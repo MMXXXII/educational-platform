@@ -1,21 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import getLPTheme from '../getLPTheme';
 import {
-    Box,
-    Container,
-    Typography,
-    Paper,
-    CssBaseline,
-    Drawer,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
-    AppBar,
-    Toolbar,
-    IconButton,
-    Button,
+    Box, Container, Typography, Drawer, List,
+    ListItem, ListItemIcon, ListItemText, AppBar,
+    Toolbar, IconButton, CssBaseline, CircularProgress,
+    Alert
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -23,42 +13,39 @@ import PeopleIcon from '@mui/icons-material/People';
 import SettingsIcon from '@mui/icons-material/Settings';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { useNavigate } from 'react-router-dom';
-import { getAccessToken } from '../utils/auth';
-import config from '../../config';
-import FileManagerWrapper from './FileManagerWrapper';
+import { userService } from '../../api';
+import getLPTheme from '../../getLPTheme';
+import FileManagerWrapper from '../fileManager/FileManagerWrapper';
 
 const drawerWidth = 240;
 
 export default function AdminPanel() {
-    const [mode, setMode] = React.useState('dark');
-    const LPtheme = React.useMemo(() => createTheme(getLPTheme(mode)), [mode]);
-    const [isAdmin, setIsAdmin] = React.useState(false);
-    const [mobileOpen, setMobileOpen] = React.useState(false);
-    const [selectedTab, setSelectedTab] = React.useState('dashboard');
+    const [mode] = useState('dark');
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [selectedTab, setSelectedTab] = useState('dashboard');
     const navigate = useNavigate();
+    const LPtheme = React.useMemo(() => createTheme(getLPTheme(mode)), [mode]);
 
     useEffect(() => {
         const checkAdminStatus = async () => {
             try {
-                const response = await fetch(`${config.apiUrl}/api/users/me`, {
-                    headers: {
-                        Authorization: `Bearer ${getAccessToken()}`,
-                    },
-                });
-                if (response.ok) {
-                    const userData = await response.json();
-                    if (userData.role === 'admin') {
-                        setIsAdmin(true);
-                    } else {
-                        navigate('/profile');
-                    }
+                const userData = await userService.getCurrentUser();
+                if (userData.role === 'admin') {
+                    setIsAdmin(true);
                 } else {
-                    navigate('/sign-in');
+                    navigate('/profile');
                 }
             } catch (error) {
                 console.error('Error checking admin status:', error);
-                navigate('/sign-in');
+                setError(error.response?.data?.detail || 'Access denied');
+                if (error.response?.status === 401) {
+                    navigate('/sign-in');
+                }
+            } finally {
+                setLoading(false);
             }
         };
 
@@ -71,13 +58,7 @@ export default function AdminPanel() {
 
     const handleTabClick = (tabName) => {
         setSelectedTab(tabName);
-    };
-
-    const handleFileManagerOpen = () => {
-        const fileManager = document.querySelector('my-file-manager');
-        if (fileManager) {
-            fileManager.removeAttribute('hidden');
-        }
+        setMobileOpen(false);
     };
 
     const drawer = (
@@ -85,27 +66,16 @@ export default function AdminPanel() {
             <Toolbar />
             <List>
                 {[
-                    {
-                        text: 'Dashboard',
-                        icon: <DashboardIcon />,
-                        key: 'dashboard',
-                    },
-                    {
-                        text: 'File Manager',
-                        icon: <FolderIcon />,
-                        key: 'file-manager',
-                    },
+                    { text: 'Dashboard', icon: <DashboardIcon />, key: 'dashboard' },
+                    { text: 'File Manager', icon: <FolderIcon />, key: 'file-manager' },
                     { text: 'Users', icon: <PeopleIcon />, key: 'users' },
-                    {
-                        text: 'Settings',
-                        icon: <SettingsIcon />,
-                        key: 'settings',
-                    },
+                    { text: 'Settings', icon: <SettingsIcon />, key: 'settings' },
                 ].map((item) => (
                     <ListItem
                         button
                         key={item.text}
                         onClick={() => handleTabClick(item.key)}
+                        selected={selectedTab === item.key}
                     >
                         <ListItemIcon>{item.icon}</ListItemIcon>
                         <ListItemText primary={item.text} />
@@ -130,6 +100,14 @@ export default function AdminPanel() {
         }
     };
 
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
     if (!isAdmin) {
         return null;
     }
@@ -137,17 +115,8 @@ export default function AdminPanel() {
     return (
         <ThemeProvider theme={LPtheme}>
             <CssBaseline />
-            <Box
-                sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    height: '100vh',
-                }}
-            >
-                <AppBar
-                    position="fixed"
-                    sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
-                >
+            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+                <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
                     <Toolbar>
                         <IconButton
                             color="inherit"
@@ -169,6 +138,13 @@ export default function AdminPanel() {
                         </Typography>
                     </Toolbar>
                 </AppBar>
+
+                {error && (
+                    <Alert severity="error" sx={{ mt: 8 }}>
+                        {error}
+                    </Alert>
+                )}
+
                 <Box sx={{ display: 'flex', flexGrow: 1 }}>
                     <Box
                         component="nav"
@@ -212,7 +188,7 @@ export default function AdminPanel() {
                             flexGrow: 1,
                             p: 3,
                             width: { sm: `calc(100% - ${drawerWidth}px)` },
-                            mt: '64px', // Добавляем отступ сверху
+                            mt: '64px',
                         }}
                     >
                         {renderContent()}

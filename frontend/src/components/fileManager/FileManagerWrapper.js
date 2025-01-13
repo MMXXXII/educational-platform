@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FileManager } from 'filemanager-element';
 import 'filemanager-element/FileManager.css';
-import config from '../../config';
-import { getAccessToken } from '../utils/auth';
+import config from '../../../config';
+import { getAccessToken } from '../../utils/auth';
 import { Box, Button } from '@mui/material';
 import axios from 'axios';
 import { styled } from '@mui/material/styles';

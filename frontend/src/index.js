@@ -1,26 +1,43 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import LandingPage from './LandingPage';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import SignUp from './components/SignUp';
-import SignIn from './components/SignIn';
-import AdminPanel from './components/AdminPanel';
-import UserProfile from './components/UserProfile';
-import FileManagerWrapper from './components/FileManagerWrapper';
-import ConstructorPanel from './components/constructor/ConstructorPanel'; 
+import LandingPage from './components/home/LandingPage';
+import SignUp from './components/auth/SignUp';
+import SignIn from './components/auth/SignIn';
+import AdminPanel from './components/admin/AdminPanel';
+import UserProfile from './components/profile/UserProfile';
+import FileManagerWrapper from './components/fileManager/FileManagerWrapper';
+import ConstructorPanel from './components/constructor/ConstructorPanel';
+import { ProtectedRoute, AdminRoute } from './routes';
 
-const rootElement = document.getElementById('root');
-const root = ReactDOM.createRoot(rootElement);
+const root = ReactDOM.createRoot(document.getElementById('root'));
 
 root.render(
     <Router>
         <Routes>
+            {/* Публичные маршруты */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/sign-up" element={<SignUp />} />
             <Route path="/sign-in" element={<SignIn />} />
-            <Route path="/profile" element={<UserProfile />} />
-            <Route path="/admin" element={<AdminPanel />} />
-            <Route path="/constructor" element={<ConstructorPanel />} /> 
+            
+            {/* Защищенные маршруты (требуют авторизации) */}
+            <Route path="/profile" element={
+                <ProtectedRoute>
+                    <UserProfile />
+                </ProtectedRoute>
+            } />
+            <Route path="/constructor" element={
+                <ProtectedRoute>
+                    <ConstructorPanel />
+                </ProtectedRoute>
+            } />
+
+            {/* Маршруты только для администраторов */}
+            <Route path="/admin" element={
+                <AdminRoute>
+                    <AdminPanel />
+                </AdminRoute>
+            } />
         </Routes>
     </Router>
 );

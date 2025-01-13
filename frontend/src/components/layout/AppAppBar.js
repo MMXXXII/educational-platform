@@ -15,9 +15,9 @@ import Typography from '@mui/material/Typography';
 import MenuItem from '@mui/material/MenuItem';
 import Drawer from '@mui/material/Drawer';
 import MenuIcon from '@mui/icons-material/Menu';
-import ToggleColorMode from './ToggleColorMode';
+import ToggleColorMode from '../common/ToggleColorMode';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { getAccessToken, removeTokens } from '../utils/auth';
+import { getAccessToken, removeTokens } from '../../utils/auth';
 
 const logoStyle = {
   width: '140px',

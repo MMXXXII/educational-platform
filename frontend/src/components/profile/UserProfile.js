@@ -1,49 +1,38 @@
-/**
- * User profile component.
- */
-
-import * as React from 'react';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import getLPTheme from '../getLPTheme';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-    Box,
-    Container,
-    Typography,
-    Paper,
-    Button,
-    Avatar,
-    CssBaseline,
+    Box, Container, Typography, Paper, Button,
+    Avatar, CssBaseline, Alert, CircularProgress
 } from '@mui/material';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { getAccessToken, removeTokens } from '../utils/auth';
-import config from '../../config';
+import { Link as RouterLink } from 'react-router-dom';
+import { userService } from '../../api';
+import { removeTokens } from '../../utils/auth';
+import getLPTheme from '../../getLPTheme';
 
 export default function UserProfile() {
-    const [mode, setMode] = React.useState('dark');
-    const LPtheme = React.useMemo(() => createTheme(getLPTheme(mode)), [mode]);
-    const [user, setUser] = React.useState(null);
+    const [mode] = useState('dark');
+    const [user, setUser] = useState(null);
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const LPtheme = React.useMemo(() => createTheme(getLPTheme(mode)), [mode]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const response = await fetch(`${config.apiUrl}/api/users/me`, {
-                    headers: {
-                        'Authorization': `Bearer ${getAccessToken()}`,
-                    },
-                });
-                if (response.ok) {
-                    const userData = await response.json();
-                    setUser(userData);
-                } else {
-                    console.error('Failed to fetch user data');
-                    navigate('/sign-in');
-                }
+                const userData = await userService.getCurrentUser();
+                setUser(userData);
             } catch (error) {
                 console.error('Error fetching user data:', error);
-                navigate('/sign-in');
+                setError(error.response?.data?.detail || 'Failed to load user data');
+                if (error.response?.status === 401) {
+                    navigate('/sign-in');
+                }
+            } finally {
+                setLoading(false);
             }
         };
 
@@ -55,22 +44,29 @@ export default function UserProfile() {
         navigate('/');
     };
 
-    if (!user) {
-        return null; // или можно показать загрузку
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <CircularProgress />
+            </Box>
+        );
     }
 
     return (
         <ThemeProvider theme={LPtheme}>
             <CssBaseline />
-            <Box
-                sx={{
-                    bgcolor: 'background.default',
-                    color: 'text.primary',
-                    minHeight: '100vh',
-                    py: { xs: 4, sm: 12 },
-                }}
-            >
+            <Box sx={{
+                bgcolor: 'background.default',
+                color: 'text.primary',
+                minHeight: '100vh',
+                py: { xs: 4, sm: 12 },
+            }}>
                 <Container maxWidth="md">
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {error}
+                        </Alert>
+                    )}
                     <Paper 
                         elevation={3}
                         sx={{
@@ -84,16 +80,16 @@ export default function UserProfile() {
                             Профиль пользователя
                         </Typography>
                         <Avatar sx={{ m: 1, bgcolor: 'secondary.main', width: 80, height: 80 }}>
-                            {user.username.charAt(0).toUpperCase()}
+                            {user?.username.charAt(0).toUpperCase()}
                         </Avatar>
                         <Typography variant="h5" gutterBottom>
-                            {user.username}
+                            {user?.username}
                         </Typography>
                         <Typography variant="body1" color="text.secondary" gutterBottom>
-                            Email: {user.email}
+                            Email: {user?.email}
                         </Typography>
                         <Typography variant="body1" color="text.secondary" gutterBottom>
-                            Роль: {user.role}
+                            Роль: {user?.role}
                         </Typography>
                         <Button
                             startIcon={<LockOutlinedIcon />}
@@ -102,7 +98,7 @@ export default function UserProfile() {
                         >
                             Изменить пароль
                         </Button>
-                        {user.role === 'admin' && (
+                        {user?.role === 'admin' && (
                             <Button
                                 component={RouterLink}
                                 to="/admin"
