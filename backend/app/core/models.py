@@ -1,10 +1,11 @@
 """
-ORM models for the database.
+SQLAlchemy ORM models
 """
 
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from database import Base
+from app.core.database import Base  # было: from database import Base
+
 
 class User(Base):
     __tablename__ = "users"
@@ -20,6 +21,7 @@ class User(Base):
     refresh_tokens = relationship("RefreshToken", back_populates="user")
     files = relationship("UserFile", back_populates="user")
 
+
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
@@ -29,7 +31,8 @@ class RefreshToken(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
 
     user = relationship("User", back_populates="refresh_tokens")
-    
+
+
 class UserFile(Base):
     __tablename__ = "user_files"
 
@@ -43,5 +46,6 @@ class UserFile(Base):
     updated_at = Column(DateTime)
 
     user = relationship("User", back_populates="files")
-    parent = relationship("UserFile", remote_side=[id], back_populates="children")
+    parent = relationship("UserFile", remote_side=[
+                          id], back_populates="children")
     children = relationship("UserFile", back_populates="parent")

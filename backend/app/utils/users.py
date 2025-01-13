@@ -1,7 +1,10 @@
+"""
+User management utilities
+"""
 from sqlalchemy.orm import Session
-from models import User
-from schemas import UserCreate
-from password_utils import get_password_hash, verify_password
+from app.core.models import User
+from app.core.schemas import UserCreate
+from app.utils.auth import get_password_hash, verify_password
 
 def authenticate_user(db: Session, username: str, password: str):
     user = get_user_by_username(db, username)
@@ -22,7 +25,12 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
 
 def create_user(db: Session, user: UserCreate):
     hashed_password = get_password_hash(user.password)
-    db_user = User(username=user.username, email=user.email, hashed_password=hashed_password, role=user.role)
+    db_user = User(
+        username=user.username,
+        email=user.email,
+        hashed_password=hashed_password,
+        role=user.role
+    )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
