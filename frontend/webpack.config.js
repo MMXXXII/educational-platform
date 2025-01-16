@@ -32,6 +32,17 @@ module.exports = {
         test: /\.(sass|less|css)$/,
         use: ["style-loader", "css-loader", 'sass-loader'],
       },
+      {
+        test: /\.(jpe?g|gif|png|svg)$/i,
+        use: [
+            {
+                loader: 'url-loader',
+                options: {
+                    limit: 10000
+                }
+            }
+        ]
+      },
     ],
   },
   resolve: {
