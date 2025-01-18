@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import {
     Box, Container, Typography, Drawer, List,
-    ListItem, ListItemIcon, ListItemText, AppBar,
+    ListItemButton, ListItemIcon, ListItemText, AppBar,
     Toolbar, IconButton, CssBaseline, CircularProgress,
     Alert
 } from '@mui/material';
@@ -15,7 +15,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { userService } from '../../api';
 import getLPTheme from '../../getLPTheme';
-import FileManagerWrapper from '../fileManager/FileManagerWrapper';
+import FileManager from '../fileManager/FileManager';
 
 const drawerWidth = 240;
 
@@ -40,7 +40,7 @@ export default function AdminPanel() {
                 }
             } catch (error) {
                 console.error('Error checking admin status:', error);
-                setError(error.response?.data?.detail || 'Access denied');
+                setError(error.response?.data?.detail || 'Доступ запрещен');
                 if (error.response?.status === 401) {
                     navigate('/sign-in');
                 }
@@ -66,20 +66,19 @@ export default function AdminPanel() {
             <Toolbar />
             <List>
                 {[
-                    { text: 'Dashboard', icon: <DashboardIcon />, key: 'dashboard' },
-                    { text: 'File Manager', icon: <FolderIcon />, key: 'file-manager' },
-                    { text: 'Users', icon: <PeopleIcon />, key: 'users' },
-                    { text: 'Settings', icon: <SettingsIcon />, key: 'settings' },
+                    { text: 'Панель управления', icon: <DashboardIcon />, key: 'dashboard' },
+                    { text: 'Файловый менеджер', icon: <FolderIcon />, key: 'file-manager' },
+                    { text: 'Пользователи', icon: <PeopleIcon />, key: 'users' },
+                    { text: 'Настройки', icon: <SettingsIcon />, key: 'settings' },
                 ].map((item) => (
-                    <ListItem
-                        button
+                    <ListItemButton
                         key={item.text}
                         onClick={() => handleTabClick(item.key)}
                         selected={selectedTab === item.key}
                     >
                         <ListItemIcon>{item.icon}</ListItemIcon>
                         <ListItemText primary={item.text} />
-                    </ListItem>
+                    </ListItemButton>
                 ))}
             </List>
         </div>
@@ -88,15 +87,15 @@ export default function AdminPanel() {
     const renderContent = () => {
         switch (selectedTab) {
             case 'dashboard':
-                return <Typography>Dashboard Content</Typography>;
+                return <Typography>Содержимое панели управления</Typography>;
             case 'file-manager':
-                return <FileManagerWrapper />;
+                return <FileManager />;
             case 'users':
-                return <Typography>Users Management</Typography>;
+                return <Typography>Управление пользователями</Typography>;
             case 'settings':
-                return <Typography>Admin Settings</Typography>;
+                return <Typography>Настройки администратора</Typography>;
             default:
-                return <Typography>Select a tab</Typography>;
+                return <Typography>Выберите вкладку</Typography>;
         }
     };
 
@@ -120,7 +119,7 @@ export default function AdminPanel() {
                     <Toolbar>
                         <IconButton
                             color="inherit"
-                            aria-label="open drawer"
+                            aria-label="открыть меню"
                             edge="start"
                             onClick={handleDrawerToggle}
                             sx={{ mr: 2, display: { sm: 'none' } }}
@@ -134,7 +133,7 @@ export default function AdminPanel() {
                             <ArrowBackIcon />
                         </IconButton>
                         <Typography variant="h6" noWrap component="div">
-                            AdminPanel
+                            Панель администратора
                         </Typography>
                     </Toolbar>
                 </AppBar>

@@ -2,26 +2,26 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { getAccessToken } from '../utils/auth';
 
-// Компонент для защиты роутов, требующих авторизации
+// Component to protect routes that require authentication
 const ProtectedRoute = ({ children }) => {
     const location = useLocation();
     const accessToken = getAccessToken();
 
-    // Если токен отсутствует, редиректим на страницу логина
+    // Redirect to the login page if the token is missing
     if (!accessToken) {
         return <Navigate to="/sign-in" state={{ from: location }} replace />;
     }
 
-    // Если токен есть, рендерим защищенный компонент
+    // Render the protected component if the token exists
     return children;
 };
 
-// Компонент для защиты роутов, требующих прав администратора
+// Component to protect routes that require admin privileges
 const AdminRoute = ({ children }) => {
     const location = useLocation();
     const accessToken = getAccessToken();
 
-    // Получаем данные о пользователе из localStorage
+    // Retrieve user data from localStorage
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const isAdmin = user.role === 'admin';
 

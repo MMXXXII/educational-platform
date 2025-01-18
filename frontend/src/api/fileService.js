@@ -1,35 +1,46 @@
 import api from './client';
 
 const fileService = {
-    getFolders: async (parent = null) => {
+    // Folders operations
+    getFolders: async (parentId = null) => {
         const response = await api.get('/folders', { 
-            params: { parent } 
+            params: { parent: parentId } 
         });
         return response.data;
     },
 
-    createFolder: async (folderData) => {
-        const response = await api.post('/folders', folderData);
+    createFolder: async (name, parentId = null) => {
+        const response = await api.post('/folders', { 
+            name, 
+            parent: parentId 
+        });
+        return response.data;
+    },
+
+    renameFolder: async (folderId, newName) => {
+        const response = await api.put(`/folders/${folderId}/rename`, null, {
+            params: { new_name: newName }
+        });
         return response.data;
     },
 
     deleteFolder: async (folderId) => {
-        const response = await api.delete(`/folders/${folderId}`);
-        return response.data;
+        await api.delete(`/folders/${folderId}`);
     },
 
-    getFiles: async (folder = null) => {
+    // Files operations
+    getFiles: async (folderId = null) => {
         const response = await api.get('/files', { 
-            params: { folder } 
+            params: { folder: folderId } 
         });
         return response.data;
     },
 
-    uploadFile: async (file, folder = null) => {
+    uploadFile: async (file, folderId = null) => {
         const formData = new FormData();
         formData.append('file', file);
-        if (folder) {
-            formData.append('folder', folder);
+        if (folderId) {
+            formData.append('folder', folderId);
         }
 
         const response = await api.post('/files', formData, {
@@ -40,20 +51,21 @@ const fileService = {
         return response.data;
     },
 
-    deleteFile: async (fileId) => {
-        const response = await api.delete(`/files/${fileId}`);
+    renameFile: async (fileId, newName) => {
+        const response = await api.put(`/files/${fileId}/rename`, null, {
+            params: { new_name: newName }
+        });
         return response.data;
+    },
+
+    deleteFile: async (fileId) => {
+        await api.delete(`/files/${fileId}`);
     },
 
     downloadFile: async (fileId) => {
         const response = await api.get(`/files/${fileId}/download`, {
             responseType: 'blob'
         });
-        return response.data;
-    },
-
-    readFileContent: async (fileId) => {
-        const response = await api.get(`/files/${fileId}/read`);
         return response.data;
     }
 };

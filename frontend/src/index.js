@@ -6,7 +6,6 @@ import SignUp from './components/auth/SignUp';
 import SignIn from './components/auth/SignIn';
 import AdminPanel from './components/admin/AdminPanel';
 import UserProfile from './components/profile/UserProfile';
-import FileManagerWrapper from './components/fileManager/FileManagerWrapper';
 import ConstructorPanel from './components/constructor/ConstructorPanel';
 import EditorPanel from './components/editor/EditorPanel';
 
