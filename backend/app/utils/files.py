@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 from PIL import Image
 from fastapi.responses import FileResponse
+import os
 
 from app.core.models import User, UserFile
 from app.core.schemas import FolderSchema, FileSchema
@@ -242,3 +243,75 @@ def read_file_content(db: Session, file_id: int):
         return {"id": file.id, "name": file.filename, "content": content}
     except UnicodeDecodeError:
         raise HTTPException(status_code=400, detail="File is not a text file")
+    
+
+def rename_item(db: Session, user: User, item_id: int, new_name: str, is_folder: bool) -> UserFile:
+    """Rename file or folder"""
+    # Get the item
+    item = db.query(UserFile).filter(
+        UserFile.id == item_id,
+        UserFile.user_id == user.id,
+        UserFile.is_folder == is_folder
+    ).first()
+
+    if not item:
+        raise HTTPException(
+            status_code=404, 
+            detail="Folder not found" if is_folder else "File not found"
+        )
+
+    # Check if an item with the new name already exists in the same directory
+    parent_id = item.parent_id
+    existing_item = db.query(UserFile).filter(
+        UserFile.user_id == user.id,
+        UserFile.parent_id == parent_id,
+        UserFile.filename == new_name,
+        UserFile.is_folder == is_folder
+    ).first()
+
+    if existing_item:
+        raise HTTPException(
+            status_code=400,
+            detail=f"An {'folder' if is_folder else 'file'} with this name already exists"
+        )
+
+    # Get old and new paths
+    old_path = get_absolute_path(user, item.relative_path)
+    new_relative_path = str(Path(item.relative_path).parent / new_name)
+    new_path = get_absolute_path(user, new_relative_path)
+
+    # Rename on filesystem
+    try:
+        os.rename(old_path, new_path)
+
+        # If it's a file and has a thumbnail, rename it too
+        if not is_folder and old_path.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']:
+            old_thumbnail = Path(THUMBNAIL_DIR) / user.username / f"th_{old_path.stem}.webp"
+            new_thumbnail = Path(THUMBNAIL_DIR) / user.username / f"th_{new_path.stem}.webp"
+            if old_thumbnail.exists():
+                os.rename(old_thumbnail, new_thumbnail)
+
+    except OSError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to rename: {str(e)}")
+
+    # Update database
+    item.filename = new_name
+    item.relative_path = new_relative_path
+    db.commit()
+    db.refresh(item)
+
+    if is_folder:
+        return FolderSchema(
+            id=item.id,
+            name=item.filename,
+            parent=item.parent_id
+        )
+    else:
+        return FileSchema(
+            id=item.id,
+            name=item.filename,
+            url=f"{BASE_URL}/api/files/{item.id}/download",
+            size=new_path.stat().st_size,
+            folder=item.parent_id,
+            thumbnail=get_thumbnail_path(new_path, user.username)
+        )

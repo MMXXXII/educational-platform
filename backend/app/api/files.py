@@ -12,7 +12,7 @@ from app.utils.auth import get_current_active_user
 from app.utils.files import (
     get_folders, create_folder, delete_folder,
     get_files, upload_file, delete_file,
-    download_file, read_file_content
+    download_file, read_file_content, rename_item
 )
 
 router = APIRouter()
@@ -82,3 +82,23 @@ async def read_file_contents(
     db: Session = Depends(get_db)
 ):
     return read_file_content(db, file_id)
+
+@router.put("/folders/{folder_id}/rename", response_model=FolderSchema)
+async def rename_folder(
+    folder_id: int,
+    new_name: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Rename folder"""
+    return rename_item(db, current_user, folder_id, new_name, is_folder=True)
+
+@router.put("/files/{file_id}/rename", response_model=FileSchema)
+async def rename_file(
+    file_id: int,
+    new_name: str,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Rename file"""
+    return rename_item(db, current_user, file_id, new_name, is_folder=False)
