@@ -21,13 +21,12 @@ import nz from "./textures/skybox_nz.jpg";
 
 var delta = 0;
 
-
 const CANVASHEIGHT = 768;
 
 var FIELDSIZE = 16;
 var LAYERSAMOUNT = 5;
 
-var PAINTMODE = 1;
+var PAINTMODE = 2;
 var MATERIALSLIST = [];
 var CURRENTLAYER = 0;
 
@@ -35,8 +34,9 @@ var player = null;
 var exit = null;
 var sceneGlobal = null;
 
-const materialButton = document.querySelector("#Material")
-const layerButton = document.querySelector("#Layer")
+var topDownCamera = null;
+var arcCamera = null;
+var light = null;
 
 var WINCONDITION = false;
 
@@ -50,11 +50,6 @@ for (let i = 0; i < LAYERSAMOUNT; i++){
     }
 }
 
-const reloadParams = function(){
-    PAINTMODE = Number(materialButton.value);
-    CURRENTLAYER = Number(layerButton.value);
-}
-
 const initializeMaterials = function(scene){
     //Eraser material
     MATERIALSLIST = [null];
@@ -62,19 +57,19 @@ const initializeMaterials = function(scene){
     //Green material
     let material = new StandardMaterial(scene)
     material.alpha = 1;
-    material.diffuseColor = new Color3.Green;
+    material.diffuseColor = new Color3(0,1,0);
     MATERIALSLIST.push(material);
 
     //Red material
     material = new StandardMaterial(scene)
     material.alpha = 1;
-    material.diffuseColor = new Color3.Yellow;
+    material.diffuseColor = new Color3(1,0,0);
     MATERIALSLIST.push(material);
 
     //Blue material
     material = new StandardMaterial(scene)
     material.alpha = 1;
-    material.diffuseColor = new Color3.Blue;
+    material.diffuseColor = new Color3(0,0,1);
     MATERIALSLIST.push(material);
 
     //Point of exit
@@ -131,7 +126,6 @@ const setupSkybox = function(scene){
     let skybox = MeshBuilder.CreateBox("skybox", {size:1000.0}, scene);
     let skyboxMaterial = new StandardMaterial("skybox", scene);
     skyboxMaterial.backFaceCulling = false;
-    console.log(process.env)
     skyboxMaterial.reflectionTexture = new CubeTexture('', scene, undefined, undefined, [px, py, pz, nx, ny, nz]);
     skyboxMaterial.reflectionTexture.coordinatesMode = Texture.SKYBOX_MODE;
     skyboxMaterial.diffuseColor = new Color3(0,0,0);
@@ -252,12 +246,11 @@ const turnLeft = function(){
 }
 
 const onMouseClick = function(event){
-    let x = event.x;
-    let y = event.y;
+    let x = event.layerX;
+    let y = event.layerY;
     x = Math.floor(x/(CANVASHEIGHT/FIELDSIZE))
     y = Math.floor(y/(CANVASHEIGHT/FIELDSIZE))
-    console.log(sceneGlobal);
-    if (sceneGlobal.activeCamera.name == 'Camera1'){
+    if (sceneGlobal.activeCamera.name == 'camera1'){
         if (event.altKey){
             createTile(x,y, CURRENTLAYER, 0, sceneGlobal);
         } else {
@@ -267,17 +260,24 @@ const onMouseClick = function(event){
     }
 }
 
+const onKeyDown = function(event){
+    if (event.key == " "){
+        switchCameras(topDownCamera, arcCamera, sceneGlobal);
+        lightChangeMode(light);
+    }
+}
+
 
 const onSceneReady = (scene) => {
-    const topDownCamera = setupCameraOrthographic(scene);
+    topDownCamera = setupCameraOrthographic(scene);
 
-    const arcCamera = setupCameraArc(scene);
+    arcCamera = setupCameraArc(scene);
 
-    switchCameras(topDownCamera, arcCamera, scene);
-
-    const light = setupLight(scene);
+    light = setupLight(scene);
 
     const skybox = setupSkybox(scene);
+
+    initializeMaterials(scene)
 
     sceneGlobal = scene;
 };
@@ -297,7 +297,7 @@ const onRender = (scene) => {
 };
 
 export default () => (
-  <div>
-    <SceneComponent antialias onSceneReady={onSceneReady} onRender={onRender} id="renderCanvas" onMouseClick={onMouseClick} />
+  <div className="editorWrapper">
+    <SceneComponent antialias onSceneReady={onSceneReady} onRender={onRender} id="renderCanvas" onMouseClick={onMouseClick} onKeyDown={onKeyDown}/>
   </div>
 );

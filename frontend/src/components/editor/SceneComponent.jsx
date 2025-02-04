@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Engine, Scene } from "@babylonjs/core";
 
-export default ({ antialias, engineOptions, adaptToDeviceRatio, sceneOptions, onRender, onSceneReady, onMouseClick, onKeyDown, ...rest }) => {
+export default ({ antialias, engineOptions, adaptToDeviceRatio, sceneOptions, onRender, onSceneReady, onMouseClick, ...rest }) => {
   const reactCanvas = useRef(null);
 
   useEffect(() => {
@@ -23,7 +23,15 @@ export default ({ antialias, engineOptions, adaptToDeviceRatio, sceneOptions, on
     });
 
     if (typeof onMouseClick === "function") {
-      canvas.addEventListener("click", onMouseClick);
+      canvas.addEventListener("click", function(event){
+        onMouseClick(event)
+      });
+    };
+
+    if (typeof onKeyDown === "function") {
+      canvas.addEventListener("keydown", function(event){
+        onKeyDown(event)
+      });
     };
 
     const resize = () => {
