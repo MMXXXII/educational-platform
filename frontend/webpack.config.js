@@ -30,7 +30,19 @@ module.exports = {
       {
         test: /\.css$/,
         test: /\.(sass|less|css)$/,
-        use: ["style-loader", "css-loader", 'sass-loader'],
+        use: [
+          "style-loader",
+          "css-loader",
+          {
+            loader: "sass-loader",
+            options: {
+              api: "modern-compiler",
+              sassOptions: {
+                // Your sass options
+              },
+            },
+          },
+        ],
       },
       {
         test: /\.(jpe?g|gif|png|svg)$/i,
