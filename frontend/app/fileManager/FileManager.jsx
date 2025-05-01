@@ -5,6 +5,12 @@ import { FileContextMenu } from './FileContextMenu';
 import { CreateFolderDialog, RenameDialog, DeleteDialog } from './FileDialogs';
 import { useFileOperations } from '../hooks/useFileOperations';
 import { useFileNavigation } from '../hooks/useFileNavigation';
+import {
+    MagnifyingGlassIcon,
+    ChevronRightIcon,
+    FolderPlusIcon,
+    ArrowUpTrayIcon
+} from '@heroicons/react/24/outline';
 
 export function FileManager() {
     const {
@@ -92,9 +98,7 @@ export function FileManager() {
             <div className="p-4 border-b border-gray-700">
                 <div className="relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                        </svg>
+                        <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
                         type="text"
@@ -120,17 +124,7 @@ export function FileManager() {
                         {folderPath.map((folder, index) => (
                             <li key={folder.id}>
                                 <div className="flex items-center">
-                                    <svg
-                                        className="w-5 h-5 text-gray-500"
-                                        fill="currentColor"
-                                        viewBox="0 0 20 20"
-                                    >
-                                        <path
-                                            fillRule="evenodd"
-                                            d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                                            clipRule="evenodd"
-                                        />
-                                    </svg>
+                                    <ChevronRightIcon className="w-5 h-5 text-gray-500" />
                                     <button
                                         className="ml-1 text-sm font-medium text-purple-400 hover:text-purple-300 md:ml-2"
                                         onClick={() => navigateByBreadcrumb(index)}
@@ -164,19 +158,14 @@ export function FileManager() {
                     className="flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
                     onClick={() => setNewFolderDialog(true)}
                 >
-                    <svg className="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                        <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM10 11a1 1 0 011 1v2a1 1 0 11-2 0v-2a1 1 0 011-1z" clipRule="evenodd" />
-                    </svg>
+                    <FolderPlusIcon className="h-5 w-5 mr-2" />
                     Новая папка
                 </button>
                 <button
                     className="flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
                     onClick={handleManualFileUpload}
                 >
-                    <svg className="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                    </svg>
+                    <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
                     Загрузить файл
                 </button>
                 <input

@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { FileIcon } from './FileIcon';
+import { EllipsisVerticalIcon } from '@heroicons/react/24/outline';
 
 export function FileListItem({ file, onClick, onMenuClick, selected }) {
     // Return null if no file is provided
@@ -41,15 +42,7 @@ export function FileListItem({ file, onClick, onMenuClick, selected }) {
                     className="ml-2 p-1 rounded-full hover:bg-gray-600 focus:outline-none"
                     onClick={handleMenuClick}
                 >
-                    <svg
-                        className="h-5 w-5 text-gray-400"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        aria-hidden="true"
-                    >
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                    </svg>
+                    <EllipsisVerticalIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
                 </button>
             </button>
         </li>
