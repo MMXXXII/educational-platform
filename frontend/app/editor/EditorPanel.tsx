@@ -1,4 +1,3 @@
-import React from "react";
 import {FreeCamera, 
         Vector3,
         HemisphericLight,
@@ -11,14 +10,6 @@ import {FreeCamera,
         Texture} from '@babylonjs/core';
 import SceneComponent from "./SceneComponent";
 import "./EditorPanel.css";
-
-import { alpha } from '@mui/material';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Container from '@mui/material/Container';
-import Link from '@mui/material/Link';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 
 import px from "./textures/skybox_px.jpg";
 import py from "./textures/skybox_py.jpg";
@@ -332,16 +323,8 @@ const importMap = function(map){
     }
 }
 
-export default () => (
-  <div className="editorWrapper">
+export function EditorPanel(){
+  return (
     <SceneComponent antialias onSceneReady={onSceneReady} onRender={onRender} id="renderCanvas" onMouseClick={onMouseClick} onKeyDown={onKeyDown}/>
-        <Container>
-            <Button variant="contained" color="primary" onClick={function(){importMap(EXAMPLEMAP)}} >
-                Импорт
-            </Button>
-            <Button variant="contained" color="primary" onClick={exportMap} >
-                Экспорт
-            </Button>
-        </Container>
-  </div>
-);
+  )
+};
