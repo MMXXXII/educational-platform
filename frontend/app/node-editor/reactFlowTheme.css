@@ -1,0 +1,118 @@
+/* Стили для кастомизации ReactFlow под общую тему приложения */
+
+/* Основные стили панели управления ReactFlow */
+.react-flow__controls {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+/* Стили для темной темы */
+@media (prefers-color-scheme: dark) {
+    .react-flow__controls {
+        background-color: #1f2937;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .react-flow__controls-button {
+        background-color: #374151;
+        color: #e5e7eb;
+        border-color: #4b5563;
+    }
+
+    .react-flow__controls-button:hover {
+        background-color: rgba(75, 85, 99, 0.8);
+    }
+
+    /* Стилизация кнопок зума и подгонки области */
+    .react-flow__controls-button svg {
+        fill: #e5e7eb;
+        position: relative;
+        z-index: 2;
+    }
+}
+
+/* Стилизация кнопок управления */
+.react-flow__controls-button {
+    border: none;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.react-flow__controls-button:last-child {
+    border-bottom: none;
+}
+
+/* Стилизация MiniMap */
+.react-flow__minimap {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+    .react-flow__minimap {
+        background-color: #1f2937;
+    }
+}
+
+/* Стилизация фона */
+.react-flow__background {
+    opacity: 0.5;
+}
+
+@media (prefers-color-scheme: dark) {
+    .react-flow__background {
+        opacity: 0.3;
+    }
+
+    .react-flow__background-pattern {
+        stroke: #4b5563;
+    }
+}
+
+/* Стилизация выделения */
+.react-flow__selection {
+    background-color: rgba(59, 130, 246, 0.1);
+    border: 1px solid #3b82f6;
+}
+
+@media (prefers-color-scheme: dark) {
+    .react-flow__selection {
+        background-color: rgba(59, 130, 246, 0.2);
+        border: 1px solid #60a5fa;
+    }
+}
+
+/* Стилизация для разных типов нодов в миникарте */
+.react-flow__minimap-node[data-type="variable"] {
+    fill: #3b82f6;
+}
+
+.react-flow__minimap-node[data-type="number"],
+.react-flow__minimap-node[data-type="string"] {
+    fill: #10b981;
+}
+
+.react-flow__minimap-node[data-type="math"] {
+    fill: #8b5cf6;
+}
+
+.react-flow__minimap-node[data-type="print"] {
+    fill: #f59e0b;
+}
+
+.react-flow__minimap-node[data-type="loop"] {
+    fill: #ef4444;
+}
+
+.react-flow__minimap-node[data-type="if"] {
+    fill: #6366f1;
+}

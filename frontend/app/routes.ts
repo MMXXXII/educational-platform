@@ -8,6 +8,7 @@ import {
 
 export default [
     index("routes/home.tsx"),
+    route("node-editor", "routes/node-editor.tsx"),
     route("editor", "./routes/editor.tsx"),
     route("profile", "./routes/profile.tsx"),
     route("file-manager", "./routes/file-manager.tsx"),
