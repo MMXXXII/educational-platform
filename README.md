@@ -1,2 +1,2 @@
-# game-practice
-Gamedev practice
+# Educational Platform
+Branch for fronted development
