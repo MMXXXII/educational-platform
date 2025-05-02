@@ -40,14 +40,14 @@ export function Header({ isAuthenticated }) {
                         ) : (
                             <>
                                 <Link 
-                                    to="/login" 
+                                    to="/sign-in" 
                                     className="px-4 py-2 border border-blue-600 text-blue-600 font-semibold rounded-lg hover:bg-blue-50 flex items-center"
                                 >
                                     <ArrowRightEndOnRectangleIcon className="h-5 w-5 mr-1" />
                                     <span>Войти</span>
                                 </Link>
                                 <Link 
-                                    to="/register" 
+                                    to="/sign-up" 
                                     className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
                                 >
                                     Регистрация
