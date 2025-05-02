@@ -33,7 +33,7 @@ export function FeaturesSection() {
                             className="bg-gray-50 p-5 sm:p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow"
                         >
                             <div className="flex justify-center mb-4">{feature.icon}</div>
-                            <h4 className="text-lg sm:text-xl font-semibold mb-2 text-center">{feature.title}</h4>
+                            <h4 className="text-lg sm:text-xl font-semibold text-center text-gray-800 mb-2">{feature.title}</h4>
                             <p className="text-gray-600 text-center text-sm sm:text-base">{feature.description}</p>
                         </div>
                     ))}

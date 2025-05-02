@@ -33,7 +33,7 @@ export function DetailedFeaturesSection() {
                             <div className="flex-1">
                                 <div className="flex items-center mb-4 justify-center md:justify-start">
                                     {feature.icon}
-                                    <h4 className="text-xl sm:text-2xl font-semibold ml-4">{feature.title}</h4>
+                                    <h4 className="text-xl sm:text-2xl font-semibold text-gray-800 ml-4">{feature.title}</h4>
                                 </div>
                                 <p className="text-gray-600 text-base sm:text-lg text-center md:text-left">{feature.description}</p>
                             </div>
