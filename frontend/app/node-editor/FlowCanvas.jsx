@@ -11,10 +11,10 @@ import 'reactflow/dist/style.css';
 import { useEditor } from '../contexts/EditorContext';
 import { v4 as uuidv4 } from 'uuid';
 import { createNode } from '../nodes/NodeTypes';
-import ExecutionControls from './ExecutionControls';
 import useNodeExecution from '../hooks/useNodeExecution';
 import CustomNode from '../nodes/CustomNode';
 import AnimatedDataEdge from './AnimatedDataEdge';
+import RightSidebar from './RightSidebar';
 import './flowStyles.css';
 import './reactFlowTheme.css';
 
@@ -31,7 +31,8 @@ const FlowCanvas = () => {
         onNodesChange,
         onEdgesChange,
         setIsModified,
-        setSelectedNodeId
+        setSelectedNodeId,
+        selectedNodeId
     } = useEditor();
 
     // Ссылка на экземпляр ReactFlow
@@ -303,17 +304,16 @@ const FlowCanvas = () => {
                     />
                     <Background color="#aaa" gap={16} />
 
-                    <Panel position="top-right">
-                        <ExecutionControls
-                            isExecuting={isExecuting}
-                            executionStep={executionStep}
-                            onStart={startExecution}
-                            onStop={stopExecution}
-                            onStep={executeStep}
-                            onRunFull={runFullAlgorithm}
-                            consoleOutput={consoleOutput}
-                        />
-                    </Panel>
+                    <RightSidebar
+                        isExecuting={isExecuting}
+                        executionStep={executionStep}
+                        onStop={stopExecution}
+                        onStep={executeStep}
+                        onRunFull={runFullAlgorithm}
+                        consoleOutput={consoleOutput}
+                        selectedNodeId={selectedNodeId}
+                        nodes={nodes}
+                    />
                 </ReactFlow>
             </div>
         </div>
