@@ -10,6 +10,7 @@ export default [
     layout("./routes/layout.tsx", [
         index("routes/home.tsx"),
         route("courses", "./routes/courses.tsx"),
+        route("courses/:id", "./routes/course-detail.tsx"),
         route("profile", "./routes/profile.tsx"),
         route("file-manager", "./routes/file-manager.tsx"),
     ]),
