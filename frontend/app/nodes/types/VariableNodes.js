@@ -1,44 +1,44 @@
-import BaseNode from './BaseNode';
+import BaseNode from '../BaseNode';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * SetVariableNode - нод для установки значения глобальной переменной
- */
+  * SetVariableNode - нод для установки значения глобальной переменной
+*/
 export class SetVariableNode extends BaseNode {
     /**
-     * @param {string} id - Идентификатор нода
-     * @param {Object} data - Данные нода
-     * @param {string} data.variableName - Имя глобальной переменной
-     */
+      * @param {string} id - Идентификатор нода
+      * @param {Object} data - Данные нода
+      * @param {string} data.variableName - Имя глобальной переменной
+      */
     constructor(id = uuidv4(), data = {}) {
         const variableName = data.variableName || '';
-        super(id, 'set_variable', `Установить: ${variableName || '[выберите]'}`, {
+        super(id, 'set_variable', `Set: ${variableName || '[select]'}`, {
             variableName,
             ...data
         });
 
         // Добавление портов
-        this.addInput('flow', 'Вход', 'flow');
-        this.addInput('value', 'Значение', 'any');
-        this.addOutput('flow', 'Выход', 'flow');
+        this.addInput('flow', 'Input', 'flow');
+        this.addInput('value', 'Value', 'any');
+        this.addOutput('flow', 'Output', 'flow');
     }
 
     /**
-     * Выполняет логику нода
-     * @param {Object} inputValues - Входные значения
-     * @param {Object} context - Контекст выполнения
-     * @returns {Object} - Выходные значения
-     */
+      * Выполняет логику нода
+      * @param {Object} inputValues - Входные значения
+      * @param {Object} context - Контекст выполнения
+      * @returns {Object} - Выходные значения
+      */
     execute(inputValues, context) {
         const value = inputValues.value;
         const variableName = this.data.variableName;
 
         // Проверяем, что имя переменной задано
         if (!variableName) {
-            this.state = { error: 'Имя переменной не задано' };
+            this.state = { error: 'Variable name not set' };
             context.console.push({
                 type: 'error',
-                value: `Ошибка в ноде "${this.label}": Имя переменной не задано`
+                value: `Error in node "${this.label}": Variable name not set`
             });
             return { flow: true };
         }
@@ -57,14 +57,14 @@ export class SetVariableNode extends BaseNode {
             // Добавляем сообщение в консоль
             context.console.push({
                 type: 'output',
-                value: `Установлено значение переменной "${variableName}": ${JSON.stringify(value)}`
+                value: `Set variable "${variableName}" value: ${JSON.stringify(value)}`
             });
         } else {
             // Если контекст не поддерживает глобальные переменные
-            this.state = { error: 'Глобальные переменные не поддерживаются' };
+            this.state = { error: 'Global variables not supported' };
             context.console.push({
                 type: 'error',
-                value: `Ошибка в ноде "${this.label}": Глобальные переменные не поддерживаются`
+                value: `Error in node "${this.label}": Global variables not supported`
             });
         }
 
@@ -73,16 +73,16 @@ export class SetVariableNode extends BaseNode {
     }
 
     /**
-     * Переопределение метода setProperty для специфичной логики
-     * @param {string} key - Ключ свойства
-     * @param {any} value - Значение свойства 
-     */
+      * Переопределение метода setProperty для специфичной логики
+      * @param {string} key - Ключ свойства
+      * @param {any} value - Значение свойства 
+      */
     setProperty(key, value) {
         super.setProperty(key, value);
 
         // Если обновилось имя переменной, обновим метку нода
         if (key === 'variableName') {
-            this.label = `Установить: ${value || '[выберите]'}`;
+            this.label = `Set: ${value || '[select]'}`;
         }
 
         return this;
@@ -90,40 +90,40 @@ export class SetVariableNode extends BaseNode {
 }
 
 /**
- * GetVariableNode - нод для получения значения глобальной переменной
- */
+  * GetVariableNode - нод для получения значения глобальной переменной
+  */
 export class GetVariableNode extends BaseNode {
     /**
-     * @param {string} id - Идентификатор нода
-     * @param {Object} data - Данные нода
-     * @param {string} data.variableName - Имя глобальной переменной
-     */
+      * @param {string} id - Идентификатор нода
+      * @param {Object} data - Данные нода
+      * @param {string} data.variableName - Имя глобальной переменной
+      */
     constructor(id = uuidv4(), data = {}) {
         const variableName = data.variableName || '';
-        super(id, 'get_variable', `Получить: ${variableName || '[выберите]'}`, {
+        super(id, 'get_variable', `Get: ${variableName || '[select]'}`, {
             variableName,
             ...data
         });
 
-        // Добавление портов
-        this.addOutput('value', 'Значение', 'any');
+        // Add ports
+        this.addOutput('value', 'Value', 'any');
     }
 
     /**
-     * Выполняет логику нода
-     * @param {Object} inputValues - Входные значения
-     * @param {Object} context - Контекст выполнения
-     * @returns {Object} - Выходные значения
-     */
+      * Выполняет логику нода
+      * @param {Object} inputValues - Входные значения
+      * @param {Object} context - Контекст выполнения
+      * @returns {Object} - Выходные значения
+      */
     execute(inputValues, context) {
         const variableName = this.data.variableName;
 
         // Проверяем, что имя переменной задано
         if (!variableName) {
-            this.state = { error: 'Имя переменной не задано' };
+            this.state = { error: 'Variable name not set' };
             context.console.push({
                 type: 'error',
-                value: `Ошибка в ноде "${this.label}": Имя переменной не задано`
+                value: `Error in node "${this.label}": Variable name not set`
             });
             return { value: undefined };
         }
@@ -143,7 +143,7 @@ export class GetVariableNode extends BaseNode {
             if (context.debug) {
                 context.console.push({
                     type: 'debug',
-                    value: `Получено значение переменной "${variableName}": ${JSON.stringify(value)}`
+                    value: `Got variable "${variableName}" value: ${JSON.stringify(value)}`
                 });
             }
 
@@ -151,26 +151,26 @@ export class GetVariableNode extends BaseNode {
             return { value };
         } else {
             // Если контекст не поддерживает глобальные переменные
-            this.state = { error: 'Глобальные переменные не поддерживаются' };
+            this.state = { error: 'Global variables not supported' };
             context.console.push({
                 type: 'error',
-                value: `Ошибка в ноде "${this.label}": Глобальные переменные не поддерживаются`
+                value: `Error in node "${this.label}": Global variables not supported`
             });
             return { value: undefined };
         }
     }
 
     /**
-     * Переопределение метода setProperty для специфичной логики
-     * @param {string} key - Ключ свойства
-     * @param {any} value - Значение свойства 
-     */
+      * Переопределение метода setProperty для специфичной логики
+      * @param {string} key - Ключ свойства
+      * @param {any} value - Значение свойства 
+      */
     setProperty(key, value) {
         super.setProperty(key, value);
 
         // Если обновилось имя переменной, обновим метку нода
         if (key === 'variableName') {
-            this.label = `Получить: ${value || '[выберите]'}`;
+            this.label = `Get: ${value || '[select]'}`;
         }
 
         return this;

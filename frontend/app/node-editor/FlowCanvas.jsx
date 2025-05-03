@@ -10,7 +10,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { useEditor } from '../contexts/EditorContext';
 import { v4 as uuidv4 } from 'uuid';
-import { createNode } from '../nodes/NodeTypes';
+import { createNode } from '../nodes/NodeFactory';
 import useNodeExecution from '../hooks/useNodeExecution';
 import CustomNode from '../nodes/CustomNode';
 import AnimatedDataEdge from './AnimatedDataEdge';

@@ -1,8 +1,8 @@
-import { nodeTypes, createNode } from '../nodes/NodeTypes';
+import { nodeTypes, createNode } from '../nodes/NodeFactory';
 
 /**
- * Helper function to check if localStorage is available
- * @returns {boolean} - Whether localStorage is available
+ * Вспомогательная функция для проверки доступности localStorage
+ * @returns {boolean} - Доступен ли localStorage
  */
 const isLocalStorageAvailable = () => {
     return typeof window !== 'undefined' && window.localStorage;

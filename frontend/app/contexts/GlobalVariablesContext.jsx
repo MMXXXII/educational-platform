@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
-// Create context
+// Создаем контекст
 const GlobalVariablesContext = createContext();
 
-// Variable types enum
+// Перечисление типов переменных
 export const VariableTypes = {
     NUMBER: 'number',
     STRING: 'string',
@@ -11,17 +11,17 @@ export const VariableTypes = {
 };
 
 /**
- * Provider for global variables context
- * @param {Object} props - Component props
- * @param {React.ReactNode} props.children - Child components
+ * Провайдер для контекста глобальных переменных
+ * @param {Object} props - Свойства компонента
+ * @param {React.ReactNode} props.children - Дочерние компоненты
  */
 export const GlobalVariablesProvider = ({ children }) => {
-    // State for variables
+    // Состояние для переменных
     const [variables, setVariables] = useState({});
     const [variableValues, setVariableValues] = useState({});
     const [isBrowser, setIsBrowser] = useState(false);
 
-    // Initialize from localStorage on mount
+    // Инициализация из localStorage при монтировании
     useEffect(() => {
         setIsBrowser(true);
         try {
@@ -30,7 +30,7 @@ export const GlobalVariablesProvider = ({ children }) => {
                 const parsed = JSON.parse(savedVariables);
                 setVariables(parsed);
                 
-                // Initialize values
+                // Инициализация значений
                 const initialValues = {};
                 Object.entries(parsed).forEach(([name, variable]) => {
                     initialValues[name] = variable.initialValue;
@@ -38,39 +38,39 @@ export const GlobalVariablesProvider = ({ children }) => {
                 setVariableValues(initialValues);
             }
         } catch (error) {
-            console.error('Error loading global variables from localStorage:', error);
+            console.error('Ошибка загрузки глобальных переменных из localStorage:', error);
         }
     }, []);
 
-    // Save to localStorage when variables change
+    // Сохранение в localStorage при изменении переменных
     useEffect(() => {
         if (isBrowser && Object.keys(variables).length > 0) {
             try {
                 localStorage.setItem('nodeEditor_globalVariables', JSON.stringify(variables));
             } catch (error) {
-                console.error('Error saving global variables to localStorage:', error);
+                console.error('Ошибка сохранения глобальных переменных в localStorage:', error);
             }
         }
     }, [variables, isBrowser]);
 
     /**
-     * Add a new variable
-     * @param {string} name - Variable name
-     * @param {string} type - Variable type
-     * @param {any} initialValue - Initial value
-     * @returns {boolean} - Success status
+     * Добавить новую переменную
+     * @param {string} name - Имя переменной
+     * @param {string} type - Тип переменной
+     * @param {any} initialValue - Начальное значение
+     * @returns {boolean} - Статус успешности
      */
     const addVariable = useCallback((name, type, initialValue) => {
         if (!name || name.trim() === '') {
             return false;
         }
 
-        // Check if variable already exists
+        // Проверка, существует ли переменная уже
         if (variables[name]) {
             return false;
         }
 
-        // Validate initial value based on type
+        // Валидация начального значения в зависимости от типа
         let validatedValue;
         switch (type) {
             case VariableTypes.NUMBER:
@@ -86,7 +86,7 @@ export const GlobalVariablesProvider = ({ children }) => {
                 validatedValue = initialValue;
         }
 
-        // Add variable
+        // Добавление переменной
         setVariables(prev => ({
             ...prev,
             [name]: {
@@ -95,7 +95,7 @@ export const GlobalVariablesProvider = ({ children }) => {
             }
         }));
 
-        // Initialize value
+        // Инициализация значения
         setVariableValues(prev => ({
             ...prev,
             [name]: validatedValue
@@ -105,18 +105,18 @@ export const GlobalVariablesProvider = ({ children }) => {
     }, [variables]);
 
     /**
-     * Update a variable
-     * @param {string} name - Variable name
-     * @param {string} type - New variable type
-     * @param {any} initialValue - New initial value
-     * @returns {boolean} - Success status
+     * Обновить переменную
+     * @param {string} name - Имя переменной
+     * @param {string} type - Новый тип переменной
+     * @param {any} initialValue - Новое начальное значение
+     * @returns {boolean} - Статус успешности
      */
     const updateVariable = useCallback((name, type, initialValue) => {
         if (!variables[name]) {
             return false;
         }
 
-        // Validate initial value based on type
+        // Валидация начального значения в зависимости от типа
         let validatedValue;
         switch (type) {
             case VariableTypes.NUMBER:
@@ -132,7 +132,7 @@ export const GlobalVariablesProvider = ({ children }) => {
                 validatedValue = initialValue;
         }
 
-        // Update variable
+        // Обновление переменной
         setVariables(prev => ({
             ...prev,
             [name]: {
@@ -141,7 +141,7 @@ export const GlobalVariablesProvider = ({ children }) => {
             }
         }));
 
-        // Update value
+        // Обновление значения
         setVariableValues(prev => ({
             ...prev,
             [name]: validatedValue
@@ -151,9 +151,9 @@ export const GlobalVariablesProvider = ({ children }) => {
     }, [variables]);
 
     /**
-     * Delete a variable
-     * @param {string} name - Variable name
-     * @returns {boolean} - Success status
+     * Удалить переменную
+     * @param {string} name - Имя переменной
+     * @returns {boolean} - Статус успешности
      */
     const deleteVariable = useCallback((name) => {
         if (!variables[name]) {
@@ -176,26 +176,26 @@ export const GlobalVariablesProvider = ({ children }) => {
     }, [variables]);
 
     /**
-     * Get value of a variable
-     * @param {string} name - Variable name
-     * @returns {any} - Variable value
+     * Получить значение переменной
+     * @param {string} name - Имя переменной
+     * @returns {any} - Значение переменной
      */
     const getVariableValue = useCallback((name) => {
         return variableValues[name];
     }, [variableValues]);
 
     /**
-     * Set value of a variable
-     * @param {string} name - Variable name
-     * @param {any} value - New value
-     * @returns {boolean} - Success status
+     * Установить значение переменной
+     * @param {string} name - Имя переменной
+     * @param {any} value - Новое значение
+     * @returns {boolean} - Статус успешности
      */
     const setVariableValue = useCallback((name, value) => {
         if (!variables[name]) {
             return false;
         }
 
-        // Validate value based on type
+        // Валидация значения в зависимости от типа
         let validatedValue;
         const type = variables[name].type;
         switch (type) {
@@ -221,7 +221,7 @@ export const GlobalVariablesProvider = ({ children }) => {
     }, [variables]);
 
     /**
-     * Reset all variable values to their initial values
+     * Сбросить все значения переменных к их начальным значениям
      */
     const resetVariableValues = useCallback(() => {
         const initialValues = {};
@@ -231,7 +231,7 @@ export const GlobalVariablesProvider = ({ children }) => {
         setVariableValues(initialValues);
     }, [variables]);
 
-    // Context value
+    // Значение контекста
     const value = {
         variables,
         variableValues,
@@ -251,13 +251,13 @@ export const GlobalVariablesProvider = ({ children }) => {
 };
 
 /**
- * Hook to use global variables context
- * @returns {Object} - Global variables context
+ * Хук для использования контекста глобальных переменных
+ * @returns {Object} - Контекст глобальных переменных
  */
 export const useGlobalVariables = () => {
     const context = useContext(GlobalVariablesContext);
     if (!context) {
-        throw new Error('useGlobalVariables must be used within a GlobalVariablesProvider');
+        throw new Error('useGlobalVariables должен использоваться внутри GlobalVariablesProvider');
     }
     return context;
 };
