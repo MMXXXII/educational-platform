@@ -1,5 +1,6 @@
 import React, { memo, useState, useEffect, useRef } from 'react';
 import { Handle, Position } from 'reactflow';
+import { useGlobalVariables } from '../contexts/GlobalVariablesContext';
 
 /**
  * Компонент CustomNode для визуализации нода в ReactFlow
@@ -9,7 +10,10 @@ const CustomNode = ({ data, selected }) => {
     const [hoveredOutput, setHoveredOutput] = useState(null);
     const [localState, setLocalState] = useState({});
     const nodeRef = data.nodeRef;
-    
+
+    // Получаем глобальные переменные для нодов get/set_variable
+    const { variables: availableVariables } = useGlobalVariables();
+
     // Инициализируем локальное состояние из данных нода
     useEffect(() => {
         if (nodeRef) {
@@ -19,7 +23,8 @@ const CustomNode = ({ data, selected }) => {
                 initialValue: nodeRef.data.initialValue !== undefined ? nodeRef.data.initialValue : '',
                 operation: nodeRef.data.operation || 'add',
                 count: nodeRef.data.count !== undefined ? nodeRef.data.count : 5,
-                condition: nodeRef.data.condition || 'equal'
+                condition: nodeRef.data.condition || 'equal',
+                variableName: nodeRef.data.variableName || ''
             });
         }
     }, [nodeRef]);
@@ -64,6 +69,13 @@ const CustomNode = ({ data, selected }) => {
                     border: 'border-indigo-500',
                     text: 'text-indigo-800 dark:text-indigo-200'
                 };
+            case 'set_variable':
+            case 'get_variable':
+                return {
+                    bg: 'bg-teal-100 dark:bg-teal-900',
+                    border: 'border-teal-500',
+                    text: 'text-teal-800 dark:text-teal-200'
+                };
             default:
                 return {
                     bg: 'bg-gray-100 dark:bg-gray-800',
@@ -94,7 +106,7 @@ const CustomNode = ({ data, selected }) => {
     // Обработчик изменения значений в интерактивных элементах
     const handleChange = (key, value) => {
         setLocalState(prev => ({ ...prev, [key]: value }));
-        
+
         if (nodeRef) {
             nodeRef.setProperty(key, value);
         }
@@ -201,6 +213,22 @@ const CustomNode = ({ data, selected }) => {
                         </select>
                     </div>
                 );
+            case 'set_variable':
+            case 'get_variable':
+                return (
+                    <div className="w-full">
+                        <select
+                            value={localState.variableName || ''}
+                            onChange={(e) => handleChange('variableName', e.target.value)}
+                            className="w-full p-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm nodrag"
+                        >
+                            <option value="">Выберите переменную</option>
+                            {Object.keys(availableVariables || {}).map(name => (
+                                <option key={name} value={name}>{name}</option>
+                            ))}
+                        </select>
+                    </div>
+                );
             case 'print':
                 return (
                     <div className="w-full text-center text-sm">
@@ -215,16 +243,16 @@ const CustomNode = ({ data, selected }) => {
     // Индикатор текущего состояния
     const renderActiveIndicator = () => {
         if (!data.nodeRef || !data.nodeRef.state) return null;
-        
+
         const state = data.nodeRef.state;
         const hasData = Object.keys(state).length > 0;
-        
+
         if (!hasData) return null;
-        
+
         // Определяем самое важное значение для отображения (в зависимости от типа нода)
         let keyValue = null;
         let indicator = null;
-        
+
         switch (data.type) {
             case 'variable':
                 keyValue = state.currentValue !== undefined ? state.currentValue : null;
@@ -240,25 +268,49 @@ const CustomNode = ({ data, selected }) => {
                 keyValue = state.result !== undefined ? (state.result ? 'Истина' : 'Ложь') : null;
                 break;
             case 'loop':
-                keyValue = state.currentIteration !== undefined ? 
+                keyValue = state.currentIteration !== undefined ?
                     `Итерация ${state.currentIteration + 1}/${state.count}` : null;
                 break;
             case 'print':
                 keyValue = 'Выполнен';
                 break;
+            case 'get_variable':
+                keyValue = state.value;
+                break;
+            case 'set_variable':
+                keyValue = state.value;
+                break;
             default:
                 keyValue = null;
         }
-        
+
         if (keyValue !== null) {
             // Активный нод с данными - показываем индикатор
+            let displayValue = typeof keyValue === 'object'
+                ? '[Объект]'
+                : (keyValue === undefined ? 'undefined' : String(keyValue));
+
+            // Ограничиваем длину отображаемого значения
+            if (displayValue.length > 10) {
+                displayValue = displayValue.substring(0, 8) + '...';
+            }
+
             indicator = (
-                <div className="absolute -top-2 -right-2 h-5 flex items-center justify-center px-2 bg-blue-500 text-white text-xs rounded-full shadow-md font-semibold z-10">
-                    {typeof keyValue === 'object' ? '[Объект]' : String(keyValue)}
+                <div className="absolute -top-2 -right-2 py-1 px-2 bg-blue-500 text-white text-xs rounded-full shadow-md font-semibold z-10">
+                    {displayValue}
                 </div>
             );
         }
-        
+
+        // Индикатор ошибки
+        if (state.error) {
+            indicator = (
+                <div className="absolute -top-2 -right-2 py-1 px-2 bg-red-500 text-white text-xs rounded-full shadow-md font-semibold z-10">
+                    Ошибка
+                </div>
+            );
+        }
+
         return indicator;
     };
 
@@ -274,7 +326,7 @@ const CustomNode = ({ data, selected }) => {
         >
             {/* Индикатор активного состояния */}
             {renderActiveIndicator()}
-            
+
             {/* Заголовок нода */}
             <div className="font-bold text-center mb-2 pb-1 border-b border-gray-300 dark:border-gray-600">
                 {data.label}

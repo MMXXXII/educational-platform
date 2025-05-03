@@ -7,7 +7,9 @@ import {
     CalculatorIcon,
     ArrowsRightLeftIcon,
     ChevronDownIcon,
-    ChevronRightIcon
+    ChevronRightIcon,
+    CubeTransparentIcon,
+    ServerIcon
 } from '@heroicons/react/24/outline';
 
 /**
@@ -29,6 +31,14 @@ const ConstructorPanel = () => {
                 { type: 'variable', name: 'Переменная', icon: <VariableIcon className="w-5 h-5" /> },
                 { type: 'number', name: 'Число', icon: <HashtagIcon className="w-5 h-5" /> },
                 { type: 'string', name: 'Строка', icon: <DocumentTextIcon className="w-5 h-5" /> }
+            ]
+        },
+        {
+            id: 'globalVars',
+            name: 'Глобальные переменные',
+            nodes: [
+                { type: 'get_variable', name: 'Получить переменную', icon: <ServerIcon className="w-5 h-5" /> },
+                { type: 'set_variable', name: 'Установить переменную', icon: <CubeTransparentIcon className="w-5 h-5" /> }
             ]
         },
         {
@@ -79,6 +89,8 @@ const ConstructorPanel = () => {
             case 'variable': return 'bg-blue-500 hover:bg-blue-600';
             case 'number':
             case 'string': return 'bg-green-500 hover:bg-green-600';
+            case 'get_variable':
+            case 'set_variable': return 'bg-teal-500 hover:bg-teal-600';
             case 'math': return 'bg-purple-500 hover:bg-purple-600';
             case 'print': return 'bg-yellow-500 hover:bg-yellow-600';
             case 'loop': return 'bg-red-500 hover:bg-red-600';

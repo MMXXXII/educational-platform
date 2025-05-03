@@ -7,7 +7,7 @@ class ExecutionEngine {
      * @param {Array} nodes - Массив нодов
      * @param {Array} edges - Массив связей между нодами
      */
-    constructor(nodes, edges) {
+    constructor(nodes, edges, globalVariables = {}, setGlobalVariable = null) {
         this.nodes = nodes;
         this.edges = edges;
         this.context = {
@@ -16,7 +16,9 @@ class ExecutionEngine {
             activeNodeId: null,
             previousNodeId: null,
             visitedNodes: new Set(),
-            loopReturn: null
+            loopReturn: null,
+            globalVariables: globalVariables || {},
+            setGlobalVariable: setGlobalVariable || null
         };
         this.inputCache = {};
         this.isComplete = false;
@@ -57,6 +59,10 @@ class ExecutionEngine {
      * @returns {boolean} - Готов ли движок к выполнению
      */
     initialize() {
+        // Сохраняем глобальные переменные
+        const globalVariables = this.context.globalVariables;
+        const setGlobalVariable = this.context.setGlobalVariable;
+
         // Сбрасываем состояние
         this.context = {
             variables: {},
@@ -64,7 +70,9 @@ class ExecutionEngine {
             activeNodeId: null,
             previousNodeId: null,
             visitedNodes: new Set(),
-            loopReturn: null
+            loopReturn: null,
+            globalVariables: globalVariables,
+            setGlobalVariable: setGlobalVariable
         };
         this.inputCache = {};
         this.isComplete = false;
@@ -156,7 +164,7 @@ class ExecutionEngine {
     executeAllNodes() {
         // Сначала определяем порядок выполнения
         const executionOrder = this.determineExecutionOrder();
-        
+
         // Добавляем сообщение о начале выполнения
         this.context.console.push({
             type: 'output',
@@ -193,39 +201,39 @@ class ExecutionEngine {
         // Создаем граф зависимостей
         const graph = {};
         const inDegree = {};
-        
+
         // Инициализируем каждый нод
         this.nodes.forEach(node => {
             graph[node.id] = [];
             inDegree[node.id] = 0;
         });
-        
+
         // Строим зависимости
         this.edges.forEach(edge => {
             // source -> target означает, что target зависит от source
             graph[edge.source].push(edge.target);
             inDegree[edge.target] = (inDegree[edge.target] || 0) + 1;
         });
-        
+
         // Находим ноды без зависимостей (начальные ноды)
         const queue = this.startNodeIds.slice();
         const order = [];
-        
+
         // Алгоритм топологической сортировки
         while (queue.length > 0) {
             const current = queue.shift();
             order.push(current);
-            
+
             // Обрабатываем соседей
             graph[current].forEach(neighbor => {
                 inDegree[neighbor]--;
-                
+
                 if (inDegree[neighbor] === 0) {
                     queue.push(neighbor);
                 }
             });
         }
-        
+
         // Проверяем, что все ноды включены в порядок
         if (order.length !== this.nodes.length) {
             // Есть циклы или недостижимые ноды
@@ -236,7 +244,7 @@ class ExecutionEngine {
                 }
             });
         }
-        
+
         return order;
     }
 
@@ -247,38 +255,38 @@ class ExecutionEngine {
      */
     executeNode(nodeId) {
         const node = this.nodes.find(n => n.id === nodeId);
-        
+
         if (!node) {
             return {
                 error: `Нод с ID ${nodeId} не найден`,
                 nodeId
             };
         }
-        
+
         try {
             // Добавляем нод в список посещенных
             this.context.visitedNodes.add(nodeId);
             this.executionPath.push(nodeId);
-            
+
             // Обновляем активный нод в контексте
             this.context.previousNodeId = this.context.activeNodeId;
             this.context.activeNodeId = nodeId;
-            
+
             // Собираем входные значения для нода
             const inputValues = this.collectInputValues(node);
-            
+
             // Выполняем логику нода
             const nodeRef = node.data.nodeRef;
             if (!nodeRef) {
                 throw new Error(`Нод с ID ${nodeId} не имеет ссылки на реализацию`);
             }
-            
+
             // Выполняем нод
             const outputs = nodeRef.execute(inputValues, this.context);
-            
+
             // Сохраняем выходные значения в кэше
             this.cacheOutputValues(node, outputs);
-            
+
             // Добавляем информацию о выполнении для важных нодов
             if (node.data.type === 'math') {
                 // Показываем промежуточные результаты вычислений
@@ -286,7 +294,7 @@ class ExecutionEngine {
                 const a = inputValues.a;
                 const b = inputValues.b;
                 const result = outputs.result;
-                
+
                 let opSymbol = '';
                 switch (operation) {
                     case 'add': opSymbol = '+'; break;
@@ -294,24 +302,24 @@ class ExecutionEngine {
                     case 'multiply': opSymbol = '*'; break;
                     case 'divide': opSymbol = '/'; break;
                 }
-                
+
                 this.context.console.push({
                     type: 'debug',
                     value: `Вычисление: ${a} ${opSymbol} ${b} = ${result}`
                 });
             }
-            
-            return { 
-                success: true, 
-                nodeId, 
-                outputs 
+
+            return {
+                success: true,
+                nodeId,
+                outputs
             };
         } catch (error) {
             this.context.console.push({
                 type: 'error',
                 value: `Ошибка в ноде "${node.data.label}": ${error.message}`
             });
-            
+
             return {
                 error: error.message,
                 nodeId
@@ -369,7 +377,7 @@ class ExecutionEngine {
 
             // Находим следующий нод для выполнения
             const nextNodeId = this.findNextNode(currentNode, result.outputs);
-            
+
             // Если следующий нод не найден, выполнение завершено
             if (!nextNodeId) {
                 this.isComplete = true;
@@ -396,7 +404,7 @@ class ExecutionEngine {
                 type: 'error',
                 value: `Ошибка выполнения: ${error.message}`
             });
-            
+
             return {
                 isComplete: true,
                 error: error.message,
@@ -445,12 +453,12 @@ class ExecutionEngine {
                     if (this.inputCache[cacheKey] !== undefined) {
                         const value = this.inputCache[cacheKey];
                         inputValues[inputName] = value;
-                        
+
                         // Записываем информацию о передаче данных для анимации
                         this.dataTransfers.push({
                             edgeId: sourceEdge.id,
                             sourceNodeId: sourceNode.id,
-                            targetNodeId: node.id, 
+                            targetNodeId: node.id,
                             sourceHandle: sourceHandleId,
                             targetHandle: inputId,
                             value: value,
@@ -510,20 +518,20 @@ class ExecutionEngine {
             if (outgoingEdges.length > 0) {
                 const nextNodeId = outgoingEdges[0].target;
                 const nextNode = this.nodes.find(n => n.id === nextNodeId);
-                
+
                 if (nextNode) {
                     // Записываем информацию о передаче управления (flow)
                     this.dataTransfers.push({
                         edgeId: outgoingEdges[0].id,
                         sourceNodeId: currentNode.id,
-                        targetNodeId: nextNodeId, 
+                        targetNodeId: nextNodeId,
                         sourceHandle: sourceHandleId,
                         targetHandle: null, // Для flow не важно, на какой вход
                         value: 'flow',
                         isFlow: true,
                         timestamp: Date.now()
                     });
-                    
+
                     return nextNodeId;
                 }
             }
@@ -534,27 +542,27 @@ class ExecutionEngine {
         const outputPorts = currentNode.data.outputs
             .filter(output => !flowOutputs.includes(output.name))
             .map(output => `output-${output.name}`);
-        
+
         // Находим все связи от этих портов
-        const dataEdges = this.edges.filter(edge => 
-            edge.source === currentNode.id && 
+        const dataEdges = this.edges.filter(edge =>
+            edge.source === currentNode.id &&
             outputPorts.includes(edge.sourceHandle)
         );
-        
+
         // Проверяем, есть ли ноды, которые зависят только от этого нода
         for (const edge of dataEdges) {
             const targetNode = this.nodes.find(n => n.id === edge.target);
-            
+
             if (targetNode && !this.context.visitedNodes.has(targetNode.id)) {
                 // Проверяем, готовы ли все входные порты этого нода
                 const allInputsReady = this.areAllInputsReady(targetNode);
-                
+
                 if (allInputsReady) {
                     return targetNode.id;
                 }
             }
         }
-        
+
         // 3. Третий приоритет: выбираем любой готовый узел, который не был посещен
         for (const node of this.nodes) {
             if (!this.context.visitedNodes.has(node.id) && this.areAllInputsReady(node)) {
@@ -594,7 +602,7 @@ class ExecutionEngine {
 
                 // Проверяем, все ли источники были выполнены и есть ли значения в кэше
                 let hasValue = false;
-                
+
                 for (const edge of incomingEdges) {
                     const sourceNodeId = edge.source;
 
@@ -609,7 +617,7 @@ class ExecutionEngine {
                         }
                     }
                 }
-                
+
                 if (!hasValue) {
                     return false;
                 }

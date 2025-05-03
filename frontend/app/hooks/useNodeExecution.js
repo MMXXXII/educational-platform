@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import ExecutionEngine from '../services/executionEngine';
+import { useGlobalVariables } from '../contexts/GlobalVariablesContext';
 
 /**
  * Хук для управления выполнением нодового графа
@@ -10,6 +11,9 @@ import ExecutionEngine from '../services/executionEngine';
  * @returns {Object} - Методы и состояние для управления выполнением
  */
 const useNodeExecution = (nodes, edges, updateNodes) => {
+    // Доступ к глобальным переменным
+    const { variableValues, setVariableValue } = useGlobalVariables();
+
     // Состояние выполнения
     const [isExecuting, setIsExecuting] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
@@ -19,7 +23,7 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
     const [activeNodeId, setActiveNodeId] = useState(null);
     const [error, setError] = useState(null);
     const [consoleOutput, setConsoleOutput] = useState([]);
-    
+
     // Состояние для анимации передачи данных
     const [dataFlows, setDataFlows] = useState([]);
 
@@ -31,11 +35,17 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
     const isInitializedRef = useRef(false);
 
     /**
-     * Инициализирует движок выполнения
-     */
+      * Инициализирует движок выполнения
+      */
     const initializeEngine = useCallback(() => {
-        // Создаем новый экземпляр движка для каждого запуска
-        engineRef.current = new ExecutionEngine(nodes, edges);
+        // Функция для установки значения глобальной переменной
+        const setGlobalVar = (name, value) => {
+            setVariableValue(name, value);
+            return true;
+        };
+
+        // Создаем новый экземпляр движка для каждого запуска с доступом к глобальным переменным
+        engineRef.current = new ExecutionEngine(nodes, edges, variableValues, setGlobalVar);
 
         const success = engineRef.current.initialize();
         isInitializedRef.current = success;
@@ -181,7 +191,7 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
                     ...transfer,
                     animationId: Math.random().toString(36).substr(2, 9)
                 }));
-                
+
                 setDataFlows(dataTransfers);
             }
 
@@ -243,10 +253,10 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
             if (!prepareExecution()) {
                 return { error: "Не удалось подготовить выполнение" };
             }
-            
+
             // Запускаем выполнение всего алгоритма
             const result = engineRef.current.runFull();
-            
+
             // Обрабатываем результат
             if (result.error) {
                 setError(result.error);
@@ -254,10 +264,10 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
                 setIsComplete(true);
                 return result;
             }
-            
+
             // Успешное выполнение
             setConsoleOutput(result.context.console || []);
-            
+
             // Подсвечиваем все выполненные ноды
             updateNodes(prevNodes =>
                 prevNodes.map(node => {
@@ -271,10 +281,10 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
                     };
                 })
             );
-            
+
             setIsComplete(true);
             setExecutionStep(result.executionPath?.length || 0);
-            
+
             return result;
         } catch (error) {
             setError(error.message);
@@ -283,7 +293,7 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
                 value: `Ошибка выполнения: ${error.message}`
             }]);
             setIsComplete(true);
-            
+
             return { error: error.message };
         }
     }, [prepareExecution, updateNodes]);

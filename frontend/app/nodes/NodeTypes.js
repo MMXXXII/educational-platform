@@ -1,5 +1,6 @@
 import BaseNode from './BaseNode';
 import { v4 as uuidv4 } from 'uuid';
+import { SetVariableNode, GetVariableNode } from './VariableNodes';
 
 /**
  * VariableNode - нод для хранения переменной
@@ -449,6 +450,12 @@ export class IfNode extends BaseNode {
     }
 }
 
+// Экспортируем классы нодов
+export {
+    SetVariableNode,
+    GetVariableNode
+};
+
 // Реестр всех типов нодов
 export const nodeTypes = {
     variable: VariableNode,
@@ -457,7 +464,9 @@ export const nodeTypes = {
     print: PrintNode,
     loop: LoopNode,
     math: MathNode,
-    if: IfNode
+    if: IfNode,
+    get_variable: GetVariableNode,
+    set_variable: SetVariableNode
 };
 
 /**
@@ -492,6 +501,8 @@ export default {
     LoopNode,
     MathNode,
     IfNode,
+    SetVariableNode,
+    GetVariableNode,
     createNode,
     registerNodeType,
     nodeTypes
