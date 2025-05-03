@@ -20,7 +20,7 @@ export default function ProjectLayout() {
             {/* Временная кнопка для демонстрации - убрать */}
             <button
                 onClick={toggleAuth}
-                className="fixed bottom-4 right-4 bg-gray-200 p-2 rounded-md text-sm z-50"
+                className="fixed bottom-4 right-4 bg-gray-200 text-black p-2 rounded-md text-sm z-50"
             >
                 {isAuthenticated ? 'Выйти' : 'Симулировать вход'}
             </button>
