@@ -1,9 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import { UserIcon, ArrowRightEndOnRectangleIcon, BookOpenIcon, PlayIcon, PencilSquareIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
 export function Header({ isAuthenticated }) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    // Обработчик для предотвращения контекстного меню на логотипе
+    const preventContextMenu = (e) => {
+        e.preventDefault();
+        return false;
+    };
 
     const toggleMobileMenu = () => {
         setMobileMenuOpen(!mobileMenuOpen);
@@ -11,10 +17,19 @@ export function Header({ isAuthenticated }) {
 
     return (
         <header className="bg-white shadow-md relative z-20">
-            <div className="container mx-auto px-4 sm:px-6 py-4">
+            <div className="container mx-auto px-4 sm:px-6 py-3">
                 <div className="flex justify-between items-center">
-                    <Link to="/" className="text-xl sm:text-2xl font-bold text-blue-600 hover:text-blue-700">
-                        EduPlatform
+                    {/* Вариант 1: Защищенный логотип с использованием CSS background-image */}
+                    <Link to="/" className="block">
+                        <div 
+                            className="h-12 sm:h-15 w-auto sm:w-40 bg-no-repeat bg-contain bg-center select-none" 
+                            style={{ 
+                                backgroundImage: 'url("logo.png")',
+                                pointerEvents: 'none' 
+                            }}
+                            onContextMenu={preventContextMenu}
+                            aria-label="EduPlatform Logo"
+                        />
                     </Link>
 
                     {/* Desktop Navigation */}
