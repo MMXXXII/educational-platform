@@ -2,18 +2,23 @@ import { useEffect, useRef, useState } from 'react'
 import * as BABYLON from '@babylonjs/core'
 import * as MATERIALS from '@babylonjs/materials'
 import { registerBuiltInLoaders } from '@babylonjs/loaders/dynamic'
+import { ModelsList } from './ModelsList.jsx'
 
 // Регистрируем загрузчики моделей BabylonJS
 registerBuiltInLoaders()
-
 
 export function ModelViewer() {
   const canvasRef = useRef(null)
   const engineRef = useRef(null)
   const sceneRef = useRef(null)
-  const [modelLoaded, setModelLoaded] = useState(false)
+  const highlightLayerRef = useRef(null)
   const [dragActive, setDragActive] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [models, setModels] = useState([])
+  const [selectedModelId, setSelectedModelId] = useState(null)
+  
+  // Генерация уникального ID
+  const generateId = () => `model-${Date.now()}-${Math.floor(Math.random() * 1000)}`
 
   // Инициализация сцены BabylonJS
   useEffect(() => {
@@ -53,7 +58,7 @@ export function ModelViewer() {
       )
       light2.intensity = 0.5
       
-      // Создаем сетку для пола (опционально)
+      // Создаем сетку для пола
       const ground = BABYLON.MeshBuilder.CreateGround(
         'ground', 
         { width: 10, height: 10 }, 
@@ -66,6 +71,22 @@ export function ModelViewer() {
       groundMaterial.mainColor = new BABYLON.Color3(0.2, 0.2, 0.2)
       groundMaterial.lineColor = new BABYLON.Color3(0.4, 0.4, 0.4)
       ground.material = groundMaterial
+      
+      // Создаем слой подсветки для выделения выбранных моделей
+      const highlightLayer = new BABYLON.HighlightLayer("highlightLayer", scene)
+      highlightLayer.innerGlow = true
+      highlightLayer.outerGlow = true
+      highlightLayerRef.current = highlightLayer
+      
+      // Добавляем обработчик клика для выбора модели
+      scene.onPointerDown = (evt, pickResult) => {
+        if (pickResult.hit && pickResult.pickedMesh) {
+          const modelId = pickResult.pickedMesh.metadata?.modelId;
+          if (modelId && modelId !== 'ground') {
+            setSelectedModelId(modelId);
+          }
+        }
+      };
       
       return scene
     }
@@ -90,21 +111,59 @@ export function ModelViewer() {
     }
   }, [])
 
+  // Выделение выбранной модели
+  useEffect(() => {
+    if (!sceneRef.current || !highlightLayerRef.current) return;
+    
+    // Очищаем текущие выделения
+    highlightLayerRef.current.removeAllMeshes();
+    
+    if (selectedModelId) {
+      // Ищем все меши, принадлежащие выбранной модели
+      sceneRef.current.meshes.forEach(mesh => {
+        if (mesh.metadata?.modelId === selectedModelId) {
+          // Добавляем меш в слой подсветки с голубым цветом
+          highlightLayerRef.current.addMesh(mesh, BABYLON.Color3.FromHexString("#00a0ff"));
+        }
+      });
+    }
+  }, [selectedModelId]);
+
+  // Обновление трансформаций модели в сцене
+  useEffect(() => {
+    if (!sceneRef.current) return;
+    
+    models.forEach(model => {
+      const rootMesh = sceneRef.current.getMeshById(model.rootMeshId);
+      if (rootMesh) {
+        // Обновляем трансформации модели
+        rootMesh.position = new BABYLON.Vector3(
+          model.transform.position.x,
+          model.transform.position.y,
+          model.transform.position.z
+        );
+        
+        // Преобразуем градусы в радианы для вращения
+        rootMesh.rotation = new BABYLON.Vector3(
+          model.transform.rotation.x * (Math.PI / 180),
+          model.transform.rotation.y * (Math.PI / 180),
+          model.transform.rotation.z * (Math.PI / 180)
+        );
+        
+        rootMesh.scaling = new BABYLON.Vector3(
+          model.transform.scaling.x,
+          model.transform.scaling.y,
+          model.transform.scaling.z
+        );
+      }
+    });
+  }, [models]);
+
   // Загрузка модели .glb
   const loadModel = async (file) => {
     try {
       setErrorMessage('')
       if (!sceneRef.current) return
-
-      // Очистка предыдущей модели если есть
-      if (modelLoaded) {
-        const meshes = sceneRef.current.meshes.slice()
-        meshes.forEach(mesh => {
-          if (mesh.name !== 'ground') {
-            mesh.dispose()
-          }
-        })
-      }
 
       // Создаем FileReader для чтения файла как ArrayBuffer
       const reader = new FileReader()
@@ -119,53 +178,85 @@ export function ModelViewer() {
           const content = new Uint8Array(event.target.result)
           const fileName = file.name
           
+          // Генерируем уникальный ID для модели
+          const modelId = generateId()
+          
           // Используем встроенный метод для создания файла с правильным именем
-          // это позволит BabylonJS определить тип файла
           const engineBinaryFile = new File([content], fileName, { type: "application/octet-stream" })
           
           // Загружаем модель из файла
-          await BABYLON.SceneLoader.ImportMeshAsync(
+          const result = await BABYLON.SceneLoader.ImportMeshAsync(
             "",             // имена мешей (пустая строка = все меши) 
             "file:",        // rootUrl
             engineBinaryFile, // файл
             sceneRef.current // сцена
           )
           
-          setModelLoaded(true)
-          
-          // Центрирование камеры на модели
-          if (sceneRef.current.meshes.length > 1) {
-            // Получаем все меши кроме земли
-            const meshes = sceneRef.current.meshes.filter(mesh => mesh.name !== 'ground')
-            if (meshes.length > 0) {
+          // Если модель загрузилась успешно
+          if (result.meshes.length > 0) {
+            // Создаем корневой меш, который будет содержать все меши модели
+            const rootMesh = new BABYLON.Mesh(`root-${modelId}`, sceneRef.current)
+            rootMesh.id = `root-${modelId}`
+            
+            // Добавляем метаданные к мешу для идентификации
+            rootMesh.metadata = { modelId }
+            
+            // Вычисляем центр модели
+            let minX = Number.MAX_VALUE, minY = Number.MAX_VALUE, minZ = Number.MAX_VALUE
+            let maxX = Number.MIN_VALUE, maxY = Number.MIN_VALUE, maxZ = Number.MIN_VALUE
+            
+            result.meshes.forEach(mesh => {
+              if (mesh !== rootMesh) {
+                const boundingBox = mesh.getBoundingInfo().boundingBox
+                minX = Math.min(minX, boundingBox.minimum.x)
+                minY = Math.min(minY, boundingBox.minimum.y)
+                minZ = Math.min(minZ, boundingBox.minimum.z)
+                maxX = Math.max(maxX, boundingBox.maximum.x)
+                maxY = Math.max(maxY, boundingBox.maximum.y)
+                maxZ = Math.max(maxZ, boundingBox.maximum.z)
+                
+                // Добавляем метаданные для поддержки выбора
+                mesh.metadata = { modelId }
+                
+                // Родительским элементом становится rootMesh, а не сцена
+                mesh.parent = rootMesh
+              }
+            })
+            
+            // Вычисляем размер модели
+            const modelWidth = maxX - minX
+            const modelHeight = maxY - minY
+            const modelDepth = maxZ - minZ
+            
+            // Определяем масштаб для нормализации размера модели
+            const maxDimension = Math.max(modelWidth, modelHeight, modelDepth)
+            const scale = maxDimension > 0 ? 2 / maxDimension : 1
+            
+            // Создаем модель для сохранения в состоянии
+            const newModel = {
+              id: modelId,
+              fileName: fileName,
+              rootMeshId: rootMesh.id,
+              transform: {
+                position: { x: 0, y: 0, z: 0 },
+                rotation: { x: 0, y: 0, z: 0 },
+                scaling: { x: scale, y: scale, z: scale }
+              }
+            }
+            
+            // Применяем начальные трансформации
+            rootMesh.scaling = new BABYLON.Vector3(scale, scale, scale)
+            
+            // Добавляем новую модель в список
+            setModels(prevModels => [...prevModels, newModel])
+            setSelectedModelId(modelId)
+            
+            // Если это первая модель, центрируем камеру
+            if (models.length === 0) {
               const camera = sceneRef.current.cameras[0]
               if (camera instanceof BABYLON.ArcRotateCamera) {
-                // Вычисляем центр модели
-                let minX = Number.MAX_VALUE, minY = Number.MAX_VALUE, minZ = Number.MAX_VALUE
-                let maxX = Number.MIN_VALUE, maxY = Number.MIN_VALUE, maxZ = Number.MIN_VALUE
-                
-                meshes.forEach(mesh => {
-                  const boundingBox = mesh.getBoundingInfo().boundingBox
-                  minX = Math.min(minX, boundingBox.minimum.x)
-                  minY = Math.min(minY, boundingBox.minimum.y)
-                  minZ = Math.min(minZ, boundingBox.minimum.z)
-                  maxX = Math.max(maxX, boundingBox.maximum.x)
-                  maxY = Math.max(maxY, boundingBox.maximum.y)
-                  maxZ = Math.max(maxZ, boundingBox.maximum.z)
-                })
-                
-                const center = new BABYLON.Vector3(
-                  (minX + maxX) / 2,
-                  (minY + maxY) / 2,
-                  (minZ + maxZ) / 2
-                )
-                
-                // Устанавливаем целевую точку камеры
-                camera.target = center
-                
-                // Устанавливаем расстояние камеры
-                const radius = Math.max(maxX - minX, maxY - minY, maxZ - minZ) * 1.5
-                camera.radius = radius
+                camera.target = new BABYLON.Vector3(0, 0, 0)
+                camera.radius = 5
               }
             }
           }
@@ -187,6 +278,35 @@ export function ModelViewer() {
     }
   }
 
+  // Обработка изменений параметров модели
+  const handleModelChange = (modelId, action, value) => {
+    if (action === 'delete') {
+      // Удаляем модель из сцены
+      const modelToDelete = models.find(m => m.id === modelId);
+      if (modelToDelete && sceneRef.current) {
+        const rootMesh = sceneRef.current.getMeshById(modelToDelete.rootMeshId);
+        if (rootMesh) {
+          rootMesh.dispose(false, true);
+        }
+      }
+      
+      // Удаляем модель из состояния
+      setModels(prevModels => prevModels.filter(m => m.id !== modelId));
+      if (selectedModelId === modelId) {
+        setSelectedModelId(null);
+      }
+    } else if (action === 'transform') {
+      // Обновляем трансформации модели
+      setModels(prevModels => 
+        prevModels.map(model => 
+          model.id === modelId 
+            ? { ...model, transform: value } 
+            : model
+        )
+      );
+    }
+  };
+
   // Обработчики событий перетаскивания
   const handleDrag = (e) => {
     e.preventDefault()
@@ -205,29 +325,32 @@ export function ModelViewer() {
     setDragActive(false)
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0]
-      // Проверка типа файла
-      if (file.name.toLowerCase().endsWith('.glb')) {
-        loadModel(file)
-      } else {
-        setErrorMessage('Пожалуйста, загрузите файл формата .glb')
-      }
+      // Обрабатываем все перетащенные файлы
+      Array.from(e.dataTransfer.files).forEach(file => {
+        if (file.name.toLowerCase().endsWith('.glb')) {
+          loadModel(file)
+        } else {
+          setErrorMessage('Поддерживаются только файлы формата .glb')
+        }
+      });
     }
   }
 
   const handleFileSelect = (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0]
-      if (file.name.toLowerCase().endsWith('.glb')) {
-        loadModel(file)
-      } else {
-        setErrorMessage('Пожалуйста, загрузите файл формата .glb')
-      }
+      // Обрабатываем все выбранные файлы
+      Array.from(e.target.files).forEach(file => {
+        if (file.name.toLowerCase().endsWith('.glb')) {
+          loadModel(file)
+        } else {
+          setErrorMessage('Поддерживаются только файлы формата .glb')
+        }
+      });
     }
   }
 
   return (
-    <div className="flex flex-col items-center w-full h-full">
+    <div className="flex flex-col items-center w-full">
       <div 
         className={`relative w-full h-96 border-2 border-dashed rounded-lg mb-4
           ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
@@ -241,21 +364,22 @@ export function ModelViewer() {
           className="w-full h-full"
         />
         
-        {!modelLoaded && (
+        {models.length === 0 && (
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
             <div className="text-lg font-medium text-gray-500">
-              Перетащите .glb файл сюда
+              Перетащите .glb файлы сюда
             </div>
             <div className="text-sm text-gray-400 mt-2">
               или
             </div>
             <label className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer pointer-events-auto">
-              Выбрать файл
+              Выбрать файлы
               <input 
                 type="file" 
                 accept=".glb" 
                 className="hidden" 
                 onChange={handleFileSelect}
+                multiple
               />
             </label>
           </div>
@@ -268,24 +392,36 @@ export function ModelViewer() {
         )}
       </div>
       
-      {modelLoaded && (
-        <div className="w-full max-w-md">
-          <div className="text-sm text-gray-500 text-center">
-            Используйте мышь для вращения модели, колесо для масштабирования
-          </div>
-          <div className="mt-4 flex justify-center">
-            <label className="px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer">
-              Загрузить другую модель
-              <input 
-                type="file" 
-                accept=".glb" 
-                className="hidden" 
-                onChange={handleFileSelect}
+      <div className="w-full max-w-2xl">
+        {models.length > 0 && (
+          <>
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-sm text-gray-500">
+                Используйте мышь для вращения камеры, колесо для масштабирования. Кликните на модель для выбора.
+              </div>
+              <label className="px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer">
+                Добавить модели
+                <input 
+                  type="file" 
+                  accept=".glb" 
+                  className="hidden" 
+                  onChange={handleFileSelect}
+                  multiple
+                />
+              </label>
+            </div>
+            
+            <div className="mt-4">
+              <ModelsList 
+                models={models}
+                selectedModelId={selectedModelId}
+                onSelectModel={setSelectedModelId}
+                onModelChange={handleModelChange}
               />
-            </label>
-          </div>
-        </div>
-      )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   )
 }
