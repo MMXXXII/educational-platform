@@ -6,7 +6,6 @@ import {
     XMarkIcon,
 } from '@heroicons/react/24/solid';
 import ExecutionPanel from './panels/ExecutionPanel';
-import VariablesPanel from './panels/VariablesPanel';
 import NodePropertiesPanel from './panels/NodePropertiesPanel';
 
 /**
@@ -25,7 +24,6 @@ const RightSidebar = ({
     // Режимы панели
     const PANEL_MODES = {
         EXECUTION: 'execution',
-        VARIABLES: 'variables',
         NODE_PROPERTIES: 'node_properties',
         HIDDEN: 'hidden' // Состояние, когда панель свернута
     };
@@ -61,8 +59,6 @@ const RightSidebar = ({
                         consoleOutput={consoleOutput}
                     />
                 );
-            case PANEL_MODES.VARIABLES:
-                return <VariablesPanel />;
             case PANEL_MODES.NODE_PROPERTIES:
                 return <NodePropertiesPanel node={selectedNode} />;
             case PANEL_MODES.HIDDEN:
@@ -87,16 +83,7 @@ const RightSidebar = ({
                 >
                     <PlayIcon className="w-5 h-5 text-gray-700 dark:text-gray-200" />
                 </button>
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        handleModeSwitch(PANEL_MODES.VARIABLES);
-                    }}
-                    className="mode-button p-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors shadow-md"
-                    title="Переменные"
-                >
-                    <BeakerIcon className="w-5 h-5 text-gray-700 dark:text-gray-200" />
-                </button>
+                
                 <button
                     onClick={(e) => {
                         if (!selectedNode) return;
@@ -126,12 +113,7 @@ const RightSidebar = ({
                                 Выполнение
                             </span>
                         )}
-                        {currentMode === PANEL_MODES.VARIABLES && (
-                            <span className="flex items-center">
-                                <BeakerIcon className="w-4 h-4 mr-1 text-purple-600 dark:text-purple-400" />
-                                Переменные
-                            </span>
-                        )}
+
                         {currentMode === PANEL_MODES.NODE_PROPERTIES && (
                             <span className="flex items-center">
                                 <CubeIcon className="w-4 h-4 mr-1 text-green-600 dark:text-green-400" />
@@ -153,16 +135,7 @@ const RightSidebar = ({
                     >
                         <PlayIcon className="w-4 h-4" />
                     </button>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleModeSwitch(PANEL_MODES.VARIABLES);
-                        }}
-                        className={`mode-button ${currentMode === PANEL_MODES.VARIABLES ? 'active' : ''} p-1.5 rounded ${currentMode === PANEL_MODES.VARIABLES ? 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                        title="Переменные"
-                    >
-                        <BeakerIcon className="w-4 h-4" />
-                    </button>
+                    
                     <button
                         onClick={(e) => {
                             if (!selectedNode) return;

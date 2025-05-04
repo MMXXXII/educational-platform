@@ -1,6 +1,5 @@
 import React, { memo, useState, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
-import { useGlobalVariables } from '../contexts/GlobalVariablesContext';
 import { getNodeDefinition, formatDisplayValue } from '../services/nodeRegistry';
 
 /**
@@ -12,9 +11,6 @@ const CustomNode = ({ data, selected }) => {
     const [localState, setLocalState] = useState({});
     const nodeRef = data.nodeRef;
     const nodeType = data.type;
-
-    // Получаем глобальные переменные для нодов get/set_variable
-    const { variables: availableVariables } = useGlobalVariables();
 
     // Получаем определение типа нода из реестра
     const nodeDefinition = getNodeDefinition(nodeType);
@@ -152,22 +148,7 @@ const CustomNode = ({ data, selected }) => {
                         </select>
                     </div>
                 );
-            case 'set_variable':
-            case 'get_variable':
-                return (
-                    <div className="w-full">
-                        <select
-                            value={localState.variableName || ''}
-                            onChange={(e) => handleChange('variableName', e.target.value)}
-                            className="w-full p-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm nodrag"
-                        >
-                            <option value="">Выберите переменную</option>
-                            {Object.keys(availableVariables || {}).map(name => (
-                                <option key={name} value={name}>{name}</option>
-                            ))}
-                        </select>
-                    </div>
-                );
+
             case 'print':
                 return (
                     <div className="w-full text-center text-sm">

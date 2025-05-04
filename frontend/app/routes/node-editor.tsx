@@ -1,7 +1,6 @@
 import type { Route } from "./+types/editor";
 import { NodeEditor } from "../node-editor/NodeEditor";
 import { EditorProvider } from "../contexts/EditorContext";
-import { GlobalVariablesProvider } from "../contexts/GlobalVariablesContext";
 
 export function meta({ }: Route.MetaArgs) {
     return [
@@ -13,9 +12,7 @@ export function meta({ }: Route.MetaArgs) {
 export default function Editor() {
     return (
         <EditorProvider>
-            <GlobalVariablesProvider>
                 <NodeEditor />
-            </GlobalVariablesProvider>
         </EditorProvider>
     );
 }

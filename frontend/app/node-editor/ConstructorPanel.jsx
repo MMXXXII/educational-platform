@@ -17,21 +17,12 @@ import {
  */
 const ConstructorPanel = () => {
     const [expandedCategories, setExpandedCategories] = useState({
-        globalVars: true,
         operations: true,
         control: true
     });
 
     // Определение категорий нодов
     const nodeCategories = [
-        {
-            id: 'globalVars',
-            name: 'Глобальные переменные',
-            nodes: [
-                { type: 'get_variable', name: 'Получить переменную', icon: <ServerIcon className="w-5 h-5" /> },
-                { type: 'set_variable', name: 'Установить переменную', icon: <CubeTransparentIcon className="w-5 h-5" /> }
-            ]
-        },
         {
             id: 'operations',
             name: 'Операции',

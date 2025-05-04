@@ -17,7 +17,6 @@ import {
  * Определения категорий нодов
  */
 export const NODE_CATEGORIES = {
-    GLOBAL_VARS: 'globalVars',
     OPERATIONS: 'operations',
     CONTROL: 'control'
 };
@@ -26,39 +25,6 @@ export const NODE_CATEGORIES = {
  * Реестр нодов с метаданными
  */
 const nodeRegistry = {
-    // Ноды категории "Глобальные переменные"
-    get_variable: {
-        type: 'get_variable',
-        category: NODE_CATEGORIES.GLOBAL_VARS,
-        name: 'Получить переменную',
-        description: 'Получает значение глобальной переменной',
-        iconComponent: ServerIcon,
-        color: {
-            bg: 'bg-teal-100 dark:bg-teal-900',
-            border: 'border-teal-500',
-            text: 'text-teal-800 dark:text-teal-200'
-        },
-        paletteColor: 'bg-teal-500 hover:bg-teal-600',
-        getActiveValue: node => node.state?.value,
-        getPortColor: dataType => getPortColorForType(dataType)
-    },
-    
-    set_variable: {
-        type: 'set_variable',
-        category: NODE_CATEGORIES.GLOBAL_VARS,
-        name: 'Установить переменную',
-        description: 'Устанавливает значение глобальной переменной',
-        iconComponent: CubeTransparentIcon,
-        color: {
-            bg: 'bg-teal-100 dark:bg-teal-900',
-            border: 'border-teal-500',
-            text: 'text-teal-800 dark:text-teal-200'
-        },
-        paletteColor: 'bg-teal-500 hover:bg-teal-600',
-        getActiveValue: node => node.state?.value,
-        getPortColor: dataType => getPortColorForType(dataType)
-    },
-    
     // Ноды категории "Операции"
     math: {
         type: 'math',
@@ -245,8 +211,6 @@ export function getNodeCategories() {
  */
 function getCategoryName(categoryId) {
     switch (categoryId) {
-        case NODE_CATEGORIES.GLOBAL_VARS:
-            return 'Глобальные переменные';
         case NODE_CATEGORIES.OPERATIONS:
             return 'Операции';
         case NODE_CATEGORIES.CONTROL:

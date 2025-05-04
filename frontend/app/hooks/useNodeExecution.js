@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import ExecutionEngine from '../services/execution';
-import { useGlobalVariables } from '../contexts/GlobalVariablesContext';
 
 /**
  * Хук для управления выполнением нодового графа
@@ -11,9 +10,6 @@ import { useGlobalVariables } from '../contexts/GlobalVariablesContext';
  * @returns {Object} - Методы и состояние для управления выполнением
  */
 const useNodeExecution = (nodes, edges, updateNodes) => {
-    // Доступ к глобальным переменным
-    const { variableValues, setVariableValue } = useGlobalVariables();
-
     // Состояние выполнения
     const [isExecuting, setIsExecuting] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
@@ -38,14 +34,7 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
       * Инициализирует движок выполнения
       */
     const initializeEngine = useCallback(() => {
-        // Функция для установки значения глобальной переменной
-        const setGlobalVar = (name, value) => {
-            setVariableValue(name, value);
-            return true;
-        };
-
-        // Создаем новый экземпляр движка для каждого запуска с доступом к глобальным переменным
-        engineRef.current = new ExecutionEngine(nodes, edges, variableValues, setGlobalVar);
+        engineRef.current = new ExecutionEngine(nodes, edges, {}, null);
 
         const success = engineRef.current.initialize();
         isInitializedRef.current = success;
