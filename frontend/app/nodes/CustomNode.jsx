@@ -105,57 +105,6 @@ const CustomNode = ({ data, selected }) => {
     // Рендерим интерактивные элементы в зависимости от типа нода
     const renderNodeContent = () => {
         switch (data.type) {
-            case 'variable':
-                return (
-                    <div className="w-full space-y-2">
-                        <div className="flex items-center">
-                            <label className="block text-sm mr-2">Имя:</label>
-                            <input
-                                type="text"
-                                value={localState.name || ''}
-                                onChange={(e) => handleChange('name', e.target.value)}
-                                className="w-full p-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm nodrag"
-                            />
-                        </div>
-                        <div className="flex items-center">
-                            <label className="block text-sm mr-2">Значение:</label>
-                            <input
-                                type="text"
-                                value={localState.initialValue || ''}
-                                onChange={(e) => handleChange('initialValue', e.target.value)}
-                                className="w-full p-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm nodrag"
-                            />
-                        </div>
-                    </div>
-                );
-            case 'number':
-                return (
-                    <div className="w-full">
-                        <div className="flex items-center">
-                            <label className="block text-sm mr-2">Значение:</label>
-                            <input
-                                type="number"
-                                value={localState.value || 0}
-                                onChange={(e) => handleChange('value', parseFloat(e.target.value) || 0)}
-                                className="w-full p-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm nodrag"
-                            />
-                        </div>
-                    </div>
-                );
-            case 'string':
-                return (
-                    <div className="w-full">
-                        <div className="flex items-center">
-                            <label className="block text-sm mr-2">Текст:</label>
-                            <input
-                                type="text"
-                                value={localState.value || ''}
-                                onChange={(e) => handleChange('value', e.target.value)}
-                                className="w-full p-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm nodrag"
-                            />
-                        </div>
-                    </div>
-                );
             case 'math':
                 return (
                     <div className="w-full">

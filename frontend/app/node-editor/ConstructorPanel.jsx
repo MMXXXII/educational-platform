@@ -17,22 +17,13 @@ import {
  */
 const ConstructorPanel = () => {
     const [expandedCategories, setExpandedCategories] = useState({
-        values: true,
+        globalVars: true,
         operations: true,
         control: true
     });
 
     // Определение категорий нодов
     const nodeCategories = [
-        {
-            id: 'values',
-            name: 'Значения',
-            nodes: [
-                { type: 'variable', name: 'Переменная', icon: <VariableIcon className="w-5 h-5" /> },
-                { type: 'number', name: 'Число', icon: <HashtagIcon className="w-5 h-5" /> },
-                { type: 'string', name: 'Строка', icon: <DocumentTextIcon className="w-5 h-5" /> }
-            ]
-        },
         {
             id: 'globalVars',
             name: 'Глобальные переменные',
@@ -86,9 +77,6 @@ const ConstructorPanel = () => {
     // Получение цвета для нода по его типу
     const getNodeColor = (type) => {
         switch (type) {
-            case 'variable': return 'bg-blue-500 hover:bg-blue-600';
-            case 'number':
-            case 'string': return 'bg-green-500 hover:bg-green-600';
             case 'get_variable':
             case 'set_variable': return 'bg-teal-500 hover:bg-teal-600';
             case 'math': return 'bg-purple-500 hover:bg-purple-600';

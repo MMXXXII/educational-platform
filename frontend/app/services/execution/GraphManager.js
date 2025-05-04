@@ -65,9 +65,9 @@ class GraphManager {
         // Ноды без входных связей - автономные или начальные
         const autonomousNodes = this.nodes.filter(node => !nodesWithInputs.has(node.id));
 
-        // Приоритет для начальных нодов - ноды данных (число, строка, переменная)
+        // Приоритет для начальных нодов - ноды получения данных (get_variable)
         const dataNodes = autonomousNodes.filter(node =>
-            ['variable', 'number', 'string', 'get_variable'].includes(node.data.type)
+            ['get_variable'].includes(node.data.type)
         );
 
         if (dataNodes.length > 0) {

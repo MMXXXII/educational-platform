@@ -17,7 +17,6 @@ import {
  * Определения категорий нодов
  */
 export const NODE_CATEGORIES = {
-    VALUES: 'values',
     GLOBAL_VARS: 'globalVars',
     OPERATIONS: 'operations',
     CONTROL: 'control'
@@ -27,55 +26,6 @@ export const NODE_CATEGORIES = {
  * Реестр нодов с метаданными
  */
 const nodeRegistry = {
-    // Ноды категории "Значения"
-    variable: {
-        type: 'variable',
-        category: NODE_CATEGORIES.VALUES,
-        name: 'Переменная',
-        description: 'Хранит значение переменной',
-        iconComponent: VariableIcon,
-        color: {
-            bg: 'bg-blue-100 dark:bg-blue-900',
-            border: 'border-blue-500',
-            text: 'text-blue-800 dark:text-blue-200'
-        },
-        paletteColor: 'bg-blue-500 hover:bg-blue-600',
-        getActiveValue: node => node.state?.currentValue !== undefined ? node.state.currentValue : null,
-        getPortColor: dataType => getPortColorForType(dataType)
-    },
-    
-    number: {
-        type: 'number',
-        category: NODE_CATEGORIES.VALUES,
-        name: 'Число',
-        description: 'Числовое значение',
-        iconComponent: HashtagIcon,
-        color: {
-            bg: 'bg-green-100 dark:bg-green-900',
-            border: 'border-green-500',
-            text: 'text-green-800 dark:text-green-200'
-        },
-        paletteColor: 'bg-green-500 hover:bg-green-600',
-        getActiveValue: node => node.state?.value,
-        getPortColor: dataType => getPortColorForType(dataType)
-    },
-    
-    string: {
-        type: 'string',
-        category: NODE_CATEGORIES.VALUES,
-        name: 'Строка',
-        description: 'Строковое значение',
-        iconComponent: DocumentTextIcon,
-        color: {
-            bg: 'bg-green-100 dark:bg-green-900',
-            border: 'border-green-500',
-            text: 'text-green-800 dark:text-green-200'
-        },
-        paletteColor: 'bg-green-500 hover:bg-green-600',
-        getActiveValue: node => node.state?.value,
-        getPortColor: dataType => getPortColorForType(dataType)
-    },
-    
     // Ноды категории "Глобальные переменные"
     get_variable: {
         type: 'get_variable',
@@ -295,8 +245,6 @@ export function getNodeCategories() {
  */
 function getCategoryName(categoryId) {
     switch (categoryId) {
-        case NODE_CATEGORIES.VALUES:
-            return 'Значения';
         case NODE_CATEGORIES.GLOBAL_VARS:
             return 'Глобальные переменные';
         case NODE_CATEGORIES.OPERATIONS:
