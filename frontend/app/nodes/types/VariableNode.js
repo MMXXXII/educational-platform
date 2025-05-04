@@ -2,7 +2,7 @@ import BaseNode from '../BaseNode';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * VariableNode - нод для хранения переменной
+ * VariableNode - универсальный нод для создания или изменения переменных
  */
 export class VariableNode extends BaseNode {
     /**
@@ -10,18 +10,23 @@ export class VariableNode extends BaseNode {
      * @param {Object} data - Данные нода
      * @param {string} data.name - Имя переменной
      * @param {any} data.initialValue - Начальное значение переменной
+     * @param {string} data.variableType - Тип переменной (number, string, boolean)
      */
     constructor(id = uuidv4(), data = {}) {
         const name = data.name || 'x';
-        super(id, 'variable', `Variable: ${name}`, {
+        super(id, 'variable', `Переменная: ${name}`, {
             name,
             initialValue: data.initialValue !== undefined ? data.initialValue : '',
+            variableType: data.variableType || 'any',
             ...data
         });
 
-        // Добавление портов
-        this.addInput('value', 'Value', 'any');
-        this.addOutput('value', 'Value', 'any');
+
+        this.addInput('flow', 'Flow', 'flow');  
+        this.addInput('value', 'Value', data.variableType || 'any'); 
+
+        this.addOutput('flow', 'Flow', 'flow'); 
+        this.addOutput('value', 'Value', data.variableType || 'any'); 
     }
 
     /**
@@ -39,6 +44,15 @@ export class VariableNode extends BaseNode {
             value = this.data.initialValue;
         }
 
+        // Преобразуем значение в соответствии с типом переменной
+        if (this.data.variableType === 'number' && typeof value !== 'number') {
+            value = Number(value) || 0;
+        } else if (this.data.variableType === 'string' && typeof value !== 'string') {
+            value = String(value);
+        } else if (this.data.variableType === 'boolean' && typeof value !== 'boolean') {
+            value = Boolean(value);
+        }
+
         // Сохраняем значение в контексте выполнения
         if (context.variables) {
             context.variables[this.data.name] = value;
@@ -47,8 +61,11 @@ export class VariableNode extends BaseNode {
         // Обновляем состояние нода
         this.state = { currentValue: value };
 
-        // Возвращаем значение на выходной порт
-        return { value };
+        // Возвращаем значение на выходные порты
+        return { 
+            flow: true,  // Сигнал для продолжения выполнения
+            value: value // Значение переменной
+        };
     }
 
     /**
@@ -57,11 +74,25 @@ export class VariableNode extends BaseNode {
      * @param {any} value - Значение свойства 
      */
     setProperty(key, value) {
-        super.setProperty(key, value);
-
-        // Если обновилось имя переменной, обновим метку нода
         if (key === 'name') {
-            this.label = `Variable: ${value}`;
+            super.setProperty(key, value);
+            this.label = `Переменная: ${value}`;
+        } else {
+            super.setProperty(key, value);
+        }
+
+        // Если обновился тип переменной, обновляем типы портов
+        if (key === 'variableType') {
+            const inputs = this.inputs.filter(input => input.name === 'value');
+            const outputs = this.outputs.filter(output => output.name === 'value');
+            
+            if (inputs.length > 0) {
+                inputs[0].dataType = value;
+            }
+            
+            if (outputs.length > 0) {
+                outputs[0].dataType = value;
+            }
         }
 
         return this;

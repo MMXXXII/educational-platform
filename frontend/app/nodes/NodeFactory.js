@@ -1,21 +1,21 @@
-// NodeRegistry.js - управление типами узлов
 import { v4 as uuidv4 } from 'uuid';
 import BaseNode from './BaseNode';
 
 // Импорт всех типов узлов
-import * as nodeTypes from './types';
+import { VariableNode } from './types/VariableNode';
+import { PrintNode } from './types/PrintNode';
+import { LoopNode } from './types/LoopNode';
+import { MathNode } from './types/MathNode';
+import { IfNode } from './types/IfNode';
+
 
 // Создаем реестр типов узлов
 const registry = {
-    variable: nodeTypes.VariableNode,
-    number: nodeTypes.NumberNode,
-    string: nodeTypes.StringNode,
-    print: nodeTypes.PrintNode,
-    loop: nodeTypes.LoopNode,
-    math: nodeTypes.MathNode,
-    if: nodeTypes.IfNode,
-    get_variable: nodeTypes.GetVariableNode,
-    set_variable: nodeTypes.SetVariableNode
+    variable: VariableNode,
+    print: PrintNode,
+    loop: LoopNode,
+    math: MathNode,
+    if: IfNode,
 };
 
 /**
@@ -25,11 +25,29 @@ const registry = {
  * @returns {BaseNode} - Экземпляр созданного узла
  */
 export function createNode(type, data = {}) {
+    // Если требуется создать number или string, перенаправляем на variable
+    // с соответствующим типом данных для обеспечения совместимости
+    if (type === 'number') {
+        return createNode('variable', {
+            ...data,
+            variableType: 'number',
+            initialValue: data.value || 0
+        });
+    }
+    
+    if (type === 'string') {
+        return createNode('variable', {
+            ...data,
+            variableType: 'string',
+            initialValue: data.value || ''
+        });
+    }
+    
     const NodeClass = registry[type];
     if (!NodeClass) {
-        throw new Error(`Unknown node type: ${type}`);
+        throw new Error(`Неизвестный тип узла: ${type}`);
     }
-    return new NodeClass(data.id, data);
+    return new NodeClass(data.id || uuidv4(), data);
 }
 
 /**
@@ -45,14 +63,10 @@ export function registerNodeType(type, NodeClass) {
 export { BaseNode };
 export { registry as nodeTypes };
 
-// Реэкспорт всех типов узлов
-export * from './types';
-
 // Экспорт по умолчанию
 export default {
     BaseNode,
     createNode,
     registerNodeType,
-    nodeTypes: registry,
-    ...nodeTypes
+    nodeTypes: registry
 };

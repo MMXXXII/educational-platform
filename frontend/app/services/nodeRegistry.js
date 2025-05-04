@@ -17,6 +17,7 @@ import {
  * Определения категорий нодов
  */
 export const NODE_CATEGORIES = {
+    VARIABLES: 'variables',
     OPERATIONS: 'operations',
     CONTROL: 'control'
 };
@@ -25,6 +26,24 @@ export const NODE_CATEGORIES = {
  * Реестр нодов с метаданными
  */
 const nodeRegistry = {
+    // Ноды переменной
+    variable: {
+        type: 'variable',
+        category: NODE_CATEGORIES.VARIABLES,
+        name: 'Переменная',
+        description: 'Создает или изменяет переменную',
+        iconComponent: VariableIcon,
+        color: {
+            bg: 'bg-green-100 dark:bg-green-900',
+            border: 'border-green-500',
+            text: 'text-green-800 dark:text-green-200'
+        },
+        paletteColor: 'bg-green-500 hover:bg-green-600',
+        getActiveValue: node => node.state?.currentValue,
+        getPortColor: dataType => getPortColorForType(dataType),
+        defaultData: { name: 'x', initialValue: '', variableType: 'any' }
+    },
+    
     // Ноды категории "Операции"
     math: {
         type: 'math',
@@ -91,7 +110,7 @@ const nodeRegistry = {
         getActiveValue: node => node.state?.currentIteration !== undefined ?
             `Итерация ${node.state.currentIteration + 1}/${node.state.count}` : null,
         getPortColor: dataType => getPortColorForType(dataType)
-    }
+    },
 };
 
 /**
@@ -142,9 +161,9 @@ export function formatDisplayValue(value) {
 }
 
 /**
- * Получает определение нода по его типу
+ * Получает категорию нода по его типу
  * @param {string} nodeType - Тип нода
- * @returns {Object|null} - Определение нода или null, если тип не найден
+ * @returns {string} - Категория нода
  */
 export function getNodeDefinition(nodeType) {
     return nodeRegistry[nodeType] || null;
@@ -194,10 +213,13 @@ export function getNodeCategories() {
     });
     
     // Заполняем категории нодами
-    Object.values(nodeRegistry).forEach(nodeDef => {
+    Object.values(nodeRegistry).forEach(nodeDef => {        
         const category = nodeDef.category;
         if (categories[category]) {
-            categories[category].nodes.push(nodeDef);
+            categories[category].nodes.push({
+                ...nodeDef,
+                icon: nodeDef.iconComponent
+            });
         }
     });
     
@@ -211,6 +233,8 @@ export function getNodeCategories() {
  */
 function getCategoryName(categoryId) {
     switch (categoryId) {
+        case NODE_CATEGORIES.VARIABLES:
+            return 'Переменные';
         case NODE_CATEGORIES.OPERATIONS:
             return 'Операции';
         case NODE_CATEGORIES.CONTROL:
