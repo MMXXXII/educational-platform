@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router';
 import { UserIcon, ArrowRightEndOnRectangleIcon, BookOpenIcon, PlayIcon, PencilSquareIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 
@@ -19,17 +19,29 @@ export function Header({ isAuthenticated }) {
         <header className="bg-white shadow-md relative z-20">
             <div className="container mx-auto px-4 sm:px-6 py-3">
                 <div className="flex justify-between items-center">
-                    {/* Вариант 1: Защищенный логотип с использованием CSS background-image */}
-                    <Link to="/" className="block">
-                        <div 
-                            className="h-12 sm:h-15 w-auto sm:w-40 bg-no-repeat bg-contain bg-center select-none" 
+                    {/* Защищенный логотип с использованием CSS background-image */}
+                    <Link 
+                        to="/" 
+                        className="block relative" 
+                        onContextMenu={preventContextMenu}
+                    >
+                        <img 
+                            src="logo.png"
+                            alt="EduPlatform Logo"
+                            className="h-12 sm:h-15 w-auto select-none"
                             style={{ 
-                                backgroundImage: 'url("logo.png")',
-                                pointerEvents: 'none' 
+                                pointerEvents: 'none',
+                                userSelect: 'none',
+                                WebkitUserSelect: 'none'
                             }}
-                            onContextMenu={preventContextMenu}
-                            aria-label="EduPlatform Logo"
+                            draggable="false"
                         />
+                        {/* Защитный слой поверх изображения */}
+                        <div 
+                            className="absolute inset-0 z-10" 
+                            onContextMenu={preventContextMenu}
+                            onClick={(e) => e.stopPropagation()}
+                        ></div>
                     </Link>
 
                     {/* Desktop Navigation */}
