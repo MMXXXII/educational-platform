@@ -17,5 +17,6 @@ export default [
     route("node-editor", "routes/node-editor.tsx"),
     route("editor", "./routes/editor.tsx"),
     route("sign-in", "./routes/sign-in.tsx"),
-    route("sign-up", "./routes/sign-up.tsx")
+    route("sign-up", "./routes/sign-up.tsx"),
+    route("viewer", "./routes/model-viewer.tsx"),
 ] satisfies RouteConfig;

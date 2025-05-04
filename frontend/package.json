@@ -9,7 +9,9 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
-    "@babylonjs/core": "^7.50.0",
+    "@babylonjs/core": "^8.6.1",
+    "@babylonjs/loaders": "^8.6.1",
+    "@babylonjs/materials": "^8.6.1",
     "@heroicons/react": "^2.2.0",
     "@react-router/node": "^7.2.0",
     "@react-router/serve": "^7.2.0",
