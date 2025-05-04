@@ -1,54 +1,23 @@
 import React, { useState } from 'react';
-// Updated Heroicons v2 imports
-import {
-    VariableIcon,
-    HashtagIcon,
-    DocumentTextIcon,
-    ArrowPathIcon,
-    CalculatorIcon,
-    ArrowsRightLeftIcon,
-    ChevronDownIcon,
-    ChevronRightIcon
-} from '@heroicons/react/24/outline';
+import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { getNodeCategories } from '../services/nodeRegistry';
 
 /**
  * Компонент для отображения палитры доступных типов нодов
  */
 const NodePalette = () => {
-    const [expandedCategories, setExpandedCategories] = useState({
-        values: true,
-        operations: true,
-        control: true
+    // Получаем категории и ноды из реестра
+    const nodeCategories = getNodeCategories();
+    
+    // Состояние развёрнутых категорий
+    const [expandedCategories, setExpandedCategories] = useState(() => {
+        // По умолчанию разворачиваем все категории
+        const initialState = {};
+        nodeCategories.forEach(category => {
+            initialState[category.id] = true;
+        });
+        return initialState;
     });
-
-    // Определение категорий нодов
-    const nodeCategories = [
-        {
-            id: 'values',
-            name: 'Значения',
-            nodes: [
-                { type: 'variable', name: 'Переменная', icon: <VariableIcon className="w-5 h-5" /> },
-                { type: 'number', name: 'Число', icon: <HashtagIcon className="w-5 h-5" /> },
-                { type: 'string', name: 'Строка', icon: <DocumentTextIcon className="w-5 h-5" /> }
-            ]
-        },
-        {
-            id: 'operations',
-            name: 'Операции',
-            nodes: [
-                { type: 'math', name: 'Мат. операция', data: { operation: 'add' }, icon: <CalculatorIcon className="w-5 h-5" /> },
-                { type: 'print', name: 'Вывод', icon: <DocumentTextIcon className="w-5 h-5" /> }
-            ]
-        },
-        {
-            id: 'control',
-            name: 'Управление',
-            nodes: [
-                { type: 'if', name: 'Условие', icon: <ArrowsRightLeftIcon className="w-5 h-5" /> },
-                { type: 'loop', name: 'Цикл', icon: <ArrowPathIcon className="w-5 h-5" /> }
-            ]
-        }
-    ];
 
     /**
      * Обработчик начала перетаскивания нода
@@ -72,20 +41,6 @@ const NodePalette = () => {
             ...prev,
             [categoryId]: !prev[categoryId]
         }));
-    };
-
-    // Получение цвета для нода по его типу
-    const getNodeColor = (type) => {
-        switch (type) {
-            case 'variable': return 'bg-blue-500 hover:bg-blue-600';
-            case 'number':
-            case 'string': return 'bg-green-500 hover:bg-green-600';
-            case 'math': return 'bg-purple-500 hover:bg-purple-600';
-            case 'print': return 'bg-yellow-500 hover:bg-yellow-600';
-            case 'loop': return 'bg-red-500 hover:bg-red-600';
-            case 'if': return 'bg-indigo-500 hover:bg-indigo-600';
-            default: return 'bg-gray-500 hover:bg-gray-600';
-        }
     };
 
     return (
@@ -113,17 +68,17 @@ const NodePalette = () => {
                             <div className="mt-2 pl-2 space-y-2">
                                 {category.nodes.map(node => (
                                     <div
-                                        key={`${node.type}-${JSON.stringify(node.data || {})}`}
+                                        key={`${node.type}-${JSON.stringify(node.defaultData || {})}`}
                                         className={`
-                      ${getNodeColor(node.type)}
-                      text-white p-2 rounded cursor-move
-                      flex items-center transition-all
-                      hover:shadow-md transform hover:-translate-y-0.5
-                    `}
+                                            ${node.paletteColor}
+                                            text-white p-2 rounded cursor-move
+                                            flex items-center transition-all
+                                            hover:shadow-md transform hover:-translate-y-0.5
+                                        `}
                                         draggable
-                                        onDragStart={(e) => onDragStart(e, node.type, node.data)}
+                                        onDragStart={(e) => onDragStart(e, node.type, node.defaultData)}
                                     >
-                                        <span className="mr-2">{node.icon}</span>
+                                        <span className="mr-2">{node.icon({ className: "w-5 h-5" })}</span>
                                         <span>{node.name}</span>
                                     </div>
                                 ))}

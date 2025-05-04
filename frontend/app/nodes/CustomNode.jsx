@@ -1,6 +1,7 @@
-import React, { memo, useState, useEffect, useRef } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { Handle, Position } from 'reactflow';
 import { useGlobalVariables } from '../contexts/GlobalVariablesContext';
+import { getNodeDefinition, formatDisplayValue } from '../services/nodeRegistry';
 
 /**
  * Компонент CustomNode для визуализации нода в ReactFlow
@@ -10,9 +11,20 @@ const CustomNode = ({ data, selected }) => {
     const [hoveredOutput, setHoveredOutput] = useState(null);
     const [localState, setLocalState] = useState({});
     const nodeRef = data.nodeRef;
+    const nodeType = data.type;
 
     // Получаем глобальные переменные для нодов get/set_variable
     const { variables: availableVariables } = useGlobalVariables();
+
+    // Получаем определение типа нода из реестра
+    const nodeDefinition = getNodeDefinition(nodeType);
+
+    // Используем стандартное определение, если тип не найден в реестре
+    const nodeColors = nodeDefinition?.color || {
+        bg: 'bg-gray-100 dark:bg-gray-800',
+        border: 'border-gray-500',
+        text: 'text-gray-800 dark:text-gray-200'
+    };
 
     // Инициализируем локальное состояние из данных нода
     useEffect(() => {
@@ -29,79 +41,16 @@ const CustomNode = ({ data, selected }) => {
         }
     }, [nodeRef]);
 
-    // Получаем цвета для нода в зависимости от его типа
-    const getNodeColors = (type) => {
-        switch (type) {
-            case 'variable':
-                return {
-                    bg: 'bg-blue-100 dark:bg-blue-900',
-                    border: 'border-blue-500',
-                    text: 'text-blue-800 dark:text-blue-200'
-                };
-            case 'number':
-            case 'string':
-                return {
-                    bg: 'bg-green-100 dark:bg-green-900',
-                    border: 'border-green-500',
-                    text: 'text-green-800 dark:text-green-200'
-                };
-            case 'math':
-                return {
-                    bg: 'bg-purple-100 dark:bg-purple-900',
-                    border: 'border-purple-500',
-                    text: 'text-purple-800 dark:text-purple-200'
-                };
-            case 'print':
-                return {
-                    bg: 'bg-yellow-100 dark:bg-yellow-900',
-                    border: 'border-yellow-500',
-                    text: 'text-yellow-800 dark:text-yellow-200'
-                };
-            case 'loop':
-                return {
-                    bg: 'bg-red-100 dark:bg-red-900',
-                    border: 'border-red-500',
-                    text: 'text-red-800 dark:text-red-200'
-                };
-            case 'if':
-                return {
-                    bg: 'bg-indigo-100 dark:bg-indigo-900',
-                    border: 'border-indigo-500',
-                    text: 'text-indigo-800 dark:text-indigo-200'
-                };
-            case 'set_variable':
-            case 'get_variable':
-                return {
-                    bg: 'bg-teal-100 dark:bg-teal-900',
-                    border: 'border-teal-500',
-                    text: 'text-teal-800 dark:text-teal-200'
-                };
-            default:
-                return {
-                    bg: 'bg-gray-100 dark:bg-gray-800',
-                    border: 'border-gray-500',
-                    text: 'text-gray-800 dark:text-gray-200'
-                };
-        }
-    };
-
-    const colors = getNodeColors(data.type);
-
-    // Получаем цвет для порта в зависимости от типа данных
-    const getPortColor = (dataType) => {
+    // Получаем функцию для определения цвета порта
+    const getPortColor = nodeDefinition?.getPortColor || ((dataType) => {
         switch (dataType) {
-            case 'number':
-                return 'bg-green-500';
-            case 'string':
-                return 'bg-blue-500';
-            case 'boolean':
-                return 'bg-yellow-500';
-            case 'flow':
-                return 'bg-red-500';
-            default:
-                return 'bg-gray-500';
+            case 'number': return 'bg-green-500';
+            case 'string': return 'bg-blue-500';
+            case 'boolean': return 'bg-yellow-500';
+            case 'flow': return 'bg-red-500';
+            default: return 'bg-gray-500';
         }
-    };
+    });
 
     // Обработчик изменения значений в интерактивных элементах
     const handleChange = (key, value) => {
@@ -110,6 +59,47 @@ const CustomNode = ({ data, selected }) => {
         if (nodeRef) {
             nodeRef.setProperty(key, value);
         }
+    };
+
+    // Индикатор текущего состояния
+    const renderActiveIndicator = () => {
+        if (!data.nodeRef || !data.nodeRef.state) return null;
+
+        const state = data.nodeRef.state;
+        const hasData = Object.keys(state).length > 0;
+
+        if (!hasData) return null;
+
+        // Определяем значение для отображения с использованием реестра нодов
+        let keyValue = null;
+        
+        if (nodeDefinition && typeof nodeDefinition.getActiveValue === 'function') {
+            keyValue = nodeDefinition.getActiveValue(data.nodeRef);
+        } else if (state.error) {
+            keyValue = 'Ошибка';
+        }
+
+        if (keyValue !== null) {
+            // Активный нод с данными - показываем индикатор
+            const displayValue = formatDisplayValue(keyValue);
+
+            return (
+                <div className="absolute -top-2 -right-2 py-1 px-2 bg-blue-500 text-white text-xs rounded-full shadow-md font-semibold z-10">
+                    {displayValue}
+                </div>
+            );
+        }
+
+        // Индикатор ошибки
+        if (state.error) {
+            return (
+                <div className="absolute -top-2 -right-2 py-1 px-2 bg-red-500 text-white text-xs rounded-full shadow-md font-semibold z-10">
+                    Ошибка
+                </div>
+            );
+        }
+
+        return null;
     };
 
     // Рендерим интерактивные элементы в зависимости от типа нода
@@ -240,84 +230,10 @@ const CustomNode = ({ data, selected }) => {
         }
     };
 
-    // Индикатор текущего состояния
-    const renderActiveIndicator = () => {
-        if (!data.nodeRef || !data.nodeRef.state) return null;
-
-        const state = data.nodeRef.state;
-        const hasData = Object.keys(state).length > 0;
-
-        if (!hasData) return null;
-
-        // Определяем самое важное значение для отображения (в зависимости от типа нода)
-        let keyValue = null;
-        let indicator = null;
-
-        switch (data.type) {
-            case 'variable':
-                keyValue = state.currentValue !== undefined ? state.currentValue : null;
-                break;
-            case 'number':
-            case 'string':
-                keyValue = state.value;
-                break;
-            case 'math':
-                keyValue = state.result;
-                break;
-            case 'if':
-                keyValue = state.result !== undefined ? (state.result ? 'Истина' : 'Ложь') : null;
-                break;
-            case 'loop':
-                keyValue = state.currentIteration !== undefined ?
-                    `Итерация ${state.currentIteration + 1}/${state.count}` : null;
-                break;
-            case 'print':
-                keyValue = 'Выполнен';
-                break;
-            case 'get_variable':
-                keyValue = state.value;
-                break;
-            case 'set_variable':
-                keyValue = state.value;
-                break;
-            default:
-                keyValue = null;
-        }
-
-        if (keyValue !== null) {
-            // Активный нод с данными - показываем индикатор
-            let displayValue = typeof keyValue === 'object'
-                ? '[Объект]'
-                : (keyValue === undefined ? 'undefined' : String(keyValue));
-
-            // Ограничиваем длину отображаемого значения
-            if (displayValue.length > 10) {
-                displayValue = displayValue.substring(0, 8) + '...';
-            }
-
-            indicator = (
-                <div className="absolute -top-2 -right-2 py-1 px-2 bg-blue-500 text-white text-xs rounded-full shadow-md font-semibold z-10">
-                    {displayValue}
-                </div>
-            );
-        }
-
-        // Индикатор ошибки
-        if (state.error) {
-            indicator = (
-                <div className="absolute -top-2 -right-2 py-1 px-2 bg-red-500 text-white text-xs rounded-full shadow-md font-semibold z-10">
-                    Ошибка
-                </div>
-            );
-        }
-
-        return indicator;
-    };
-
     return (
         <div
             className={`
-                ${colors.bg} ${colors.border} ${colors.text}
+                ${nodeColors.bg} ${nodeColors.border} ${nodeColors.text}
                 p-3 rounded-md border-2 w-48
                 ${selected ? 'shadow-lg ring-2 ring-blue-400' : 'shadow'}
                 flex flex-col relative
