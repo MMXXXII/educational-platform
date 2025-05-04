@@ -28,7 +28,8 @@ const useDragAndDrop = (reactFlowWrapper, reactFlowInstance, setNodes, setIsModi
 
         // Получаем позицию указателя относительно ReactFlow
         const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-        const position = reactFlowInstance.current.project({
+        
+        const position = reactFlowInstance.current.screenToFlowPosition({
             x: event.clientX - reactFlowBounds.left,
             y: event.clientY - reactFlowBounds.top,
         });
