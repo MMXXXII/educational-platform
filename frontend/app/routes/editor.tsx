@@ -4,8 +4,8 @@ import { ProtectedRoute } from '../components/ProtectedRoute';
 
 export function meta({ }: Route.MetaArgs) {
     return [
-        { title: "Editor" },
-        { name: "description", content: "Edit your maps" },
+        { title: "Редактор" },
+        { name: "description", content: "Создавайте свои карты" },
     ];
 }
 

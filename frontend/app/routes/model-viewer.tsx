@@ -3,8 +3,8 @@ import { ModelViewer } from "../model-viewer/ModelViewer";
 
 export function meta({ }: Route.MetaArgs) {
     return [
-        { title: "Model Viewer component" },
-        { name: "description", content: "View .glb models" },
+        { title: "Просмотр 3D‑моделей" },
+        { name: "description", content: "Просматривайте .glb модели онлайн" },
     ];
 }
 

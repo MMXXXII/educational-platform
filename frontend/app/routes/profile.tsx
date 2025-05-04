@@ -3,8 +3,8 @@ import { UserProfile } from "../profile/UserProfile";
 
 export function meta({ }: Route.MetaArgs) {
     return [
-        { title: "Editor" },
-        { name: "description", content: "Edit your maps" },
+        { title: "Профиль пользователя" },
+        { name: "description", content: "Просматривайте и редактируйте данные своего профиля" },
     ];
 }
 
