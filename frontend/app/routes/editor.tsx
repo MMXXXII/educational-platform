@@ -1,5 +1,6 @@
 import type { Route } from "./+types/editor";
 import { EditorPanel } from "../editor/EditorPanel";
+import { ProtectedRoute } from '../components/ProtectedRoute';
 
 export function meta({ }: Route.MetaArgs) {
     return [
@@ -9,5 +10,9 @@ export function meta({ }: Route.MetaArgs) {
 }
 
 export default function Editor() {
-    return <EditorPanel />;
+    return (
+        <ProtectedRoute requiredRoles={['admin']}>
+            <EditorPanel />
+        </ProtectedRoute>
+    );
 }
