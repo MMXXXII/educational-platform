@@ -1,11 +1,19 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router';
+import React, { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 
 // Компонент для защиты маршрутов
 export function ProtectedRoute({ children, requiredRoles = [] }) {
-    const { isAuthenticated, isLoading, user, hasRole } = useAuth();
+    const { isAuthenticated, isLoading, hasRole } = useAuth();
     const location = useLocation();
+    const navigate = useNavigate();
+
+    // Используем useEffect для перенаправления на страницу входа
+    useEffect(() => {
+        if (!isLoading && !isAuthenticated) {
+            navigate('/sign-in', { state: { from: location }, replace: true });
+        }
+    }, [isLoading, isAuthenticated, navigate, location]);
 
     // Пока проверяем авторизацию, показываем загрузчик
     if (isLoading) {
@@ -16,9 +24,13 @@ export function ProtectedRoute({ children, requiredRoles = [] }) {
         );
     }
 
-    // Если пользователь не авторизован, перенаправляем на страницу входа
+    // Если пользователь не авторизован, показываем загрузчик пока useEffect не выполнит перенаправление
     if (!isAuthenticated) {
-        return <Navigate to="/sign-in" state={{ from: location }} replace />;
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+        );
     }
 
     // Если указаны требуемые роли и у пользователя нет нужной роли
