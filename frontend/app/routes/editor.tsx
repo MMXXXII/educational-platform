@@ -1,6 +1,6 @@
 import type { Route } from "./+types/editor";
 import { EditorPanel } from "../editor/EditorPanel";
-import { ProtectedRoute } from '../components/ProtectedRoute';
+import { ProtectedRoute } from '../auth/ProtectedRoute';
 
 export function meta({ }: Route.MetaArgs) {
     return [

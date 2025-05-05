@@ -1,6 +1,6 @@
 import type { Route } from "./+types/profile";
 import { FileManager } from "../fileManager/FileManager";
-import { ProtectedRoute } from '../components/ProtectedRoute';
+import { ProtectedRoute } from '../auth/ProtectedRoute';
 
 export function meta({ }: Route.MetaArgs) {
     return [
