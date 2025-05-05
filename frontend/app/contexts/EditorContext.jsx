@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useNodesState, useEdgesState } from 'reactflow';
 import SerializationService from '../services/serializationService';
 
@@ -21,24 +21,36 @@ export const EditorProvider = ({ children }) => {
     const [isModified, setIsModified] = useState(false);
     const [selectedNodeId, setSelectedNodeId] = useState(null);
     const [isBrowser, setIsBrowser] = useState(false);
+    const [saveError, setSaveError] = useState(null);
+    const [loadError, setLoadError] = useState(null);
+
+    // Реф для хранения функций, чтобы избежать циклических зависимостей
+    const functionRef = useRef({});
 
     // Эффект для инициализации списка проектов после маунтинга компонента
     useEffect(() => {
         setIsBrowser(true);
-        setProjectsList(SerializationService.getProjectsList());
+        // Обновляем список проектов при инициализации
+        functionRef.current.refreshProjectsList();
     }, []);
 
     /**
-     * Создает новый проект
-     * @param {string} name - Имя проекта
+     * Обновляет список проектов
      */
-    const createNewProject = useCallback((name) => {
-        setProjectName(name);
-        setNodes([]);
-        setEdges([]);
-        setIsModified(false);
-        setSelectedNodeId(null);
-    }, [setNodes, setEdges]);
+    const refreshProjectsList = useCallback(() => {
+        if (isBrowser) {
+            try {
+                const list = SerializationService.getProjectsList();
+                setProjectsList(list);
+                console.log('Обновлен список проектов:', list);
+            } catch (error) {
+                console.error('Ошибка при обновлении списка проектов:', error);
+            }
+        }
+    }, [isBrowser]);
+
+    // Сохраняем функцию в реф
+    functionRef.current.refreshProjectsList = refreshProjectsList;
 
     /**
      * Сохраняет текущий проект
@@ -46,30 +58,113 @@ export const EditorProvider = ({ children }) => {
      * @returns {boolean} - Успешно ли сохранен проект
      */
     const saveProject = useCallback((name = null) => {
+        setSaveError(null);
+        
         if (!isBrowser) {
-            console.warn('Невозможно сохранить проект на сервере');
+            const error = 'Невозможно сохранить проект: localStorage недоступен';
+            console.warn(error);
+            setSaveError(error);
             return false;
         }
 
         const projectToSave = name || projectName;
 
-        if (!projectToSave) {
+        if (!projectToSave || projectToSave.trim() === '') {
+            const error = 'Имя проекта не может быть пустым';
+            console.warn(error);
+            setSaveError(error);
             return false;
         }
 
-        const serializedGraph = SerializationService.serializeGraph(nodes, edges);
-        const result = SerializationService.saveToLocalStorage(projectToSave, serializedGraph);
+        try {
+            // Сериализуем текущее состояние графа
+            const serializedGraph = SerializationService.serializeGraph(nodes, edges);
+            console.log('Сериализованный граф:', serializedGraph);
+            
+            // Сохраняем в localStorage
+            const result = SerializationService.saveToLocalStorage(projectToSave, serializedGraph);
 
-        if (result) {
-            setProjectName(projectToSave);
-            setIsModified(false);
+            if (result) {
+                console.log(`Проект "${projectToSave}" успешно сохранен`);
+                setProjectName(projectToSave);
+                setIsModified(false);
 
-            // Обновляем список проектов
-            setProjectsList(SerializationService.getProjectsList());
+                // Обновляем список проектов
+                refreshProjectsList();
+                return true;
+            } else {
+                const error = `Не удалось сохранить проект "${projectToSave}"`;
+                console.error(error);
+                setSaveError(error);
+                return false;
+            }
+        } catch (error) {
+            console.error('Ошибка при сохранении проекта:', error);
+            setSaveError(`Ошибка при сохранении: ${error.message}`);
+            return false;
+        }
+    }, [nodes, edges, projectName, isBrowser, refreshProjectsList]);
+
+    // Сохраняем функцию в реф
+    functionRef.current.saveProject = saveProject;
+
+    /**
+     * Создает новый проект
+     * @param {string} name - Имя проекта
+     * @returns {boolean} - Успешно ли создан проект
+     */
+    const createNewProject = useCallback((name) => {
+        setSaveError(null);
+        
+        // Проверка на пустое имя проекта
+        if (!name || name.trim() === '') {
+            const error = 'Имя проекта не может быть пустым';
+            console.warn(error);
+            setSaveError(error);
+            return false;
         }
 
-        return result;
-    }, [nodes, edges, projectName, isBrowser]);
+        // Сохраняем текущий проект, если он был изменен
+        if (isModified && projectName && projectName !== name) {
+            const shouldSave = window.confirm(
+                `Проект "${projectName}" был изменен. Сохранить изменения перед созданием нового проекта?`
+            );
+            
+            if (shouldSave) {
+                // Используем функцию из рефа для избежания циклической зависимости
+                functionRef.current.saveProject(projectName);
+            }
+        }
+
+        try {
+            // Создаем пустой проект в памяти
+            setProjectName(name);
+            setNodes([]);
+            setEdges([]);
+            setIsModified(false);
+            setSelectedNodeId(null);
+            setSaveError(null);
+            setLoadError(null);
+            
+            // Создаем и сразу сохраняем пустой проект в localStorage
+            const emptyProject = SerializationService.serializeGraph([], []);
+            SerializationService.saveToLocalStorage(name, emptyProject);
+            
+            // Обновляем список проектов после создания нового
+            refreshProjectsList();
+            
+            console.log(`Создан новый проект: ${name}`);
+            return true;
+        } catch (error) {
+            const errorMsg = `Ошибка при создании проекта: ${error.message}`;
+            console.error(errorMsg);
+            setSaveError(errorMsg);
+            return false;
+        }
+    }, [setNodes, setEdges, isModified, projectName, refreshProjectsList]);
+
+    // Сохраняем функцию в реф
+    functionRef.current.createNewProject = createNewProject;
 
     /**
      * Загружает проект
@@ -77,33 +172,78 @@ export const EditorProvider = ({ children }) => {
      * @returns {boolean} - Успешно ли загружен проект
      */
     const loadProject = useCallback((name) => {
+        setLoadError(null);
+        
         if (!isBrowser) {
-            console.warn('Невозможно загрузить проект на сервере');
+            const error = 'Невозможно загрузить проект: localStorage недоступен';
+            console.warn(error);
+            setLoadError(error);
             return false;
         }
 
-        const serializedGraph = SerializationService.loadFromLocalStorage(name);
-
-        if (!serializedGraph) {
+        if (!name || name.trim() === '') {
+            const error = 'Имя проекта не может быть пустым';
+            console.warn(error);
+            setLoadError(error);
             return false;
+        }
+
+        // Сохраняем текущий проект, если он был изменен
+        if (isModified && projectName && projectName !== name) {
+            const shouldSave = window.confirm(
+                `Проект "${projectName}" был изменен. Сохранить изменения перед загрузкой другого проекта?`
+            );
+            
+            if (shouldSave) {
+                functionRef.current.saveProject(projectName);
+            }
         }
 
         try {
-            const { nodes: deserializedNodes, edges: deserializedEdges } =
-                SerializationService.deserializeGraph(serializedGraph);
+            // Загружаем сериализованный граф из localStorage
+            const serializedGraph = SerializationService.loadFromLocalStorage(name);
 
-            setNodes(deserializedNodes);
-            setEdges(deserializedEdges);
-            setProjectName(name);
-            setIsModified(false);
-            setSelectedNodeId(null);
+            if (!serializedGraph) {
+                const error = `Проект "${name}" не найден`;
+                console.error(error);
+                setLoadError(error);
+                return false;
+            }
 
-            return true;
+            console.log(`Загружаем проект "${name}"`, serializedGraph);
+
+            try {
+                // Десериализуем граф
+                const { nodes: deserializedNodes, edges: deserializedEdges } =
+                    SerializationService.deserializeGraph(serializedGraph);
+
+                // Обновляем состояние графа
+                setNodes(deserializedNodes);
+                setEdges(deserializedEdges);
+                setProjectName(name);
+                setIsModified(false);
+                setSelectedNodeId(null);
+
+                console.log(`Проект "${name}" успешно загружен`, {
+                    nodes: deserializedNodes,
+                    edges: deserializedEdges
+                });
+
+                return true;
+            } catch (error) {
+                console.error('Ошибка при десериализации проекта:', error);
+                setLoadError(`Ошибка при загрузке: ${error.message}`);
+                return false;
+            }
         } catch (error) {
             console.error('Ошибка при загрузке проекта:', error);
+            setLoadError(`Ошибка при загрузке: ${error.message}`);
             return false;
         }
-    }, [setNodes, setEdges, isBrowser]);
+    }, [setNodes, setEdges, isBrowser, isModified, projectName]);
+
+    // Сохраняем функцию в реф
+    functionRef.current.loadProject = loadProject;
 
     /**
      * Удаляет проект
@@ -116,20 +256,38 @@ export const EditorProvider = ({ children }) => {
             return false;
         }
 
-        const result = SerializationService.deleteProject(name);
-
-        if (result) {
-            // Обновляем список проектов
-            setProjectsList(SerializationService.getProjectsList());
-
-            // Если удален текущий проект, создаем новый
-            if (name === projectName) {
-                createNewProject('');
-            }
+        if (!name || name.trim() === '') {
+            console.warn('Имя проекта не может быть пустым');
+            return false;
         }
 
-        return result;
-    }, [projectName, createNewProject, isBrowser]);
+        try {
+            const result = SerializationService.deleteProject(name);
+
+            if (result) {
+                console.log(`Проект "${name}" успешно удален`);
+                
+                // Обновляем список проектов
+                refreshProjectsList();
+
+                // Если удален текущий проект, создаем новый
+                if (name === projectName) {
+                    functionRef.current.createNewProject('');
+                }
+                
+                return true;
+            } else {
+                console.error(`Не удалось удалить проект "${name}"`);
+                return false;
+            }
+        } catch (error) {
+            console.error('Ошибка при удалении проекта:', error);
+            return false;
+        }
+    }, [projectName, isBrowser, refreshProjectsList]);
+
+    // Сохраняем функцию в реф
+    functionRef.current.deleteProject = deleteProject;
 
     /**
      * Экспортирует проект в файл
@@ -141,8 +299,13 @@ export const EditorProvider = ({ children }) => {
             return false;
         }
 
-        const serializedGraph = SerializationService.serializeGraph(nodes, edges);
-        return SerializationService.exportToFile(projectName, serializedGraph);
+        try {
+            const serializedGraph = SerializationService.serializeGraph(nodes, edges);
+            return SerializationService.exportToFile(projectName, serializedGraph);
+        } catch (error) {
+            console.error('Ошибка при экспорте проекта:', error);
+            return false;
+        }
     }, [nodes, edges, projectName, isBrowser]);
 
     /**
@@ -157,13 +320,26 @@ export const EditorProvider = ({ children }) => {
         }
 
         try {
+            // Сохраняем текущий проект, если он был изменен
+            if (isModified && projectName) {
+                const shouldSave = window.confirm(
+                    `Проект "${projectName}" был изменен. Сохранить изменения перед импортом?`
+                );
+                
+                if (shouldSave) {
+                    functionRef.current.saveProject(projectName);
+                }
+            }
+
             const serializedGraph = await SerializationService.importFromFile(file);
             const { nodes: deserializedNodes, edges: deserializedEdges } =
                 SerializationService.deserializeGraph(serializedGraph);
 
             setNodes(deserializedNodes);
             setEdges(deserializedEdges);
-            setProjectName(file.name.replace(/\.json$/, ''));
+            // Устанавливаем имя проекта из имени файла без расширения
+            const newProjectName = file.name.replace(/\.json$/, '');
+            setProjectName(newProjectName);
             setIsModified(true);
             setSelectedNodeId(null);
 
@@ -172,16 +348,7 @@ export const EditorProvider = ({ children }) => {
             console.error('Ошибка при импорте проекта:', error);
             return false;
         }
-    }, [setNodes, setEdges, isBrowser]);
-
-    /**
-     * Обновляет список проектов
-     */
-    const refreshProjectsList = useCallback(() => {
-        if (isBrowser) {
-            setProjectsList(SerializationService.getProjectsList());
-        }
-    }, [isBrowser]);
+    }, [setNodes, setEdges, isBrowser, isModified, projectName]);
 
     // Значение контекста
     const value = {
@@ -193,6 +360,8 @@ export const EditorProvider = ({ children }) => {
         isModified,
         selectedNodeId,
         isBrowser,
+        saveError,
+        loadError,
 
         // Методы обновления состояния
         setNodes,

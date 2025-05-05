@@ -1,7 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { ReactFlowProvider } from 'reactflow';
 import { Link } from 'react-router';
-import { CheckIcon, FolderOpenIcon, PlusCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import {
+    CheckIcon,
+    FolderOpenIcon,
+    PlusCircleIcon,
+    XMarkIcon,
+    ExclamationTriangleIcon,
+    ArrowPathIcon
+} from '@heroicons/react/24/outline';
 import ConstructorPanel from './ConstructorPanel';
 import FlowCanvas from './FlowCanvas';
 import { useEditor } from '../contexts/EditorContext';
@@ -17,25 +24,120 @@ export function NodeEditor() {
         saveProject,
         createNewProject,
         loadProject,
-        projectsList
+        projectsList,
+        saveError,
+        loadError,
+        refreshProjectsList
     } = useEditor();
 
     // Отдельные состояния для разных модальных окон
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showOpenModal, setShowOpenModal] = useState(false);
     const [newProjectName, setNewProjectName] = useState("");
+    const [showAlert, setShowAlert] = useState(false);
+    const [alertMessage, setAlertMessage] = useState("");
+    const [alertType, setAlertType] = useState("error"); // "error", "warning", "success"
 
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
+    // При открытии списка проектов всегда обновляем его
+    useEffect(() => {
+        if (showOpenModal) {
+            refreshProjectsList();
+        }
+    }, [showOpenModal, refreshProjectsList]);
+
+    // Обработка ошибок сохранения и загрузки
+    useEffect(() => {
+        if (saveError) {
+            showAlertMessage(saveError, "error");
+        }
+    }, [saveError]);
+
+    useEffect(() => {
+        if (loadError) {
+            showAlertMessage(loadError, "error");
+        }
+    }, [loadError]);
+
     // Обработчик создания нового проекта
     const handleCreateProject = () => {
         if (newProjectName.trim()) {
-            createNewProject(newProjectName.trim());
-            setNewProjectName("");
-            setShowCreateModal(false);
+            // Проверяем, существует ли уже проект с таким именем
+            if (projectsList.includes(newProjectName.trim())) {
+                const confirmOverwrite = window.confirm(
+                    `Проект с именем "${newProjectName}" уже существует. Перезаписать?`
+                );
+                if (!confirmOverwrite) {
+                    return;
+                }
+            }
+
+            // Создаем новый проект
+            const success = createNewProject(newProjectName.trim());
+            
+            if (success) {
+                // Сразу же сохраняем проект в localStorage
+                const saveSuccess = saveProject(newProjectName.trim());
+                
+                if (saveSuccess) {
+                    setNewProjectName("");
+                    setShowCreateModal(false);
+                    showAlertMessage(`Создан новый проект: ${newProjectName}`, "success");
+                    // Обновляем список проектов после сохранения
+                    refreshProjectsList();
+                } else {
+                    showAlertMessage(`Проект создан, но не удалось сохранить его`, "warning");
+                }
+            }
+        } else {
+            showAlertMessage("Имя проекта не может быть пустым", "warning");
         }
+    };
+
+    // Обработчик сохранения проекта
+    const handleSaveProject = () => {
+        // Если проект еще не имеет имени, показываем диалог создания проекта
+        if (!projectName) {
+            setShowCreateModal(true);
+            return;
+        }
+
+        const success = saveProject();
+        if (success) {
+            showAlertMessage(`Проект "${projectName}" успешно сохранен`, "success");
+            // Обновляем список проектов после сохранения
+            refreshProjectsList();
+        }
+    };
+
+    // Обработчик загрузки проекта
+    const handleLoadProject = (name) => {
+        const success = loadProject(name);
+        if (success) {
+            setShowOpenModal(false);
+            showAlertMessage(`Проект "${name}" успешно загружен`, "success");
+        }
+    };
+
+    // Обработчик обновления списка проектов
+    const handleRefreshProjectsList = () => {
+        refreshProjectsList();
+        showAlertMessage("Список проектов обновлен", "success");
+    };
+
+    // Функция для отображения сообщений
+    const showAlertMessage = (message, type = "error") => {
+        setAlertMessage(message);
+        setAlertType(type);
+        setShowAlert(true);
+        
+        // Автоматически скрываем сообщение через 5 секунд
+        setTimeout(() => {
+            setShowAlert(false);
+        }, 5000);
     };
 
     // Обработчик нажатия клавиши Enter в поле ввода
@@ -79,19 +181,18 @@ export function NodeEditor() {
                         </div>
 
                         <div className="flex items-center space-x-3">
-                            {/* Кнопка сохранения (только когда есть проект) */}
-                            {projectName && (
-                                <button
-                                    className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center ${isModified
-                                            ? 'bg-green-500 hover:bg-green-600'
-                                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                                        } text-white shadow-sm hover:shadow`}
-                                    onClick={saveProject}
-                                >
-                                    <CheckIcon className="h-5 w-5 mr-1.5" />
-                                    Сохранить
-                                </button>
-                            )}
+                            {/* Кнопка сохранения (всегда видна) */}
+                            <button
+                                className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center ${
+                                    isModified
+                                        ? 'bg-green-500 hover:bg-green-600 text-white'
+                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                                    } shadow-sm hover:shadow`}
+                                onClick={handleSaveProject}
+                            >
+                                <CheckIcon className="h-5 w-5 mr-1.5" />
+                                Сохранить
+                            </button>
 
                             {/* Кнопка создания (всегда видна) */}
                             <button
@@ -114,6 +215,24 @@ export function NodeEditor() {
                     </div>
                 </div>
             </nav>
+
+            {/* Уведомление */}
+            {showAlert && (
+                <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg flex items-center ${
+                    alertType === 'error' ? 'bg-red-100 text-red-800 border-l-4 border-red-500' :
+                    alertType === 'warning' ? 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500' : 
+                    'bg-green-100 text-green-800 border-l-4 border-green-500'
+                }`}>
+                    <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
+                    <span>{alertMessage}</span>
+                    <button 
+                        className="ml-3 text-gray-500 hover:text-gray-700"
+                        onClick={() => setShowAlert(false)}
+                    >
+                        <XMarkIcon className="h-4 w-4" />
+                    </button>
+                </div>
+            )}
 
             {/* Модальное окно для создания нового проекта */}
             {showCreateModal && (
@@ -202,11 +321,22 @@ export function NodeEditor() {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6">
-                            <div className="flex items-center">
-                                <FolderOpenIcon className="h-5 w-5 text-blue-500 mr-2" />
-                                <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
-                                    Выберите проект
-                                </h3>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                    <FolderOpenIcon className="h-5 w-5 text-blue-500 mr-2" />
+                                    <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
+                                        Выберите проект
+                                    </h3>
+                                </div>
+                                
+                                {/* Кнопка обновления списка */}
+                                <button
+                                    className="ml-2 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none"
+                                    onClick={handleRefreshProjectsList}
+                                    title="Обновить список проектов"
+                                >
+                                    <ArrowPathIcon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                                </button>
                             </div>
 
                             <div className="mt-4">
@@ -220,14 +350,13 @@ export function NodeEditor() {
                                                 {projectsList.map((name) => (
                                                     <li key={name}>
                                                         <button
-                                                            onClick={() => {
-                                                                loadProject(name);
-                                                                setShowOpenModal(false);
-                                                            }}
-                                                            className="w-full text-left px-3 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 flex items-center transition-colors"
+                                                            onClick={() => handleLoadProject(name)}
+                                                            className="w-full text-left px-3 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 flex items-center justify-between transition-colors"
                                                         >
-                                                            <FolderOpenIcon className="h-5 w-5 mr-3 text-blue-500" />
-                                                            <span className="font-medium">{name}</span>
+                                                            <div className="flex items-center">
+                                                                <FolderOpenIcon className="h-5 w-5 mr-3 text-blue-500" />
+                                                                <span className="font-medium">{name}</span>
+                                                            </div>
                                                         </button>
                                                     </li>
                                                 ))}
