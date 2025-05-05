@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import * as BABYLON from '@babylonjs/core'
 import * as MATERIALS from '@babylonjs/materials'
 import { registerBuiltInLoaders } from '@babylonjs/loaders/dynamic'
+import { TransformControls } from './TransformControls.jsx'
 import { ModelsList } from './ModelsList.jsx'
 
 // Регистрируем загрузчики моделей BabylonJS
@@ -81,7 +82,6 @@ export function ModelViewer() {
       
       // Добавляем обработчик клика для выбора модели
       scene.onPointerDown = (evt, pickResult) => {
-        console.log(pickResult);
         if (pickResult.hit && pickResult.pickedMesh) {
           const modelId = pickResult.pickedMesh.metadata?.modelId;
           if (modelId && modelId !== 'ground') {
@@ -396,36 +396,25 @@ export function ModelViewer() {
         )}
       </div>
       
-      <div className="w-full max-w-2xl">
         {models.length > 0 && (
-          <>
-            <div className="flex justify-between items-center mb-4">
-              <div className="text-sm text-gray-500">
-                Используйте мышь для вращения камеры, колесо для масштабирования. Кликните на модель для выбора.
-              </div>
-              <label className="px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer">
-                Добавить модели
-                <input 
-                  type="file" 
-                  accept=".glb" 
-                  className="hidden" 
-                  onChange={handleFileSelect}
-                  multiple
-                />
-              </label>
-            </div>
-            
             <div className="mt-4">
               <ModelsList 
                 models={models}
                 selectedModelId={selectedModelId}
                 onSelectModel={setSelectedModelId}
                 onModelChange={handleModelChange}
+                onFileSelect={handleFileSelect}
               />
             </div>
-          </>
         )}
-      </div>
+        {selectedModelId && (
+            <div className="mt-4">
+              <TransformControls 
+                model={models.find(m => m.id === selectedModelId)} 
+                onChange={handleModelChange} 
+              />
+            </div>
+        )}
     </div>
   )
 }
