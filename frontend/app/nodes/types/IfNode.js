@@ -17,8 +17,10 @@ export class IfNode extends BaseNode {
         });
 
         // Добавление портов
+        this.addInput('flow', '', 'flow');  // Flow-вход для управления выполнением
         this.addInput('a', 'A', 'any', true);
         this.addInput('b', 'B', 'any', true);
+        
         this.addOutput('true', 'True', 'flow');
         this.addOutput('false', 'False', 'flow');
     }

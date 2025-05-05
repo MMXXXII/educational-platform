@@ -18,7 +18,9 @@ export class LoopNode extends BaseNode {
         });
 
         // Добавление портов
+        this.addInput('flow', '', 'flow');  // Flow-вход для управления выполнением
         this.addInput('count', 'Count', 'number');
+        
         this.addOutput('body', 'Loop Body', 'flow');
         this.addOutput('next', 'After Loop', 'flow');
         this.addOutput('index', 'Index', 'number');

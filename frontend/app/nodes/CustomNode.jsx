@@ -29,6 +29,11 @@ const CustomNode = ({ data, selected, id }) => {
         text: 'text-gray-800 dark:text-gray-200'
     };
 
+    const flowInputs = data.inputs?.filter(input => input.dataType === 'flow') || [];
+    const dataInputs = data.inputs?.filter(input => input.dataType !== 'flow') || [];
+    const flowOutputs = data.outputs?.filter(output => output.dataType === 'flow') || [];
+    const dataOutputs = data.outputs?.filter(output => output.dataType !== 'flow') || [];
+
     // Функция для проверки наличия внешних подключений к порту value
     const checkExternalConnections = useCallback(() => {
         if (data.inputs && id && nodeType === 'variable') {
@@ -155,8 +160,6 @@ const CustomNode = ({ data, selected, id }) => {
                                     placeholder="Имя переменной"
                                 />
                             </div>
-
-
                         </div>
 
                         {/* Переключатель типа переменной */}
@@ -175,7 +178,7 @@ const CustomNode = ({ data, selected, id }) => {
             );
         }
 
-        // Другие типы нодов (TODO изменить)
+        // Другие типы нодов
         switch (data.type) {
             case 'math':
                 return (
@@ -259,65 +262,122 @@ const CustomNode = ({ data, selected, id }) => {
                 {renderNodeContent()}
             </div>
 
-            {/* Входные порты (слева) */}
-            {data.inputs && data.inputs.map((input, index) => (
-                <div key={`input-${input.id || index}`} className="absolute left-0">
+            {/* Flow-входные порты (слева сверху) */}
+            {flowInputs.map((input, index) => (
+                <div key={`flow-input-${input.id || index}`} className="absolute left-0">
                     <Handle
                         type="target"
                         position={Position.Left}
                         id={input.id || input.name}
                         style={{
                             left: -8,
-                            top: input.dataType === 'flow' ? 24 : 50 + (index * 20),
-                            width: input.dataType === 'flow' ? 14 : 12,
-                            height: input.dataType === 'flow' ? 14 : 12,
-                            transform: input.dataType === 'flow' ? 'rotate(45deg)' : 'none',
-                            borderRadius: input.dataType === 'flow' ? 0 : '50%',
+                            top: 24 + (index * 20), // Размещаем flow-порты сверху
+                            width: 14,
+                            height: 14,
+                            transform: 'rotate(45deg)',
+                            borderRadius: 0,
                         }}
-                        className={`${getPortColor(input.dataType)} border-2 border-white dark:border-gray-800 transition-all ${hoveredInput === index ? 'scale-125' : ''}`}
-                        onMouseEnter={() => setHoveredInput(index)}
+                        className={`${getPortColor('flow')} border-2 border-white dark:border-gray-800 transition-all ${hoveredInput === `flow-in-${index}` ? 'scale-125' : ''}`}
+                        onMouseEnter={() => setHoveredInput(`flow-in-${index}`)}
                         onMouseLeave={() => setHoveredInput(null)}
-                        onConnect={() => {
-                            // Дополнительный триггер при создании соединения
-                            setTimeout(checkExternalConnections, 0);
-                        }}
                     />
-                    {hoveredInput === index && (
+                    {hoveredInput === `flow-in-${index}` && (
                         <div
                             className="absolute left-2 text-xs bg-gray-800 text-white px-2 py-1 rounded z-10 whitespace-nowrap"
-                            style={{ top: input.dataType === 'flow' ? 18 : 44 + (index * 20) }}
+                            style={{ top: 18 + (index * 20) }}
                         >
-                            {input.label || input.name} {input.dataType !== 'flow' && `(${input.dataType})`}
+                            {input.label || input.name}
                         </div>
                     )}
                 </div>
             ))}
 
-            {/* Выходные порты (справа) */}
-            {data.outputs && data.outputs.map((output, index) => (
-                <div key={`output-${output.id || index}`} className="absolute right-0">
+            {/* Данные-входные порты (слева ниже) */}
+            {dataInputs.map((input, index) => (
+                <div key={`data-input-${input.id || index}`} className="absolute left-0">
+                    <Handle
+                        type="target"
+                        position={Position.Left}
+                        id={input.id || input.name}
+                        style={{
+                            left: -8,
+                            top: 60 + (index * 20), // Размещаем data-порты ниже flow-портов
+                            width: 12,
+                            height: 12,
+                            borderRadius: '50%',
+                        }}
+                        className={`${getPortColor(input.dataType)} border-2 border-white dark:border-gray-800 transition-all ${hoveredInput === `data-in-${index}` ? 'scale-125' : ''}`}
+                        onMouseEnter={() => setHoveredInput(`data-in-${index}`)}
+                        onMouseLeave={() => setHoveredInput(null)}
+                        onConnect={() => {
+                            setTimeout(checkExternalConnections, 0);
+                        }}
+                    />
+                    {hoveredInput === `data-in-${index}` && (
+                        <div
+                            className="absolute left-2 text-xs bg-gray-800 text-white px-2 py-1 rounded z-10 whitespace-nowrap"
+                            style={{ top: 54 + (index * 20) }}
+                        >
+                            {input.label || input.name} ({input.dataType})
+                        </div>
+                    )}
+                </div>
+            ))}
+
+            {/* Flow-выходные порты (справа сверху) */}
+            {flowOutputs.map((output, index) => (
+                <div key={`flow-output-${output.id || index}`} className="absolute right-0">
                     <Handle
                         type="source"
                         position={Position.Right}
                         id={output.id || output.name}
                         style={{
                             right: -8,
-                            top: output.dataType === 'flow' ? 24 : 50 + (index * 20),
-                            width: output.dataType === 'flow' ? 14 : 12,
-                            height: output.dataType === 'flow' ? 14 : 12,
-                            transform: output.dataType === 'flow' ? 'rotate(45deg)' : 'none',
-                            borderRadius: output.dataType === 'flow' ? 0 : '50%',
+                            top: 24 + (index * 20), // Размещаем flow-порты сверху
+                            width: 14,
+                            height: 14,
+                            transform: 'rotate(45deg)',
+                            borderRadius: 0,
                         }}
-                        className={`${getPortColor(output.dataType)} border-2 border-white dark:border-gray-800 transition-all ${hoveredOutput === index ? 'scale-125' : ''}`}
-                        onMouseEnter={() => setHoveredOutput(index)}
+                        className={`${getPortColor('flow')} border-2 border-white dark:border-gray-800 transition-all ${hoveredOutput === `flow-out-${index}` ? 'scale-125' : ''}`}
+                        onMouseEnter={() => setHoveredOutput(`flow-out-${index}`)}
                         onMouseLeave={() => setHoveredOutput(null)}
                     />
-                    {hoveredOutput === index && (
+                    {hoveredOutput === `flow-out-${index}` && (
                         <div
                             className="absolute right-2 text-xs bg-gray-800 text-white px-2 py-1 rounded z-10 whitespace-nowrap"
-                            style={{ top: output.dataType === 'flow' ? 18 : 44 + (index * 20) }}
+                            style={{ top: 18 + (index * 20) }}
                         >
-                            {output.label || output.name} {output.dataType !== 'flow' && `(${output.dataType})`}
+                            {output.label || output.name}
+                        </div>
+                    )}
+                </div>
+            ))}
+
+            {/* Данные-выходные порты (справа ниже) */}
+            {dataOutputs.map((output, index) => (
+                <div key={`data-output-${output.id || index}`} className="absolute right-0">
+                    <Handle
+                        type="source"
+                        position={Position.Right}
+                        id={output.id || output.name}
+                        style={{
+                            right: -8,
+                            top: 60 + (index * 20), // Размещаем data-порты ниже flow-портов
+                            width: 12,
+                            height: 12,
+                            borderRadius: '50%',
+                        }}
+                        className={`${getPortColor(output.dataType)} border-2 border-white dark:border-gray-800 transition-all ${hoveredOutput === `data-out-${index}` ? 'scale-125' : ''}`}
+                        onMouseEnter={() => setHoveredOutput(`data-out-${index}`)}
+                        onMouseLeave={() => setHoveredOutput(null)}
+                    />
+                    {hoveredOutput === `data-out-${index}` && (
+                        <div
+                            className="absolute right-2 text-xs bg-gray-800 text-white px-2 py-1 rounded z-10 whitespace-nowrap"
+                            style={{ top: 54 + (index * 20) }}
+                        >
+                            {output.label || output.name} ({output.dataType})
                         </div>
                     )}
                 </div>

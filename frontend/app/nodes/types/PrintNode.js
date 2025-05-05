@@ -13,8 +13,10 @@ export class PrintNode extends BaseNode {
         super(id, 'print', 'Output', data);
 
         // Добавление портов
+        this.addInput('flow', '', 'flow');  // Flow-вход для управления выполнением
         this.addInput('value', 'Value', 'any', true);
-        this.addOutput('next', 'Next', 'flow');
+        
+        this.addOutput('flow', '', 'flow');  // Flow-выход для продолжения выполнения
     }
 
     /**
@@ -57,6 +59,6 @@ export class PrintNode extends BaseNode {
         }
 
         // Возвращаем сигнал для перехода к следующему ноду
-        return { next: true };
+        return { flow: true };
     }
 }

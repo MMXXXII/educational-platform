@@ -28,8 +28,11 @@ export class MathNode extends BaseNode {
         });
 
         // Добавление портов
+        this.addInput('flow', '', 'flow');  // Flow-вход для управления выполнением
         this.addInput('a', 'A', 'number', true);
         this.addInput('b', 'B', 'number', true);
+        
+        this.addOutput('flow', '', 'flow');  // Flow-выход для продолжения выполнения
         this.addOutput('result', 'Result', 'number');
     }
 
@@ -64,7 +67,10 @@ export class MathNode extends BaseNode {
         // Обновляем состояние нода
         this.state = { a, b, result };
 
-        return { result };
+        return { 
+            flow: true,  // Сигнал для продолжения выполнения
+            result 
+        };
     }
 
     /**
