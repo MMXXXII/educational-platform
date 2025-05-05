@@ -74,16 +74,19 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
                 const nodeStyles = {};
 
                 if (isActive) {
-                    nodeStyles.boxShadow = '0 0 0 2px #3b82f6';
+                    // Активный нод выделяем ярко
+                    nodeStyles.boxShadow = '0 0 0 4px #10b981';
                     nodeStyles.zIndex = 1000;
                 } else if (isPrevious) {
-                    nodeStyles.boxShadow = '0 0 0 1px #3b82f6';
-                    nodeStyles.opacity = 0.9;
+                    // Предыдущий активный нод помечаем тонким контуром
+                    nodeStyles.boxShadow = '0 0 0 1px #10b981';
                 } else if (hasError) {
+                    // Нод с ошибкой выделяем красным
                     nodeStyles.boxShadow = '0 0 0 2px #ef4444';
                     nodeStyles.zIndex = 1000;
                 } else if (isVisited) {
-                    nodeStyles.opacity = 0.7;
+                    // Посещенные ноды помечаем тонкой рамкой
+                    nodeStyles.boxShadow = '0 0 0 1px #5c8f7a';
                 }
 
                 return {
@@ -265,7 +268,7 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
                         ...node,
                         style: {
                             ...node.style,
-                            opacity: isVisited ? 0.7 : 1
+                            boxShadow: isVisited ? '0 0 0 1px #10b981' : undefined,
                         }
                     };
                 })
