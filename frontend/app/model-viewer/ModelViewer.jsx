@@ -62,7 +62,7 @@ export function ModelViewer() {
       // Создаем сетку для пола
       const ground = BABYLON.MeshBuilder.CreateGround(
         'ground', 
-        { width: 10, height: 10 }, 
+        { width: 100, height: 100 }, 
         scene
       )
       const groundMaterial = new MATERIALS.GridMaterial('groundMaterial', scene)
@@ -86,6 +86,8 @@ export function ModelViewer() {
           const modelId = pickResult.pickedMesh.metadata?.modelId;
           if (modelId && modelId !== 'ground') {
             setSelectedModelId(modelId);
+          } else {
+            setSelectedModelId(null);
           }
         } else {
           setSelectedModelId(null);
@@ -356,8 +358,7 @@ export function ModelViewer() {
   return (
     <div className="flex flex-col items-center w-full">
       <div 
-        className={`relative w-full h-96 border-2 border-dashed rounded-lg mb-4
-          ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+        className={`relative w-full h-full ${dragActive ? 'border-4 border-blue-500 bg-blue-50': null}`}
         onDragEnter={handleDrag}
         onDragOver={handleDrag}
         onDragLeave={handleDrag}
@@ -367,10 +368,9 @@ export function ModelViewer() {
           ref={canvasRef}
           className="w-full h-full"
         />
-        
         {models.length === 0 && (
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <div className="text-lg font-medium text-gray-500">
+            <div className="text-lg font-medium text-gray-200">
               Перетащите .glb файлы сюда
             </div>
             <div className="text-sm text-gray-400 mt-2">
@@ -397,7 +397,7 @@ export function ModelViewer() {
       </div>
       
         {models.length > 0 && (
-            <div className="mt-4">
+            <div>
               <ModelsList 
                 models={models}
                 selectedModelId={selectedModelId}
@@ -408,7 +408,7 @@ export function ModelViewer() {
             </div>
         )}
         {selectedModelId && (
-            <div className="mt-4">
+            <div>
               <TransformControls 
                 model={models.find(m => m.id === selectedModelId)} 
                 onChange={handleModelChange} 
