@@ -83,8 +83,14 @@ class NodeExecutor {
             // Показываем промежуточные результаты вычислений
             const nodeRef = node.data.nodeRef;
             const operation = nodeRef.data.operation;
-            const a = inputValues.a;
-            const b = inputValues.b;
+            
+            const formatValue = (value) => {
+                if (value === undefined || value === null) return 'не задано';
+                return value;
+            };
+            
+            const left = formatValue(inputValues.left);
+            const right = formatValue(inputValues.right);
             const result = outputs.result;
 
             let opSymbol = '';
@@ -95,7 +101,7 @@ class NodeExecutor {
                 case 'divide': opSymbol = '/'; break;
             }
 
-            this.state.log('debug', `Вычисление: ${a} ${opSymbol} ${b} = ${result}`);
+            this.state.log('debug', `Вычисление: ${left} ${opSymbol} ${right} = ${result}`);
         } else if (node.data.type === 'variable') {
             // Логируем изменение переменной
             const name = node.data.nodeRef.data.name;
