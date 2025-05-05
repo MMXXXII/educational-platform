@@ -262,8 +262,8 @@ const CustomNode = ({ data, selected, id }) => {
                         <option value="notEqual">Не равно (!=)</option>
                         <option value="strictEqual">Строго равно (===)</option>
                         <option value="strictNotEqual">Строго не равно (!==)</option>
-                        <option value="greater">Больше (>)</option>
-                        <option value="greaterEqual">Больше или равно (>=)</option>
+                        <option value="greater">Больше (&gt;)</option>
+                        <option value="greaterEqual">Больше или равно (&gt;=)</option>
                         <option value="less">Меньше (&lt;)</option>
                         <option value="lessEqual">Меньше или равно (&lt;=)</option>
                     </select>
