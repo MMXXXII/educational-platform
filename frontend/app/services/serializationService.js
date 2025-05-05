@@ -43,12 +43,19 @@ const SerializationService = {
                 try {
                     // Если у нода есть ссылка на экземпляр нода, используем его метод сериализации
                     if (node.data && node.data.nodeRef) {
-                        return {
+                        const nodeObject = {
                             id: node.id,
                             type: node.data.type,
                             position: node.position || { x: 0, y: 0 },
                             data: node.data.nodeRef.serialize()
                         };
+                        
+                        // Сохраняем все редактируемые поля нода
+                        if (node.data.nodeRef.data) {
+                            nodeObject.data.data = JSON.parse(JSON.stringify(node.data.nodeRef.data));
+                        }
+                        
+                        return nodeObject;
                     } else {
                         // Иначе просто сохраняем данные
                         return {
@@ -131,11 +138,29 @@ const SerializationService = {
                     let nodeInstance;
 
                     try {
-                        // Если у нас есть фабричный метод для этого типа нода
-                        nodeInstance = createNode(serializedNode.type, {
+                        // Убедимся, что сохраненные данные полностью восстановлены
+                        const nodeData = {
                             id: serializedNode.id,
                             ...serializedNode.data
-                        });
+                        };
+                        
+                        // Важно: явно восстанавливаем состояние, сохраненное в data
+                        if (serializedNode.data.data) {
+                            Object.assign(nodeData, serializedNode.data.data);
+                        }
+                        
+                        // Если у нас есть фабричный метод для этого типа нода
+                        nodeInstance = createNode(serializedNode.type, nodeData);
+                        
+                        // Дополнительно проверяем и восстанавливаем состояние нода
+                        if (serializedNode.data.data) {
+                            // Явно применяем каждое свойство к экземпляру нода
+                            Object.entries(serializedNode.data.data).forEach(([key, value]) => {
+                                if (value !== undefined) {
+                                    nodeInstance.setProperty(key, value);
+                                }
+                            });
+                        }
                     } catch (error) {
                         console.warn(`Не удалось создать нод типа ${serializedNode.type}:`, error);
 
