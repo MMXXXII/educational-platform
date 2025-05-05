@@ -68,8 +68,9 @@ export function ModelViewer() {
       groundMaterial.majorUnitFrequency = 5
       groundMaterial.minorUnitVisibility = 0.45
       groundMaterial.gridRatio = 1
-      groundMaterial.mainColor = new BABYLON.Color3(0.2, 0.2, 0.2)
-      groundMaterial.lineColor = new BABYLON.Color3(0.4, 0.4, 0.4)
+      groundMaterial.mainColor = new BABYLON.Color3(0.4, 0.4, 0.4)
+      groundMaterial.lineColor = new BABYLON.Color3(0.8, 0.8, 0.8)
+      groundMaterial.opacity = 0.98
       ground.material = groundMaterial
       
       // Создаем слой подсветки для выделения выбранных моделей
@@ -80,11 +81,14 @@ export function ModelViewer() {
       
       // Добавляем обработчик клика для выбора модели
       scene.onPointerDown = (evt, pickResult) => {
+        console.log(pickResult);
         if (pickResult.hit && pickResult.pickedMesh) {
           const modelId = pickResult.pickedMesh.metadata?.modelId;
           if (modelId && modelId !== 'ground') {
             setSelectedModelId(modelId);
           }
+        } else {
+          setSelectedModelId(null);
         }
       };
       
