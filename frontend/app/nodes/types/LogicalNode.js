@@ -2,32 +2,35 @@ import BaseNode from '../BaseNode';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * MathNode - нод для математических операций
+ * LogicalNode - нод для логических операций сравнения
  */
-export class MathNode extends BaseNode {
+export class LogicalNode extends BaseNode {
     /**
      * @param {string} id - Идентификатор нода
      * @param {Object} data - Данные нода
-     * @param {string} data.operation - Тип операции (add, subtract, multiply, divide, modulo)
+     * @param {string} data.operation - Тип операции (equal, notEqual, strictEqual, strictNotEqual, greater, greaterEqual, less, lessEqual)
      * @param {any} data.leftValue - Значение по умолчанию для левого операнда
      * @param {any} data.rightValue - Значение по умолчанию для правого операнда
      * @param {string} data.leftType - Тип левого операнда (number, string, boolean)
      * @param {string} data.rightType - Тип правого операнда (number, string, boolean)
      */
     constructor(id = uuidv4(), data = {}) {
-        const operation = data.operation || 'add';
+        const operation = data.operation || 'equal';
         let label;
 
         switch (operation) {
-            case 'add': label = 'Сложение'; break;
-            case 'subtract': label = 'Вычитание'; break;
-            case 'multiply': label = 'Умножение'; break;
-            case 'divide': label = 'Деление'; break;
-            case 'modulo': label = 'Остаток'; break;
-            default: label = 'Мат. Операция';
+            case 'equal': label = 'Равно (==)'; break;
+            case 'notEqual': label = 'Не равно (!=)'; break;
+            case 'strictEqual': label = 'Строго равно (===)'; break;
+            case 'strictNotEqual': label = 'Строго не равно (!==)'; break;
+            case 'greater': label = 'Больше (>)'; break;
+            case 'greaterEqual': label = 'Больше или равно (>=)'; break;
+            case 'less': label = 'Меньше (<)'; break;
+            case 'lessEqual': label = 'Меньше или равно (<=)'; break;
+            default: label = 'Лог. Операция';
         }
 
-        super(id, 'math', label, {
+        super(id, 'logical', label, {
             operation,
             leftValue: data.leftValue !== undefined ? data.leftValue : 0,
             rightValue: data.rightValue !== undefined ? data.rightValue : 0,
@@ -42,7 +45,7 @@ export class MathNode extends BaseNode {
         this.addInput('right', 'Right', 'any', true);
         
         this.addOutput('flow', 'Flow', 'flow');  // Flow-выход для продолжения выполнения
-        this.addOutput('result', 'Result', 'any');
+        this.addOutput('result', 'Result', 'boolean');
     }
 
     /**
@@ -82,23 +85,32 @@ export class MathNode extends BaseNode {
         let result;
 
         switch (this.data.operation) {
-            case 'add':
-                result = left + right;
+            case 'equal':
+                result = left == right;
                 break;
-            case 'subtract':
-                result = left - right;
+            case 'notEqual':
+                result = left != right;
                 break;
-            case 'multiply':
-                result = left * right;
+            case 'strictEqual':
+                result = left === right;
                 break;
-            case 'divide':
-                result = right !== 0 ? left / right : NaN;
+            case 'strictNotEqual':
+                result = left !== right;
                 break;
-            case 'modulo':
-                result = right !== 0 ? left % right : NaN;
+            case 'greater':
+                result = left > right;
+                break;
+            case 'greaterEqual':
+                result = left >= right;
+                break;
+            case 'less':
+                result = left < right;
+                break;
+            case 'lessEqual':
+                result = left <= right;
                 break;
             default:
-                result = 0;
+                result = false;
         }
 
         // Обновляем состояние нода
@@ -120,12 +132,15 @@ export class MathNode extends BaseNode {
 
         if (key === 'operation') {
             switch (value) {
-                case 'add': this.label = 'Сложение'; break;
-                case 'subtract': this.label = 'Вычитание'; break;
-                case 'multiply': this.label = 'Умножение'; break;
-                case 'divide': this.label = 'Деление'; break;
-                case 'modulo': this.label = 'Остаток'; break;
-                default: this.label = 'Мат. Операция';
+                case 'equal': this.label = 'Равно (==)'; break;
+                case 'notEqual': this.label = 'Не равно (!=)'; break;
+                case 'strictEqual': this.label = 'Строго равно (===)'; break;
+                case 'strictNotEqual': this.label = 'Строго не равно (!==)'; break;
+                case 'greater': this.label = 'Больше (>)'; break;
+                case 'greaterEqual': this.label = 'Больше или равно (>=)'; break;
+                case 'less': this.label = 'Меньше (<)'; break;
+                case 'lessEqual': this.label = 'Меньше или равно (<=)'; break;
+                default: this.label = 'Лог. Операция';
             }
         }
 

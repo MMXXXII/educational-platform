@@ -62,6 +62,23 @@ const nodeRegistry = {
         defaultData: { operation: 'add' }
     },
     
+    logical: {
+        type: 'logical',
+        category: NODE_CATEGORIES.OPERATIONS,
+        name: 'Лог. операция',
+        description: 'Выполняет логическую операцию сравнения',
+        iconComponent: ArrowsRightLeftIcon,
+        color: {
+            bg: 'bg-blue-100 dark:bg-blue-900',
+            border: 'border-blue-500',
+            text: 'text-blue-800 dark:text-blue-200'
+        },
+        paletteColor: 'bg-blue-500 hover:bg-blue-600',
+        getActiveValue: node => node.state?.result !== undefined ? (node.state.result ? 'Истина' : 'Ложь') : null,
+        getPortColor: dataType => getPortColorForType(dataType),
+        defaultData: { operation: 'equal' }
+    },
+    
     print: {
         type: 'print',
         category: NODE_CATEGORIES.OPERATIONS,

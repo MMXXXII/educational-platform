@@ -89,8 +89,20 @@ class NodeExecutor {
                 return value;
             };
             
-            const left = formatValue(inputValues.left);
-            const right = formatValue(inputValues.right);
+            // Получаем левый операнд (из inputValues или из настроек нода)
+            let left = inputValues.left;
+            if (left === undefined && nodeRef.data && nodeRef.data.leftValue !== undefined) {
+                left = nodeRef.data.leftValue;
+            }
+            left = formatValue(left);
+            
+            // Получаем правый операнд (из inputValues или из настроек нода)
+            let right = inputValues.right;
+            if (right === undefined && nodeRef.data && nodeRef.data.rightValue !== undefined) {
+                right = nodeRef.data.rightValue;
+            }
+            right = formatValue(right);
+            
             const result = outputs.result;
 
             let opSymbol = '';
@@ -99,6 +111,7 @@ class NodeExecutor {
                 case 'subtract': opSymbol = '-'; break;
                 case 'multiply': opSymbol = '*'; break;
                 case 'divide': opSymbol = '/'; break;
+                case 'modulo': opSymbol = '%'; break;
             }
 
             this.state.log('debug', `Вычисление: ${left} ${opSymbol} ${right} = ${result}`);

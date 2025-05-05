@@ -6,6 +6,7 @@ import { VariableNode } from './types/VariableNode';
 import { PrintNode } from './types/PrintNode';
 import { LoopNode } from './types/LoopNode';
 import { MathNode } from './types/MathNode';
+import { LogicalNode } from './types/LogicalNode';
 import { IfNode } from './types/IfNode';
 
 
@@ -15,6 +16,7 @@ const registry = {
     print: PrintNode,
     loop: LoopNode,
     math: MathNode,
+    logical: LogicalNode,
     if: IfNode,
 };
 

@@ -8,21 +8,17 @@ export class IfNode extends BaseNode {
     /**
      * @param {string} id - Идентификатор нода
      * @param {Object} data - Данные нода
-     * @param {string} data.condition - Тип условия (equal, notEqual, greater, less, etc.)
      */
     constructor(id = uuidv4(), data = {}) {
-        super(id, 'if', 'Condition', {
-            condition: data.condition || 'equal',
-            ...data
-        });
+        super(id, 'if', 'Condition', data);
 
         // Добавление портов
         this.addInput('flow', '', 'flow');  // Flow-вход для управления выполнением
-        this.addInput('a', 'A', 'any', true);
-        this.addInput('b', 'B', 'any', true);
+        this.addInput('test', 'Test', 'boolean', true); // Вход для условия (test)
         
         this.addOutput('true', 'True', 'flow');
         this.addOutput('false', 'False', 'flow');
+        this.addOutput('result', 'Result', 'boolean'); // Добавляем выход для результата условия
     }
 
     /**
@@ -32,37 +28,18 @@ export class IfNode extends BaseNode {
      * @returns {Object} - Выходные значения
      */
     execute(inputValues, context) {
-        const a = inputValues.a;
-        const b = inputValues.b;
-        let result = false;
-
-        switch (this.data.condition) {
-            case 'equal':
-                result = a == b;
-                break;
-            case 'notEqual':
-                result = a != b;
-                break;
-            case 'greater':
-                result = a > b;
-                break;
-            case 'less':
-                result = a < b;
-                break;
-            case 'greaterOrEqual':
-                result = a >= b;
-                break;
-            case 'lessOrEqual':
-                result = a <= b;
-                break;
-            default:
-                result = false;
-        }
+        const test = inputValues.test;
+        // Преобразуем входное значение в логический тип
+        const result = Boolean(test);
 
         // Обновляем состояние нода
-        this.state = { a, b, result };
+        this.state = { test, result };
 
         // Возвращаем сигнал для перехода по соответствующей ветке
-        return result ? { true: true } : { false: true };
+        // и результат условия как значение для выходного порта 'result'
+        return {
+            ...(result ? { true: true } : { false: true }),
+            result: result
+        };
     }
 }
