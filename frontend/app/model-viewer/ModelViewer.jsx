@@ -17,6 +17,7 @@ export function ModelViewer() {
   const [errorMessage, setErrorMessage] = useState('')
   const [models, setModels] = useState([])
   const [selectedModelId, setSelectedModelId] = useState(null)
+  const [modelFiles, setModelFiles] = useState({}) // Хранилище для бинарных данных моделей
   
   // Генерация уникального ID
   const generateId = () => `model-${Date.now()}-${Math.floor(Math.random() * 1000)}`
@@ -165,6 +166,17 @@ export function ModelViewer() {
     });
   }, [models]);
 
+  // Сохранение бинарных данных модели
+  const saveModelFile = (modelId, fileData, fileName) => {
+    setModelFiles(prev => ({
+      ...prev,
+      [modelId]: {
+        data: fileData,
+        name: fileName
+      }
+    }));
+  };
+
   // Загрузка модели .glb
   const loadModel = async (file) => {
     try {
@@ -186,6 +198,9 @@ export function ModelViewer() {
           
           // Генерируем уникальный ID для модели
           const modelId = generateId()
+          
+          // Сохраняем бинарные данные модели
+          saveModelFile(modelId, content, fileName)
           
           // Используем встроенный метод для создания файла с правильным именем
           const engineBinaryFile = new File([content], fileName, { type: "application/octet-stream" })
@@ -296,8 +311,14 @@ export function ModelViewer() {
         }
       }
       
-      // Удаляем модель из состояния
+      // Удаляем модель из состояния и хранилища бинарных данных
       setModels(prevModels => prevModels.filter(m => m.id !== modelId));
+      setModelFiles(prev => {
+        const newModelFiles = {...prev};
+        delete newModelFiles[modelId];
+        return newModelFiles;
+      });
+      
       if (selectedModelId === modelId) {
         setSelectedModelId(null);
       }
@@ -354,6 +375,246 @@ export function ModelViewer() {
       });
     }
   }
+  
+  // ======== Сериализация/десериализация ========
+  
+  // Функция сериализации сцены в JSON
+  const serializeScene = () => {
+    try {
+      if (models.length === 0) {
+        setErrorMessage('Нет моделей для экспорта');
+        return;
+      }
+      
+      // Подготавливаем данные для сериализации
+      const serializedData = {
+        version: "1.0",
+        timestamp: Date.now(),
+        models: models.map(model => {
+          // Преобразуем Uint8Array в base64 для хранения бинарных данных
+          const modelFile = modelFiles[model.id];
+          const base64Data = arrayBufferToBase64(modelFile.data);
+          
+          return {
+            id: model.id,
+            fileName: model.fileName,
+            fileData: base64Data,
+            transform: model.transform
+          };
+        })
+      };
+      
+      // Создаем JSON строку
+      const jsonData = JSON.stringify(serializedData, null, 2);
+      
+      // Создаем и загружаем файл
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `scene-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error serializing scene:", error);
+      setErrorMessage('Ошибка при экспорте сцены');
+    }
+  };
+  
+  // Преобразование ArrayBuffer в base64
+  const arrayBufferToBase64 = (buffer) => {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
+  };
+  
+  // Преобразование base64 в ArrayBuffer
+  const base64ToArrayBuffer = (base64) => {
+    const binaryString = window.atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
+  };
+  
+  // Функция загрузки сохраненной сцены
+  const deserializeScene = (e) => {
+    try {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const jsonData = JSON.parse(event.target.result);
+          
+          // Проверяем версию формата
+          if (!jsonData.version) {
+            throw new Error("Неверный формат файла сцены");
+          }
+          
+          // Очищаем текущую сцену
+          clearScene();
+          
+          // Загружаем модели одну за другой
+          for (const modelData of jsonData.models) {
+            await loadModelFromSerialized(modelData);
+          }
+          
+        } catch (error) {
+          console.error("Error parsing scene file:", error);
+          setErrorMessage('Ошибка парсинга файла сцены');
+        }
+      };
+      reader.onerror = () => {
+        setErrorMessage('Ошибка чтения файла сцены');
+      };
+      reader.readAsText(file);
+    } catch (error) {
+      console.error("Error deserializing scene:", error);
+      setErrorMessage('Ошибка при импорте сцены');
+    }
+  };
+  
+  // Очистка сцены перед загрузкой новой
+  const clearScene = () => {
+    // Удаляем все существующие модели из сцены
+    if (sceneRef.current) {
+      models.forEach(model => {
+        const rootMesh = sceneRef.current.getMeshById(model.rootMeshId);
+        if (rootMesh) {
+          rootMesh.dispose(false, true);
+        }
+      });
+    }
+    
+    // Очищаем состояние
+    setModels([]);
+    setModelFiles({});
+    setSelectedModelId(null);
+  };
+  
+  // Загрузка модели из сериализованных данных
+  const loadModelFromSerialized = async (modelData) => {
+    try {
+      // Восстанавливаем бинарные данные из base64
+      const binaryData = base64ToArrayBuffer(modelData.fileData);
+      
+      // Создаем файл для загрузки в BabylonJS
+      const file = new File([binaryData], modelData.fileName, { type: "application/octet-stream" });
+      
+      // Сохраняем исходный ID модели
+      const originalId = modelData.id;
+      
+      // Загружаем модель через стандартную функцию
+      const reader = new FileReader();
+      
+      return new Promise((resolve, reject) => {
+        reader.onload = async (event) => {
+          try {
+            if (!event.target?.result) {
+              throw new Error("Не удалось прочитать файл");
+            }
+            
+            // Получаем содержимое файла
+            const content = new Uint8Array(event.target.result);
+            
+            // Используем оригинальный ID вместо генерации нового
+            const modelId = originalId;
+            
+            // Сохраняем бинарные данные модели
+            saveModelFile(modelId, content, modelData.fileName);
+            
+            // Создаем файл для BabylonJS
+            const engineBinaryFile = new File(
+              [content],
+              modelData.fileName,
+              { type: "application/octet-stream" }
+            );
+            
+            // Загружаем модель в сцену
+            const result = await BABYLON.SceneLoader.ImportMeshAsync(
+              "",
+              "file:",
+              engineBinaryFile,
+              sceneRef.current
+            );
+            
+            // Если модель загрузилась успешно
+            if (result.meshes.length > 0) {
+              // Создаем корневой меш с оригинальным ID
+              const rootMesh = new BABYLON.Mesh(`root-${modelId}`, sceneRef.current);
+              rootMesh.id = `root-${modelId}`;
+              
+              // Добавляем метаданные
+              rootMesh.metadata = { modelId };
+              
+              // Настраиваем иерархию мешей
+              result.meshes.forEach(mesh => {
+                if (mesh !== rootMesh) {
+                  mesh.metadata = { modelId };
+                  mesh.parent = rootMesh;
+                }
+              });
+              
+              // Создаем объект модели с оригинальными трансформациями
+              const newModel = {
+                id: modelId,
+                fileName: modelData.fileName,
+                rootMeshId: rootMesh.id,
+                transform: modelData.transform
+              };
+              
+              // Применяем трансформации
+              rootMesh.position = new BABYLON.Vector3(
+                modelData.transform.position.x,
+                modelData.transform.position.y,
+                modelData.transform.position.z
+              );
+              
+              rootMesh.rotation = new BABYLON.Vector3(
+                modelData.transform.rotation.x * (Math.PI / 180),
+                modelData.transform.rotation.y * (Math.PI / 180),
+                modelData.transform.rotation.z * (Math.PI / 180)
+              );
+              
+              rootMesh.scaling = new BABYLON.Vector3(
+                modelData.transform.scaling.x,
+                modelData.transform.scaling.y,
+                modelData.transform.scaling.z
+              );
+              
+              // Добавляем модель в список
+              setModels(prevModels => [...prevModels, newModel]);
+              
+              resolve();
+            } else {
+              reject(new Error("Не удалось загрузить модель"));
+            }
+          } catch (error) {
+            console.error("Error loading serialized model:", error);
+            reject(error);
+          }
+        };
+        
+        reader.onerror = () => {
+          reject(new Error("Ошибка чтения файла модели"));
+        };
+        
+        reader.readAsArrayBuffer(file);
+      });
+    } catch (error) {
+      console.error("Error in loadModelFromSerialized:", error);
+      setErrorMessage('Ошибка загрузки сериализованной модели');
+    }
+  };
 
   return (
     <div className="flex flex-col items-center w-full">
@@ -396,25 +657,51 @@ export function ModelViewer() {
         )}
       </div>
       
+      <div className="w-full mt-4 flex justify-between">
         {models.length > 0 && (
-            <div>
-              <ModelsList 
-                models={models}
-                selectedModelId={selectedModelId}
-                onSelectModel={setSelectedModelId}
-                onModelChange={handleModelChange}
-                onFileSelect={handleFileSelect}
-              />
-            </div>
+          <div className="flex gap-2">
+            <button 
+              onClick={serializeScene}
+              className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md"
+            >
+              Экспортировать сцену
+            </button>
+          </div>
         )}
-        {selectedModelId && (
-            <div>
-              <TransformControls 
-                model={models.find(m => m.id === selectedModelId)} 
-                onChange={handleModelChange} 
-              />
-            </div>
-        )}
+        
+        <div>
+          <label className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md cursor-pointer">
+            Импортировать сцену
+            <input 
+              type="file" 
+              accept=".json" 
+              className="hidden" 
+              onChange={deserializeScene}
+            />
+          </label>
+        </div>
+      </div>
+      
+      {models.length > 0 && (
+        <div className="w-full mt-4">
+          <ModelsList 
+            models={models}
+            selectedModelId={selectedModelId}
+            onSelectModel={setSelectedModelId}
+            onModelChange={handleModelChange}
+            onFileSelect={handleFileSelect}
+          />
+        </div>
+      )}
+      
+      {selectedModelId && (
+        <div className="w-full mt-4">
+          <TransformControls 
+            model={models.find(m => m.id === selectedModelId)} 
+            onChange={handleModelChange} 
+          />
+        </div>
+      )}
     </div>
   )
 }
