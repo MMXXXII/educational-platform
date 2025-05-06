@@ -7,7 +7,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { useEditor } from '../contexts/EditorContext';
 import useNodeExecution from '../hooks/useNodeExecution';
-import CustomNode from '../nodes/CustomNode';
+import NodeRenderer from '../nodes/NodeRenderer';
 import AnimatedDataEdge from './AnimatedDataEdge';
 import RightSidebar from './RightSidebar';
 import useDragAndDrop from '../hooks/useDragAndDrop';
@@ -72,7 +72,7 @@ const FlowCanvas = () => {
 
     // Определяем типы нодов и рёбер
     const nodeTypes = useMemo(() => ({
-        customNode: CustomNode
+        customNode: NodeRenderer
     }), []);
 
     const edgeTypes = useMemo(() => ({
