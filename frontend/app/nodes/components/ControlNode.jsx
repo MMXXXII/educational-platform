@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getNodeClassName } from '../nodeUtils';
+import { getNodeClassName } from '../../utils/nodeUtils';
 import { InputHandles, OutputHandles, NodeStateIndicator } from './NodeHandles';
 
 /**
