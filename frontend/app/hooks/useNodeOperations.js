@@ -20,18 +20,59 @@ const useNodeOperations = (
     setSelectedNodeId
 ) => {
     /**
+     * Проверяет валидность соединения
+     * @param {Object} params - Параметры соединения
+     * @param {Array} nodes - Массив узлов
+     * @returns {boolean} - Валидно ли соединение
+     */
+    const validateConnection = useCallback((params, nodes) => {
+        // Проверяем наличие узлов
+        const sourceNode = nodes.find(node => node.id === params.source);
+        const targetNode = nodes.find(node => node.id === params.target);
+        
+        if (!sourceNode || !targetNode) {
+            console.warn('Соединение отклонено: узел источника или цели не существует');
+            return false;
+        }
+        
+        // Проверяем наличие портов
+        const hasSourceHandle = !params.sourceHandle || 
+            sourceNode.data.outputs?.some(output => output.id === params.sourceHandle);
+        
+        const hasTargetHandle = !params.targetHandle || 
+            targetNode.data.inputs?.some(input => input.id === params.targetHandle);
+        
+        if (!hasSourceHandle || !hasTargetHandle) {
+            console.warn(`Соединение отклонено: порты не найдены - источник: ${params.sourceHandle}, цель: ${params.targetHandle}`);
+            return false;
+        }
+        
+        return true;
+    }, []);
+
+    /**
      * Обработчик добавления новой связи
      */
     const onConnect = useCallback((params) => {
-        setEdges((eds) => addEdge({
-            ...params,
-            id: `edge-${uuidv4()}`,
-            type: 'animatedEdge',
-            animated: params.sourceHandle?.includes('flow') || params.targetHandle?.includes('flow'),
-            style: { stroke: '#555', strokeWidth: 2 }
-        }, eds));
-        setIsModified(true);
-    }, [setEdges, setIsModified]);
+        setNodes(nodes => {
+            // Проверяем валидность соединения
+            if (!validateConnection(params, nodes)) {
+                return nodes;
+            }
+            
+            // Если соединение валидно, добавляем его
+            setEdges((eds) => addEdge({
+                ...params,
+                id: `edge-${uuidv4()}`,
+                type: 'animatedEdge',
+                animated: params.sourceHandle?.includes('flow') || params.targetHandle?.includes('flow'),
+                style: { stroke: '#555', strokeWidth: 2 }
+            }, eds));
+            
+            setIsModified(true);
+            return nodes;
+        });
+    }, [setEdges, setIsModified, validateConnection, setNodes]);
 
     /**
      * Обработчик выбора нода
@@ -124,10 +165,50 @@ const useNodeOperations = (
         return () => clearInterval(interval);
     }, [setNodes]);
 
+    /**
+     * Валидация существующих соединений для устранения ошибок после загрузки проекта
+     */
+    const validateExistingEdges = useCallback(() => {
+        setNodes(nodes => {
+            if (nodes.length === 0) return nodes;
+            
+            setEdges(edges => {
+                // Фильтруем только валидные соединения
+                return edges.filter(edge => {
+                    const sourceNode = nodes.find(node => node.id === edge.source);
+                    const targetNode = nodes.find(node => node.id === edge.target);
+                    
+                    if (!sourceNode || !targetNode) return false;
+                    
+                    const hasSourceHandle = !edge.sourceHandle || 
+                        sourceNode.data.outputs?.some(output => output.id === edge.sourceHandle);
+                    
+                    const hasTargetHandle = !edge.targetHandle || 
+                        targetNode.data.inputs?.some(input => input.id === edge.targetHandle);
+                    
+                    return hasSourceHandle && hasTargetHandle;
+                });
+            });
+            
+            return nodes;
+        });
+    }, [setEdges, setNodes]);
+
+    // Запускаем валидацию соединений при инициализации хука
+    useEffect(() => {
+        // Даем время для инициализации узлов
+        const timer = setTimeout(() => {
+            validateExistingEdges();
+        }, 500);
+        
+        return () => clearTimeout(timer);
+    }, [validateExistingEdges]);
+
     return {
         onConnect,
         onSelectionChange,
-        handleNodesChange
+        handleNodesChange,
+        validateExistingEdges
     };
 };
 

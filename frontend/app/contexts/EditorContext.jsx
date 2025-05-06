@@ -23,7 +23,7 @@ export const EditorProvider = ({ children }) => {
     const [isBrowser, setIsBrowser] = useState(false);
     const [saveError, setSaveError] = useState(null);
     const [loadError, setLoadError] = useState(null);
-    
+
     // Состояние для автоматического масштабирования после загрузки проекта
     const [needsFitView, setNeedsFitView] = useState(false);
 
@@ -62,7 +62,7 @@ export const EditorProvider = ({ children }) => {
      */
     const saveProject = useCallback((name = null) => {
         setSaveError(null);
-        
+
         if (!isBrowser) {
             const error = 'Невозможно сохранить проект: localStorage недоступен';
             console.warn(error);
@@ -83,7 +83,7 @@ export const EditorProvider = ({ children }) => {
             // Сериализуем текущее состояние графа
             const serializedGraph = SerializationService.serializeGraph(nodes, edges);
             console.log('Сериализованный граф:', serializedGraph);
-            
+
             // Сохраняем в localStorage
             const result = SerializationService.saveToLocalStorage(projectToSave, serializedGraph);
 
@@ -118,7 +118,7 @@ export const EditorProvider = ({ children }) => {
      */
     const createNewProject = useCallback((name) => {
         setSaveError(null);
-        
+
         // Проверка на пустое имя проекта
         if (!name || name.trim() === '') {
             const error = 'Имя проекта не может быть пустым';
@@ -132,7 +132,7 @@ export const EditorProvider = ({ children }) => {
             const shouldSave = window.confirm(
                 `Проект "${projectName}" был изменен. Сохранить изменения перед созданием нового проекта?`
             );
-            
+
             if (shouldSave) {
                 // Используем функцию из рефа для избежания циклической зависимости
                 functionRef.current.saveProject(projectName);
@@ -148,14 +148,14 @@ export const EditorProvider = ({ children }) => {
             setSelectedNodeId(null);
             setSaveError(null);
             setLoadError(null);
-            
+
             // Создаем и сразу сохраняем пустой проект в localStorage
             const emptyProject = SerializationService.serializeGraph([], []);
             SerializationService.saveToLocalStorage(name, emptyProject);
-            
+
             // Обновляем список проектов после создания нового
             refreshProjectsList();
-            
+
             console.log(`Создан новый проект: ${name}`);
             return true;
         } catch (error) {
@@ -170,13 +170,13 @@ export const EditorProvider = ({ children }) => {
     functionRef.current.createNewProject = createNewProject;
 
     /**
-     * Загружает проект
-     * @param {string} name - Имя проекта
-     * @returns {boolean} - Успешно ли загружен проект
-     */
+ * Загружает проект
+ * @param {string} name - Имя проекта
+ * @returns {boolean} - Успешно ли загружен проект
+ */
     const loadProject = useCallback((name) => {
         setLoadError(null);
-        
+
         if (!isBrowser) {
             const error = 'Невозможно загрузить проект: localStorage недоступен';
             console.warn(error);
@@ -196,7 +196,7 @@ export const EditorProvider = ({ children }) => {
             const shouldSave = window.confirm(
                 `Проект "${projectName}" был изменен. Сохранить изменения перед загрузкой другого проекта?`
             );
-            
+
             if (shouldSave) {
                 functionRef.current.saveProject(projectName);
             }
@@ -220,20 +220,27 @@ export const EditorProvider = ({ children }) => {
                 const { nodes: deserializedNodes, edges: deserializedEdges } =
                     SerializationService.deserializeGraph(serializedGraph);
 
-                // Обновляем состояние графа
-                setNodes(deserializedNodes);
-                setEdges(deserializedEdges);
-                setProjectName(name);
-                setIsModified(false);
-                setSelectedNodeId(null);
-                
-                // Устанавливаем флаг для автоматического масштабирования
-                setNeedsFitView(true);
+                // Очищаем текущее состояние перед загрузкой нового
+                setNodes([]);
+                setEdges([]);
 
-                console.log(`Проект "${name}" успешно загружен`, {
-                    nodes: deserializedNodes,
-                    edges: deserializedEdges
-                });
+                // Устанавливаем таймаут для обеспечения корректной очистки состояния
+                setTimeout(() => {
+                    // Обновляем состояние графа
+                    setNodes(deserializedNodes);
+                    setEdges(deserializedEdges);
+                    setProjectName(name);
+                    setIsModified(false);
+                    setSelectedNodeId(null);
+
+                    // Устанавливаем флаг для автоматического масштабирования
+                    setNeedsFitView(true);
+
+                    console.log(`Проект "${name}" успешно загружен`, {
+                        nodes: deserializedNodes,
+                        edges: deserializedEdges
+                    });
+                }, 100);
 
                 return true;
             } catch (error) {
@@ -246,7 +253,7 @@ export const EditorProvider = ({ children }) => {
             setLoadError(`Ошибка при загрузке: ${error.message}`);
             return false;
         }
-    }, [setNodes, setEdges, isBrowser, isModified, projectName]);
+    }, [setNodes, setEdges, isBrowser, isModified, projectName, setNeedsFitView, setProjectName, setIsModified, setSelectedNodeId, setLoadError]);
 
     // Сохраняем функцию в реф
     functionRef.current.loadProject = loadProject;
@@ -272,7 +279,7 @@ export const EditorProvider = ({ children }) => {
 
             if (result) {
                 console.log(`Проект "${name}" успешно удален`);
-                
+
                 // Обновляем список проектов
                 refreshProjectsList();
 
@@ -280,7 +287,7 @@ export const EditorProvider = ({ children }) => {
                 if (name === projectName) {
                     functionRef.current.createNewProject('');
                 }
-                
+
                 return true;
             } else {
                 console.error(`Не удалось удалить проект "${name}"`);
@@ -331,7 +338,7 @@ export const EditorProvider = ({ children }) => {
                 const shouldSave = window.confirm(
                     `Проект "${projectName}" был изменен. Сохранить изменения перед импортом?`
                 );
-                
+
                 if (shouldSave) {
                     functionRef.current.saveProject(projectName);
                 }
@@ -348,7 +355,7 @@ export const EditorProvider = ({ children }) => {
             setProjectName(newProjectName);
             setIsModified(true);
             setSelectedNodeId(null);
-            
+
             // Устанавливаем флаг для автоматического масштабирования
             setNeedsFitView(true);
 

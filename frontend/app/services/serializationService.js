@@ -213,35 +213,57 @@ const SerializationService = {
                 }
             });
 
-            // Десериализуем связи
-            const deserializedEdges = graph.edges.map(edge => {
-                try {
-                    return {
-                        id: edge.id,
-                        source: edge.source,
-                        target: edge.target,
-                        sourceHandle: edge.sourceHandle,
-                        targetHandle: edge.targetHandle,
-                        // Добавляем анимацию для связей с потоками
-                        animated: edge.animated || edge.sourceHandle?.includes('flow') || edge.targetHandle?.includes('flow'),
-                        style: edge.style || { stroke: '#555', strokeWidth: 2 },
-                        type: 'animatedEdge'
-                    };
-                } catch (error) {
-                    console.error(`Ошибка при десериализации связи ${edge.id}:`, error);
-                    
-                    // Возвращаем минимальную версию связи
-                    return {
-                        id: edge.id,
-                        source: edge.source,
-                        target: edge.target,
-                        sourceHandle: edge.sourceHandle,
-                        targetHandle: edge.targetHandle,
-                        style: { stroke: '#555', strokeWidth: 2 },
-                        type: 'animatedEdge'
-                    };
-                }
+            // Десериализуем связи с проверкой валидности портов
+            const nodeById = {};
+            deserializedNodes.forEach(node => {
+                nodeById[node.id] = node;
             });
+
+            // Фильтруем ребра, проверяя наличие портов
+            const deserializedEdges = graph.edges
+                .filter(edge => {
+                    // Проверяем наличие узлов
+                    const sourceNode = nodeById[edge.source];
+                    const targetNode = nodeById[edge.target];
+                    
+                    if (!sourceNode || !targetNode) {
+                        console.warn(`Пропуск ребра: узел источника или цели не существует: ${edge.id}`);
+                        return false;
+                    }
+                    
+                    // Проверяем наличие портов
+                    const hasSourceHandle = !edge.sourceHandle || 
+                        sourceNode.data.outputs?.some(output => output.id === edge.sourceHandle);
+                    
+                    const hasTargetHandle = !edge.targetHandle || 
+                        targetNode.data.inputs?.some(input => input.id === edge.targetHandle);
+                    
+                    if (!hasSourceHandle || !hasTargetHandle) {
+                        console.warn(`Пропуск ребра: порты не найдены: ${edge.id}, источник: ${edge.sourceHandle}, цель: ${edge.targetHandle}`);
+                        return false;
+                    }
+                    
+                    return true;
+                })
+                .map(edge => {
+                    try {
+                        return {
+                            id: edge.id,
+                            source: edge.source,
+                            target: edge.target,
+                            sourceHandle: edge.sourceHandle,
+                            targetHandle: edge.targetHandle,
+                            // Добавляем анимацию для связей с потоками
+                            animated: edge.animated || edge.sourceHandle?.includes('flow') || edge.targetHandle?.includes('flow'),
+                            style: edge.style || { stroke: '#555', strokeWidth: 2 },
+                            type: 'animatedEdge'
+                        };
+                    } catch (error) {
+                        console.error(`Ошибка при десериализации связи ${edge.id}:`, error);
+                        return null;
+                    }
+                })
+                .filter(Boolean); // Отфильтровываем null
 
             return {
                 nodes: deserializedNodes,

@@ -59,7 +59,7 @@ const FlowCanvas = () => {
     );
 
     // Хук для операций с нодами
-    const { onConnect, onSelectionChange, handleNodesChange } = useNodeOperations(
+    const { onConnect, onSelectionChange, handleNodesChange, validateExistingEdges } = useNodeOperations(
         setEdges,
         setNodes,
         onNodesChange,
@@ -68,7 +68,7 @@ const FlowCanvas = () => {
     );
 
     // Рёбра с информацией о потоках данных
-    const edgesWithData = useEdgeDataFlow(edges, dataFlows);
+    const edgesWithData = useEdgeDataFlow(edges, dataFlows, nodes);
 
     // Определяем типы нодов и рёбер
     const nodeTypes = useMemo(() => ({
@@ -84,7 +84,12 @@ const FlowCanvas = () => {
      */
     const onInit = useCallback((instance) => {
         reactFlowInstance.current = instance;
-    }, []);
+        
+        // Запускаем валидацию соединений после инициализации
+        setTimeout(() => {
+            validateExistingEdges();
+        }, 500);
+    }, [validateExistingEdges]);
 
     // Эффект для автоматического масштабирования после загрузки проекта
     useEffect(() => {
@@ -99,9 +104,12 @@ const FlowCanvas = () => {
                     maxZoom: 1.5
                 });
                 setNeedsFitView(false); // Сбрасываем флаг
+                
+                // Запускаем валидацию соединений после масштабирования
+                validateExistingEdges();
             }, 100);
         }
-    }, [needsFitView, setNeedsFitView]);
+    }, [needsFitView, setNeedsFitView, validateExistingEdges]);
 
     return (
         <div className="flex flex-1 h-full">
