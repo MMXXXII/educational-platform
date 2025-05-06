@@ -23,6 +23,9 @@ export const EditorProvider = ({ children }) => {
     const [isBrowser, setIsBrowser] = useState(false);
     const [saveError, setSaveError] = useState(null);
     const [loadError, setLoadError] = useState(null);
+    
+    // Состояние для автоматического масштабирования после загрузки проекта
+    const [needsFitView, setNeedsFitView] = useState(false);
 
     // Реф для хранения функций, чтобы избежать циклических зависимостей
     const functionRef = useRef({});
@@ -223,6 +226,9 @@ export const EditorProvider = ({ children }) => {
                 setProjectName(name);
                 setIsModified(false);
                 setSelectedNodeId(null);
+                
+                // Устанавливаем флаг для автоматического масштабирования
+                setNeedsFitView(true);
 
                 console.log(`Проект "${name}" успешно загружен`, {
                     nodes: deserializedNodes,
@@ -342,6 +348,9 @@ export const EditorProvider = ({ children }) => {
             setProjectName(newProjectName);
             setIsModified(true);
             setSelectedNodeId(null);
+            
+            // Устанавливаем флаг для автоматического масштабирования
+            setNeedsFitView(true);
 
             return true;
         } catch (error) {
@@ -362,6 +371,7 @@ export const EditorProvider = ({ children }) => {
         isBrowser,
         saveError,
         loadError,
+        needsFitView,
 
         // Методы обновления состояния
         setNodes,
@@ -371,6 +381,7 @@ export const EditorProvider = ({ children }) => {
         setProjectName,
         setIsModified,
         setSelectedNodeId,
+        setNeedsFitView,
 
         // Методы работы с проектами
         createNewProject,

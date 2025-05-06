@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useRef, useMemo, useEffect } from 'react';
 import ReactFlow, {
     Background,
     Controls,
@@ -30,7 +30,9 @@ const FlowCanvas = () => {
         onEdgesChange,
         setIsModified,
         setSelectedNodeId,
-        selectedNodeId
+        selectedNodeId,
+        needsFitView,
+        setNeedsFitView
     } = useEditor();
 
     // Ссылки на экземпляры ReactFlow
@@ -83,6 +85,23 @@ const FlowCanvas = () => {
     const onInit = useCallback((instance) => {
         reactFlowInstance.current = instance;
     }, []);
+
+    // Эффект для автоматического масштабирования после загрузки проекта
+    useEffect(() => {
+        // Если флаг установлен и экземпляр ReactFlow существует
+        if (needsFitView && reactFlowInstance.current) {
+            // Даем немного времени, чтобы DOM обновился после рендеринга загруженных нодов
+            setTimeout(() => {
+                reactFlowInstance.current.fitView({ 
+                    padding: 0.2,
+                    includeHiddenNodes: false,
+                    minZoom: 0.5,
+                    maxZoom: 1.5
+                });
+                setNeedsFitView(false); // Сбрасываем флаг
+            }, 100);
+        }
+    }, [needsFitView, setNeedsFitView]);
 
     return (
         <div className="flex flex-1 h-full">
