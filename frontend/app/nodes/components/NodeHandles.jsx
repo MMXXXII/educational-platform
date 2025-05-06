@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Handle, Position } from 'reactflow';
-import { getPortColor, getInputPortPosition, getOutputPortPosition, formatDisplayValue } from '../nodeUtils';
+import { getPortColor, getInputPortPosition, getOutputPortPosition, formatDisplayValue } from '../../utils/nodeUtils';
 
 /**
  * Компонент для отображения входных портов нода
