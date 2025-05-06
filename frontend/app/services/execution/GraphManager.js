@@ -14,6 +14,7 @@ class GraphManager {
         this.edges = edges;
         this.startNodeIds = [];
         this.executionOrder = [];
+        this.dependencyGraph = {};
     }
 
     /**
@@ -26,10 +27,11 @@ class GraphManager {
         this.edges = edges;
         this.startNodeIds = [];
         this.executionOrder = [];
+        this.dependencyGraph = {};
     }
 
     /**
-     * Инициализирует граф, находит стартовые ноды
+     * Инициализирует граф, находит стартовые ноды и строит зависимости
      * @returns {boolean} - Успешно ли инициализирован граф
      */
     initialize() {
@@ -44,10 +46,66 @@ class GraphManager {
             return false;
         }
 
+        // Строим граф зависимостей между нодами
+        this.buildDependencyGraph();
+
         // Определяем порядок выполнения
         this.executionOrder = this.determineExecutionOrder();
 
         return true;
+    }
+
+    /**
+     * Строит граф зависимостей на основе соединений данных
+     */
+    buildDependencyGraph() {
+        this.dependencyGraph = {};
+        
+        // Инициализируем граф для каждого нода
+        this.nodes.forEach(node => {
+            this.dependencyGraph[node.id] = {
+                inputs: [], // ID нодов, от которых зависит текущий нод
+                outputs: [] // ID нодов, которые зависят от текущего нода
+            };
+        });
+        
+        // Анализируем все ребра
+        this.edges.forEach(edge => {
+            const sourceId = edge.source;
+            const targetId = edge.target;
+            
+            if (!this.dependencyGraph[sourceId] || !this.dependencyGraph[targetId]) {
+                return; // Пропускаем некорректные ребра
+            }
+            
+            // Определяем тип соединения (flow или data)
+            const isFlowConnection = 
+                (edge.sourceHandle && edge.sourceHandle.includes('flow')) || 
+                (edge.targetHandle && edge.targetHandle.includes('flow'));
+            
+            // Добавляем зависимость, приоритизируя соединения flow
+            if (!this.dependencyGraph[targetId].inputs.includes(sourceId)) {
+                this.dependencyGraph[targetId].inputs.push(sourceId);
+                
+                // Если это flow-соединение, помещаем его в начало списка
+                if (isFlowConnection && this.dependencyGraph[targetId].inputs.length > 1) {
+                    const idx = this.dependencyGraph[targetId].inputs.indexOf(sourceId);
+                    this.dependencyGraph[targetId].inputs.splice(idx, 1);
+                    this.dependencyGraph[targetId].inputs.unshift(sourceId);
+                }
+            }
+            
+            if (!this.dependencyGraph[sourceId].outputs.includes(targetId)) {
+                this.dependencyGraph[sourceId].outputs.push(targetId);
+                
+                // Если это flow-соединение, помещаем его в начало списка
+                if (isFlowConnection && this.dependencyGraph[sourceId].outputs.length > 1) {
+                    const idx = this.dependencyGraph[sourceId].outputs.indexOf(targetId);
+                    this.dependencyGraph[sourceId].outputs.splice(idx, 1);
+                    this.dependencyGraph[sourceId].outputs.unshift(targetId);
+                }
+            }
+        });
     }
 
     /**
@@ -92,7 +150,7 @@ class GraphManager {
             inDegree[node.id] = 0;
         });
 
-        // Строим зависимости
+        // Строим зависимости на основе связей данных
         this.edges.forEach(edge => {
             // source -> target означает, что target зависит от source
             if (graph[edge.source]) {
@@ -167,8 +225,8 @@ class GraphManager {
             return null;
         }
 
-        // 1. Первый приоритет: проверяем управляющие выходы (flow)
-        const flowOutputs = ['next', 'true', 'false', 'body'];
+        // 1. Первый приоритет: если есть явные управляющие выходы (flow), используем их
+        const flowOutputs = ['next', 'true', 'false', 'body', 'flow'];
         const activeOutput = flowOutputs.find(output => outputs[output]);
 
         if (activeOutput) {
@@ -185,41 +243,89 @@ class GraphManager {
             }
         }
 
-        // 2. Второй приоритет: следуем зависимостям данных
-        // Находим все выходные порты нода
-        const outputPorts = currentNode.data.outputs
-            .filter(output => !flowOutputs.includes(output.name))
-            .map(output => `output-${output.name}`);
-
-        // Находим все связи от этих портов
-        const dataEdges = this.edges.filter(edge =>
-            edge.source === currentNode.id &&
-            outputPorts.includes(edge.sourceHandle)
-        );
-
-        // Проверяем, есть ли ноды, которые зависят только от этого нода
-        for (const edge of dataEdges) {
-            const targetNode = this.getNodeById(edge.target);
-
-            if (targetNode && !visitedNodes.has(targetNode.id)) {
-                // Проверяем, готовы ли все входные порты этого нода
-                const allInputsReady = this.areAllInputsReady(targetNode, visitedNodes, inputCache);
-
-                if (allInputsReady) {
-                    return targetNode.id;
+        // 2. Проверяем зависимости данных и находим следующий нод,
+        // который готов к выполнению и получает данные от текущего нода
+        
+        if (currentNode.id in this.dependencyGraph) {
+            // Сначала проверяем непосредственных получателей данных от текущего нода
+            const directDataReceivers = this.dependencyGraph[currentNode.id].outputs;
+            
+            for (const targetId of directDataReceivers) {
+                const targetNode = this.getNodeById(targetId);
+                
+                // Если узел уже был посещен, пропускаем его
+                if (!targetNode || visitedNodes.has(targetId)) {
+                    continue;
+                }
+                
+                // Проверяем готовность этого нода к выполнению
+                if (this.isNodeReadyForExecution(targetNode, visitedNodes, inputCache)) {
+                    return targetId;
                 }
             }
         }
 
-        // 3. Третий приоритет: выбираем любой готовый узел, который не был посещен
-        for (const node of this.nodes) {
-            if (!visitedNodes.has(node.id) && this.areAllInputsReady(node, visitedNodes, inputCache)) {
-                return node.id;
+        // 3. Если еще не нашли следующий нод, выбираем любой готовый нод,
+        // который еще не был посещен и следует логическому порядку выполнения
+        const remainingOrder = this.executionOrder.filter(nodeId => !visitedNodes.has(nodeId));
+        
+        for (const nodeId of remainingOrder) {
+            const node = this.getNodeById(nodeId);
+            if (node && this.isNodeReadyForExecution(node, visitedNodes, inputCache)) {
+                return nodeId;
             }
         }
 
         // Если не найден следующий нод, выполнение завершено
         return null;
+    }
+
+    /**
+     * Проверяет, готов ли нод к выполнению, выполняя полный анализ зависимостей
+     * @param {Object} node - Узел для проверки
+     * @param {Set} visitedNodes - Множество посещенных нодов
+     * @param {Object} inputCache - Кэш входных значений
+     * @returns {boolean} - Готов ли нод к выполнению
+     */
+    isNodeReadyForExecution(node, visitedNodes, inputCache) {
+        // Проверяем, что все обязательные входы готовы
+        if (!this.areAllInputsReady(node, visitedNodes, inputCache)) {
+            return false;
+        }
+        
+        // Дополнительно проверяем, что все ноды-предшественники (по зависимостям данных) выполнены
+        if (node.id in this.dependencyGraph) {
+            const dependencies = this.dependencyGraph[node.id].inputs;
+            
+            // Для всех зависимостей
+            for (const depId of dependencies) {
+                // Проверяем, был ли уже выполнен этот нод-зависимость
+                if (!visitedNodes.has(depId)) {
+                    return false;
+                }
+                
+                // Проверяем наличие данных от этого нода в кэше ввода
+                const edges = this.edges.filter(edge => 
+                    edge.source === depId && 
+                    edge.target === node.id
+                );
+                
+                for (const edge of edges) {
+                    // Проверяем только неуправляющие соединения (не flow)
+                    if (!edge.sourceHandle.includes('flow') && !edge.targetHandle.includes('flow')) {
+                        const outputName = edge.sourceHandle.replace('output-', '');
+                        const cacheKey = `${depId}:${outputName}`;
+                        
+                        // Если необходимые данные отсутствуют в кэше, нод не готов
+                        if (inputCache[cacheKey] === undefined) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return true;
     }
 
     /**
@@ -246,30 +352,38 @@ class GraphManager {
                 );
 
                 if (incomingEdges.length === 0) {
-                    // Обязательный вход без связи
-                    return false;
-                }
+                    // Обязательный вход без связи - проверяем, есть ли у нода значение по умолчанию
+                    const inputName = input.name;
+                    const hasDefaultValue = node.data.nodeRef && 
+                                          node.data.nodeRef.data && 
+                                          (node.data.nodeRef.data[inputName] !== undefined ||
+                                           node.data.nodeRef.data[`${inputName}Value`] !== undefined);
+                    
+                    if (!hasDefaultValue) {
+                        return false;
+                    }
+                } else {
+                    // Проверяем, все ли источники были выполнены и есть ли значения в кэше
+                    let hasValue = false;
 
-                // Проверяем, все ли источники были выполнены и есть ли значения в кэше
-                let hasValue = false;
+                    for (const edge of incomingEdges) {
+                        const sourceNodeId = edge.source;
 
-                for (const edge of incomingEdges) {
-                    const sourceNodeId = edge.source;
+                        if (visitedNodes.has(sourceNodeId)) {
+                            // ВАЖНО: учитываем префикс output- в sourceHandle
+                            const outputName = edge.sourceHandle.replace('output-', '');
+                            const cacheKey = `${sourceNodeId}:${outputName}`;
 
-                    if (visitedNodes.has(sourceNodeId)) {
-                        // ВАЖНО: учитываем префикс output- в sourceHandle
-                        const outputName = edge.sourceHandle.replace('output-', '');
-                        const cacheKey = `${sourceNodeId}:${outputName}`;
-
-                        if (inputCache[cacheKey] !== undefined) {
-                            hasValue = true;
-                            break;
+                            if (inputCache[cacheKey] !== undefined) {
+                                hasValue = true;
+                                break;
+                            }
                         }
                     }
-                }
 
-                if (!hasValue) {
-                    return false;
+                    if (!hasValue) {
+                        return false;
+                    }
                 }
             }
         }
