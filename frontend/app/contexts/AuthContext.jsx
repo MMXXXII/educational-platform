@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
 
             // Получение данных пользователя
             const userData = await userService.getCurrentUser();
-            setUser(userData);
+            setUser({ ...userData });
 
             return userData;
         } catch (error) {
@@ -52,10 +52,14 @@ export function AuthProvider({ children }) {
     };
 
     // Функция выхода из системы
-    const logout = () => {
-        removeTokens();
-        setUser(null);
-        navigate('/');
+    const logout = async () => {
+        try {
+            removeTokens();
+            setUser(null);
+            navigate('/');
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
     };
 
     // Проверка прав пользователя

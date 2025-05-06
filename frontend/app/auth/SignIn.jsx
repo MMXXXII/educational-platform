@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
-import { authService, userService } from '../api';
-import { setTokens } from '../utils/auth';
+import { useAuth } from '../contexts/AuthContext';
 import { LockClosedIcon } from '@heroicons/react/24/outline';
 
 function Copyright() {
@@ -20,6 +19,7 @@ export function SignIn() {
     const [error, setError] = useState('');
     const navigate = useNavigate();
     const location = useLocation();
+    const { login } = useAuth();
 
     const from = location.state?.from?.pathname || '/';
 
@@ -29,16 +29,10 @@ export function SignIn() {
         const data = new FormData(event.currentTarget);
 
         try {
-            // Authentication
-            const authData = await authService.login(
+            await login(
                 data.get('email'),
                 data.get('password')
             );
-            setTokens(authData.access_token, authData.refresh_token);
-
-            // Get user data
-            const userData = await userService.getCurrentUser();
-            localStorage.setItem('user', JSON.stringify(userData));
 
             navigate(from, { replace: true });
         } catch (error) {
