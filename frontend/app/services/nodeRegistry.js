@@ -39,6 +39,7 @@ const nodeRegistry = {
             text: 'text-green-800 dark:text-green-200'
         },
         paletteColor: 'bg-green-500 hover:bg-green-600',
+        hexColor: '#22c55e', // green-500
         getActiveValue: node => node.state?.currentValue,
         getPortColor: dataType => getPortColorForType(dataType),
         defaultData: { name: 'x', initialValue: '', variableType: 'any' }
@@ -57,6 +58,7 @@ const nodeRegistry = {
             text: 'text-purple-800 dark:text-purple-200'
         },
         paletteColor: 'bg-purple-500 hover:bg-purple-600',
+        hexColor: '#a855f7', // purple-500
         getActiveValue: node => node.state?.result,
         getPortColor: dataType => getPortColorForType(dataType),
         defaultData: { operation: 'add' }
@@ -74,6 +76,7 @@ const nodeRegistry = {
             text: 'text-blue-800 dark:text-blue-200'
         },
         paletteColor: 'bg-blue-500 hover:bg-blue-600',
+        hexColor: '#3b82f6', // blue-500
         getActiveValue: node => node.state?.result !== undefined ? (node.state.result ? 'Истина' : 'Ложь') : null,
         getPortColor: dataType => getPortColorForType(dataType),
         defaultData: { operation: 'equal' }
@@ -91,6 +94,7 @@ const nodeRegistry = {
             text: 'text-yellow-800 dark:text-yellow-200'
         },
         paletteColor: 'bg-yellow-500 hover:bg-yellow-600',
+        hexColor: '#eab308', // yellow-500
         getActiveValue: node => 'Выполнен',
         getPortColor: dataType => getPortColorForType(dataType)
     },
@@ -108,6 +112,7 @@ const nodeRegistry = {
             text: 'text-indigo-800 dark:text-indigo-200'
         },
         paletteColor: 'bg-indigo-500 hover:bg-indigo-600',
+        hexColor: '#6366f1', // indigo-500
         getActiveValue: node => node.state?.result !== undefined ? (node.state.result ? 'Истина' : 'Ложь') : null,
         getPortColor: dataType => getPortColorForType(dataType)
     },
@@ -124,6 +129,7 @@ const nodeRegistry = {
             text: 'text-red-800 dark:text-red-200'
         },
         paletteColor: 'bg-red-500 hover:bg-red-600',
+        hexColor: '#ef4444', // red-500
         getActiveValue: node => node.state?.currentIteration !== undefined ?
             `Итерация ${node.state.currentIteration + 1}/${node.state.count}` : null,
         getPortColor: dataType => getPortColorForType(dataType)
@@ -148,6 +154,15 @@ export function getPortColorForType(dataType) {
         default:
             return 'bg-gray-500';
     }
+}
+
+/**
+ * Получает HEX-цвет нода по его типу
+ * @param {string} nodeType - Тип нода
+ * @returns {string} - HEX-цвет для мини-карты
+ */
+export function getNodeHexColor(nodeType) {
+    return nodeRegistry[nodeType]?.hexColor || '#9ca3af';
 }
 
 /**

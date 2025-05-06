@@ -13,6 +13,7 @@ import RightSidebar from './RightSidebar';
 import useDragAndDrop from '../hooks/useDragAndDrop';
 import useNodeOperations from '../hooks/useNodeOperations';
 import useEdgeDataFlow from '../hooks/useEdgeDataFlow';
+import { getNodeHexColor } from '../services/nodeRegistry'; // Импортируем функцию
 import './flowStyles.css';
 import './reactFlowTheme.css';
 
@@ -172,16 +173,8 @@ const FlowMiniMap = () => {
                 return '#555';
             }}
             nodeColor={(n) => {
-                switch (n.data.type) {
-                    case 'variable': return '#3b82f6';
-                    case 'number':
-                    case 'string': return '#10b981';
-                    case 'math': return '#8b5cf6';
-                    case 'print': return '#f59e0b';
-                    case 'loop': return '#ef4444';
-                    case 'if': return '#6366f1';
-                    default: return '#9ca3af';
-                }
+                // Используем функцию getNodeHexColor для получения цвета из реестра нодов
+                return getNodeHexColor(n.data.type);
             }}
         />
     );
