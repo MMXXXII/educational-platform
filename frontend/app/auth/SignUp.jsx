@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { userService } from '../api';
+import { useAuth } from '../contexts/AuthContext';
 import { LockClosedIcon } from '@heroicons/react/24/outline';
 
 function Copyright() {
@@ -17,23 +18,33 @@ function Copyright() {
 
 export function SignUp() {
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+    const { login } = useAuth();
 
     const handleSubmit = async (event) => {
         event.preventDefault();
         setError('');
+        setIsLoading(true);
         const data = new FormData(event.currentTarget);
+
+        const username = data.get('username');
+        const email = data.get('email');
+        const password = data.get('password');
 
         try {
             await userService.createUser({
-                username: data.get('username'),
-                email: data.get('email'),
-                password: data.get('password')
+                username: username,
+                email: email,
+                password: password
             });
-            navigate('/sign-in');
+            await login(username, password);
+            navigate('/');
         } catch (error) {
             console.error('Error:', error);
             setError(error.response?.data?.detail || 'Registration failed');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -121,8 +132,9 @@ export function SignUp() {
                         <button
                             type="submit"
                             className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 mt-3 mb-2"
+                            disabled={isLoading}
                         >
-                            Зарегистрироваться
+                            {isLoading ? 'Регистрация...' : 'Зарегистрироваться'}
                         </button>
 
                         {/* Login Link */}
