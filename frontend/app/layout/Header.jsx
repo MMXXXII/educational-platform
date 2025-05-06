@@ -28,7 +28,7 @@ export function Header() {
                         onContextMenu={preventContextMenu}
                     >
                         <img
-                            src="logo.png"
+                            src="/logo.png"
                             alt="EduPlatform Logo"
                             className="h-12 sm:h-15 w-auto select-none"
                             style={{

@@ -16,7 +16,7 @@ export function Footer() {
                         </Link>
                     </div>
                     <div className="text-center text-gray-400 text-sm">
-                        Copyright © EduPlatform {new Date().getFullYear()}
+                        Copyright © {new Date().getFullYear()} EduPlatform
                     </div>
                 </div>
             </div>

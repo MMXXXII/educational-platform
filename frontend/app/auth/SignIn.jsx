@@ -8,10 +8,10 @@ function Copyright() {
     return (
         <p className="text-sm text-gray-400 mt-1">
             {'Copyright © '}
-            <a className="text-gray-400 hover:text-gray-300">
-                EduPlatform&nbsp;
-            </a>
             {new Date().getFullYear()}
+            <a className="text-gray-400 hover:text-gray-300">
+                &nbsp;EduPlatform
+            </a>
         </p>
     );
 }
