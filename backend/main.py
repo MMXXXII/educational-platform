@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import CORS_ORIGINS, THUMBNAIL_DIR
-from app.core.database import create_tables
+from app.core.create_tables import create_tables
 from app.api import auth, files, users
 
 
