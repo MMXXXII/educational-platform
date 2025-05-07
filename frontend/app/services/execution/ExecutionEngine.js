@@ -33,6 +33,14 @@ class ExecutionEngine {
         
         // Отслеживаем активные пути выполнения для условных ветвлений
         this.activeBranches = new Map();
+        
+        // Отслеживаем текущее тело цикла
+        this.currentLoopBody = {
+            loopId: null,
+            bodyNodes: [],
+            executionOrder: [], // Порядок выполнения нодов в теле цикла, основанный на flow-соединениях
+            currentIndex: 0     // Текущий индекс в порядке выполнения
+        };
     }
 
     /**
@@ -50,6 +58,14 @@ class ExecutionEngine {
         this.isComplete = false;
         this.stepCount = 0;
         this.activeBranches.clear();
+        
+        // Сбрасываем текущее тело цикла
+        this.currentLoopBody = {
+            loopId: null,
+            bodyNodes: [],
+            executionOrder: [],
+            currentIndex: 0
+        };
 
         if (this.nodes.length === 0) {
             this.state.log('error', "Ошибка: нет нодов для выполнения");
@@ -156,6 +172,170 @@ class ExecutionEngine {
     }
 
     /**
+     * Строит порядок выполнения нодов для тела цикла, основываясь на flow-соединениях
+     * @param {string} loopNodeId - ID нода цикла
+     * @returns {Array} - Массив ID нодов в порядке выполнения
+     */
+    buildLoopBodyExecutionOrder(loopNodeId) {
+        const bodyNodes = this.graphManager.findLoopBodyNodes(loopNodeId);
+        if (bodyNodes.length === 0) {
+            return [];
+        }
+
+        // Пытаемся найти первый нод тела цикла (тот, к которому идет body-output из цикла)
+        const bodyStartNodes = this.edges.filter(edge => 
+            edge.source === loopNodeId && 
+            edge.sourceHandle === 'output-body'
+        ).map(edge => edge.target);
+
+        // Если нет прямого соединения с output-body, ищем первый нод в теле цикла
+        let startNodes = bodyStartNodes.length > 0 ? bodyStartNodes : [];
+        
+        // Если все еще нет начальных нодов, ищем все ноды, которые могут быть первыми в цепочке
+        if (startNodes.length === 0) {
+            // Находим все ноды тела цикла с входящими соединениями 
+            // непосредственно от цикла (но не через input-flow)
+            startNodes = this.edges.filter(edge => 
+                edge.source === loopNodeId && 
+                edge.target !== loopNodeId &&
+                bodyNodes.includes(edge.target) &&
+                edge.targetHandle !== 'input-flow'
+            ).map(edge => edge.target);
+        }
+
+        // Если все еще нет начальных нодов, пробуем найти ноды без входящих соединений из тела цикла
+        if (startNodes.length === 0) {
+            // Создаем множество нодов, в которые входят ребра от других нодов тела цикла
+            const nodesWithIncomingEdges = new Set();
+            this.edges.forEach(edge => {
+                if (bodyNodes.includes(edge.source) && 
+                    bodyNodes.includes(edge.target) && 
+                    edge.source !== edge.target) {
+                    nodesWithIncomingEdges.add(edge.target);
+                }
+            });
+            
+            // Ноды без входящих соединений - потенциальные начальные
+            startNodes = bodyNodes.filter(nodeId => !nodesWithIncomingEdges.has(nodeId));
+        }
+
+        // Если все еще нет начальных нодов, берем первый нод из тела цикла
+        if (startNodes.length === 0 && bodyNodes.length > 0) {
+            startNodes = [bodyNodes[0]];
+        }
+
+        // Строим порядок выполнения, начиная с найденных стартовых нодов
+        const executionOrder = [];
+        const visited = new Set();
+
+        // Функция для обхода графа в глубину, следуя по flow-соединениям
+        const traverseFlowGraph = (nodeId) => {
+            if (visited.has(nodeId) || !bodyNodes.includes(nodeId)) {
+                return;
+            }
+
+            visited.add(nodeId);
+            executionOrder.push(nodeId);
+
+            // Находим все исходящие flow-соединения
+            const flowEdges = this.edges.filter(edge => 
+                edge.source === nodeId && 
+                bodyNodes.includes(edge.target) && 
+                edge.sourceHandle && edge.sourceHandle.includes('flow')
+            );
+
+            // Если есть flow-соединения, следуем по ним
+            if (flowEdges.length > 0) {
+                for (const edge of flowEdges) {
+                    traverseFlowGraph(edge.target);
+                }
+            } else {
+                // Если нет flow-соединений, проверяем соединения по данным
+                const dataEdges = this.edges.filter(edge => 
+                    edge.source === nodeId && 
+                    bodyNodes.includes(edge.target) && 
+                    !edge.sourceHandle.includes('flow')
+                );
+
+                for (const edge of dataEdges) {
+                    traverseFlowGraph(edge.target);
+                }
+            }
+        };
+
+        // Запускаем обход из каждого начального нода
+        for (const startNode of startNodes) {
+            traverseFlowGraph(startNode);
+        }
+
+        // Добавляем оставшиеся ноды, которые не были посещены
+        for (const nodeId of bodyNodes) {
+            if (!visited.has(nodeId)) {
+                executionOrder.push(nodeId);
+            }
+        }
+
+        console.log("Построен порядок выполнения для тела цикла:", executionOrder);
+        return executionOrder;
+    }
+
+    /**
+     * Обновляет информацию о текущем теле цикла
+     * @param {string} loopNodeId - ID нода цикла
+     */
+    updateCurrentLoopBody(loopNodeId) {
+        // Если loopNodeId изменился, обновляем список нодов тела цикла и порядок выполнения
+        if (this.currentLoopBody.loopId !== loopNodeId) {
+            const bodyNodes = this.graphManager.findLoopBodyNodes(loopNodeId);
+            const executionOrder = this.buildLoopBodyExecutionOrder(loopNodeId);
+
+            this.currentLoopBody = {
+                loopId: loopNodeId,
+                bodyNodes: bodyNodes,
+                executionOrder: executionOrder,
+                currentIndex: 0
+            };
+
+            console.log(`Обновлена информация о теле цикла для ${loopNodeId}:`);
+            console.log("Ноды тела цикла:", bodyNodes);
+            console.log("Порядок выполнения:", executionOrder);
+        }
+    }
+
+    /**
+     * Находит следующий нод для выполнения в теле цикла
+     * @returns {string|null} - ID следующего нода или null, если все ноды выполнены
+     */
+    findNextNodeInLoopBody() {
+        if (!this.currentLoopBody.loopId || 
+            this.currentLoopBody.executionOrder.length === 0 ||
+            this.currentLoopBody.currentIndex >= this.currentLoopBody.executionOrder.length) {
+            return null;
+        }
+
+        // Берем следующий нод по порядку и увеличиваем индекс
+        const nextNodeId = this.currentLoopBody.executionOrder[this.currentLoopBody.currentIndex];
+        this.currentLoopBody.currentIndex++;
+
+        return nextNodeId;
+    }
+
+    /**
+     * Проверяет, все ли ноды в теле цикла выполнены
+     * @returns {boolean} - true, если все ноды выполнены
+     */
+    isLoopBodyComplete() {
+        return this.currentLoopBody.currentIndex >= this.currentLoopBody.executionOrder.length;
+    }
+
+    /**
+     * Сбрасывает состояние текущего тела цикла для новой итерации
+     */
+    resetLoopBodyExecution() {
+        this.currentLoopBody.currentIndex = 0;
+    }
+
+    /**
      * Выполняет следующий шаг алгоритма
      * @returns {Object} - Информация о выполненном шаге
      */
@@ -219,41 +399,19 @@ class ExecutionEngine {
                 };
             }
 
-            // Проверяем, нужно ли вернуться в цикл
-            if (this.state.loopReturn) {
-                console.log("Активен возврат в цикл:", this.state.loopReturn);
-
-                // Получаем список нодов, относящихся к телу цикла
-                const loopBodyNodes = this.graphManager.findLoopBodyNodes(this.state.loopReturn);
-
-                // Проверяем, является ли текущий нод частью тела цикла
-                const isPartOfLoopBody = loopBodyNodes.includes(currentNode.id);
-
-                // Проверяем, есть ли следующий нод в теле цикла
-                let hasNextNodeInLoopBody = false;
-
-                // Проверяем все исходящие связи с нодами из тела цикла
-                if (isPartOfLoopBody) {
-                    const outgoingEdges = this.edges.filter(edge =>
-                        edge.source === currentNode.id &&
-                        loopBodyNodes.includes(edge.target)
-                    );
-                    hasNextNodeInLoopBody = outgoingEdges.length > 0;
-                }
-
-                // Проверяем, есть ли прямое соединение от текущего нода к циклу
-                const hasDirectReturnToLoop = this.edges.some(edge =>
-                    edge.source === currentNode.id &&
-                    edge.target === this.state.loopReturn &&
-                    edge.targetHandle === 'input-flow'
-                );
-
-                // Если текущий нод - последний в теле цикла или есть прямое соединение,
-                // возвращаемся в цикл
-                if ((isPartOfLoopBody && !hasNextNodeInLoopBody) || hasDirectReturnToLoop) {
-                    console.log("Возврат в цикл:", this.state.loopReturn);
-                    this.currentNodeId = this.state.loopReturn;
-
+            // Если это нод цикла и output-body активен, начинаем выполнение тела цикла
+            if (currentNode.data.type === 'loop' && result.outputs && result.outputs.body) {
+                // Обновляем информацию о текущем теле цикла
+                this.updateCurrentLoopBody(currentNode.id);
+                // Сбрасываем индекс выполнения тела цикла для новой итерации
+                this.resetLoopBodyExecution();
+                
+                // Находим первый нод для выполнения в теле цикла
+                const firstBodyNode = this.findNextNodeInLoopBody();
+                if (firstBodyNode) {
+                    console.log("Начинаем выполнение тела цикла с нода:", firstBodyNode);
+                    this.currentNodeId = firstBodyNode;
+                    
                     return {
                         isComplete: false,
                         currentNodeId: this.currentNodeId,
@@ -261,6 +419,69 @@ class ExecutionEngine {
                         context: this.state,
                         dataTransfers: this.dataManager.getDataTransfers()
                     };
+                }
+            }
+
+            // Проверяем, активен ли возврат в цикл и выполняются ли ноды тела цикла
+            if (this.state.loopReturn) {
+                console.log("Активен возврат в цикл:", this.state.loopReturn);
+                
+                // Обновляем информацию о текущем теле цикла, если не обновлена
+                this.updateCurrentLoopBody(this.state.loopReturn);
+                
+                // Если текущий нод в теле цикла, проверяем, есть ли еще ноды для выполнения
+                if (this.currentLoopBody.bodyNodes.includes(currentNode.id)) {
+                    const nextNodeInLoop = this.findNextNodeInLoopBody();
+                    
+                    if (nextNodeInLoop) {
+                        console.log("Следующий нод в теле цикла:", nextNodeInLoop);
+                        this.currentNodeId = nextNodeInLoop;
+                        
+                        return {
+                            isComplete: false,
+                            currentNodeId: this.currentNodeId,
+                            previousNodeId: currentNode.id,
+                            context: this.state,
+                            dataTransfers: this.dataManager.getDataTransfers()
+                        };
+                    }
+                    
+                    // Если все ноды тела цикла выполнены, возвращаемся в цикл
+                    if (this.isLoopBodyComplete()) {
+                        console.log("Все ноды тела цикла выполнены, возвращаемся в цикл");
+                        this.currentNodeId = this.state.loopReturn;
+                        
+                        return {
+                            isComplete: false,
+                            currentNodeId: this.currentNodeId,
+                            previousNodeId: currentNode.id,
+                            context: this.state,
+                            dataTransfers: this.dataManager.getDataTransfers()
+                        };
+                    }
+                }
+                
+                // Если текущий нод - это цикл и выход next активен, продолжаем выполнение
+                if (currentNode.id === this.state.loopReturn && result.outputs && result.outputs.next) {
+                    console.log("Выход из цикла");
+                    this.state.clearLoopReturn();
+                    // Продолжаем с обычной логикой поиска следующего нода
+                } else if (currentNode.id === this.state.loopReturn) {
+                    // Если мы вернулись в цикл, но нет активного выхода next, продолжаем выполнение тела цикла
+                    this.resetLoopBodyExecution();
+                    const firstBodyNode = this.findNextNodeInLoopBody();
+                    if (firstBodyNode) {
+                        console.log("Продолжаем выполнение тела цикла с нода:", firstBodyNode);
+                        this.currentNodeId = firstBodyNode;
+                        
+                        return {
+                            isComplete: false,
+                            currentNodeId: this.currentNodeId,
+                            previousNodeId: currentNode.id,
+                            context: this.state,
+                            dataTransfers: this.dataManager.getDataTransfers()
+                        };
+                    }
                 }
             }
 
@@ -404,6 +625,14 @@ class ExecutionEngine {
             this.currentNodeId = null;
             this.stepCount = 0;
             this.activeBranches.clear();
+            
+            // Сбрасываем информацию о текущем теле цикла
+            this.currentLoopBody = {
+                loopId: null,
+                bodyNodes: [],
+                executionOrder: [],
+                currentIndex: 0
+            };
 
             // Сбрасываем состояние всех компонентов
             this.state.reset();

@@ -428,41 +428,84 @@ class GraphManager {
             edge.sourceHandle === 'output-body'
         );
 
-        // Если нет соединений с телом цикла, возвращаем пустой массив
+        // Если нет соединений с телом цикла, ищем любые соединения с другими нодами (как flow, так и data)
         if (loopBodyEdges.length === 0) {
-            return [];
+            // Создаем граф всех соединений, исходящих от цикла (кроме output-next)
+            const outgoingEdges = this.edges.filter(edge =>
+                edge.source === loopNodeId &&
+                edge.sourceHandle !== 'output-next'
+            );
+
+            // Если есть исходящие соединения, начинаем с них
+            if (outgoingEdges.length > 0) {
+                // Рассматриваем все исходящие соединения как потенциальное начало тела цикла
+                for (const edge of outgoingEdges) {
+                    // Добавляем начальные ноды в граф тела цикла
+                    const initialNodeId = edge.target;
+                    bodyNodesIds.add(initialNodeId);
+
+                    // Добавляем все ноды, соединенные с этими начальными нодами
+                    const connectedNodes = this.findAllConnectedNodes(initialNodeId, loopNodeId);
+                    connectedNodes.forEach(id => bodyNodesIds.add(id));
+                }
+            }
+        } else {
+            // Если есть прямые соединения с телом цикла (через output-body)
+            for (const edge of loopBodyEdges) {
+                const initialNodeId = edge.target;
+                bodyNodesIds.add(initialNodeId);
+
+                // Добавляем все ноды, соединенные с этими начальными нодами (не через flow-next к циклу)
+                const connectedNodes = this.findAllConnectedNodes(initialNodeId, loopNodeId);
+                connectedNodes.forEach(id => bodyNodesIds.add(id));
+            }
         }
 
-        // Функция для рекурсивного обхода всех соединенных нодов
-        const traverseNodes = (nodeId, visited = new Set()) => {
-            // Если нод уже посещен, выходим
-            if (visited.has(nodeId)) {
-                return;
+        return Array.from(bodyNodesIds);
+    }
+
+    /**
+     * Находит все ноды, соединенные с указанным нодом
+     * Учитывает как flow, так и data соединения
+     * @param {string} startNodeId - ID начального нода
+     * @param {string} loopNodeId - ID нода цикла (для исключения соединения с ним через next)
+     * @returns {Set} - Множество ID соединенных нодов
+     */
+    findAllConnectedNodes(startNodeId, loopNodeId) {
+        const connectedNodes = new Set();
+        const visited = new Set();
+        const stack = [startNodeId];
+
+        while (stack.length > 0) {
+            const currentNodeId = stack.pop();
+            
+            if (visited.has(currentNodeId)) {
+                continue;
             }
 
-            // Помечаем нод как посещенный
-            visited.add(nodeId);
-            bodyNodesIds.add(nodeId);
+            visited.add(currentNodeId);
+            
+            // Не добавляем цикл в список связанных нодов
+            if (currentNodeId !== loopNodeId) {
+                connectedNodes.add(currentNodeId);
+            }
 
-            // Находим все ноды, соединенные с выходами текущего нода,
-            // кроме нодов, соединенных с нодом цикла через 'next'
-            const connectedEdges = this.edges.filter(edge =>
-                edge.source === nodeId &&
+            // Находим все исходящие ребра из текущего нода
+            const outgoingEdges = this.edges.filter(edge => 
+                edge.source === currentNodeId &&
+                // Исключаем соединения с нодом цикла через flow-next
                 !(edge.target === loopNodeId && edge.targetHandle === 'input-flow')
             );
 
-            // Для каждого соединения рекурсивно обходим соединенные ноды
-            connectedEdges.forEach(edge => {
-                traverseNodes(edge.target, visited);
-            });
-        };
+            // Добавляем все целевые ноды в стек для обхода
+            for (const edge of outgoingEdges) {
+                if (!visited.has(edge.target)) {
+                    stack.push(edge.target);
+                }
+            }
+        }
 
-        // Начинаем обход с первого нода, соединенного с выходом 'body'
-        loopBodyEdges.forEach(edge => {
-            traverseNodes(edge.target);
-        });
-
-        return Array.from(bodyNodesIds);
+        return connectedNodes;
     }
 
     /**
@@ -491,15 +534,21 @@ class GraphManager {
         // Если следующего нода нет или найдены все возможные следующие ноды,
         // проверяем, принадлежит ли текущий нод телу цикла
         const loopBodyNodes = this.findLoopBodyNodes(context.loopReturn);
-        const isLastNodeInLoop = loopBodyNodes.includes(nodeId) &&
-            !this.edges.some(edge =>
+        
+        // Проверяем, является ли текущий нод частью тела цикла
+        if (loopBodyNodes.includes(nodeId)) {
+            // Проверяем, есть ли исходящие соединения к другим нодам тела цикла
+            const hasConnectionsToLoopBody = this.edges.some(edge =>
                 edge.source === nodeId &&
+                edge.target !== context.loopReturn && // Исключаем прямое соединение с нодом цикла
                 loopBodyNodes.includes(edge.target)
             );
-
-        // Если это последний нод в теле цикла, возвращаемся в цикл
-        if (isLastNodeInLoop) {
-            return context.loopReturn;
+            
+            // Если нет исходящих соединений к другим нодам тела цикла,
+            // считаем этот нод концом тела цикла и возвращаемся в цикл
+            if (!hasConnectionsToLoopBody) {
+                return context.loopReturn;
+            }
         }
 
         return null;
