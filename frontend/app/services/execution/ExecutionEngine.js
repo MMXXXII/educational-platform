@@ -30,6 +30,9 @@ class ExecutionEngine {
         this.currentNodeId = null;
         this.maxSteps = 100; // Для предотвращения бесконечных циклов
         this.stepCount = 0;
+        
+        // Отслеживаем активные пути выполнения для условных ветвлений
+        this.activeBranches = new Map();
     }
 
     /**
@@ -46,6 +49,7 @@ class ExecutionEngine {
         this.nodeExecutor.reset();
         this.isComplete = false;
         this.stepCount = 0;
+        this.activeBranches.clear();
 
         if (this.nodes.length === 0) {
             this.state.log('error', "Ошибка: нет нодов для выполнения");
@@ -108,6 +112,47 @@ class ExecutionEngine {
         this.state.log('output', "Алгоритм выполнен успешно");
 
         return stepResult;
+    }
+
+    /**
+     * Проверяет, находится ли нод в активной ветви выполнения
+     * @param {string} nodeId - ID нода
+     * @returns {boolean} - True, если нод находится в активной ветви
+     */
+    isNodeInActiveBranch(nodeId) {
+        // Если нет активных ветвей, считаем все ноды активными
+        if (this.activeBranches.size === 0) {
+            return true;
+        }
+
+        // Проверяем каждую активную ветвь
+        for (const [ifNodeId, branchType] of this.activeBranches) {
+            // Находим все исходящие связи от условного нода
+            const outgoingEdges = this.edges.filter(edge => 
+                edge.source === ifNodeId && 
+                edge.sourceHandle === `output-${branchType}`
+            );
+            
+            // Если нод непосредственно связан с активной ветвью условного нода
+            if (outgoingEdges.some(edge => edge.target === nodeId)) {
+                return true;
+            }
+            
+            // Рекурсивно проверяем ноды, связанные с активной ветвью
+            const directTargets = outgoingEdges.map(edge => edge.target);
+            for (const targetId of directTargets) {
+                const childEdges = this.edges.filter(edge => 
+                    edge.source === targetId
+                );
+                
+                if (childEdges.some(edge => edge.target === nodeId)) {
+                    return true;
+                }
+            }
+        }
+        
+        // Если нод не связан ни с одной активной ветвью, считаем его неактивным
+        return false;
     }
 
     /**
@@ -245,11 +290,29 @@ class ExecutionEngine {
                         nextNodeId = outgoingEdges[0].target;
                         console.log("Следующий нод по flow-выходу:", nextNodeId);
                     }
+                    
+                    // Если это условный нод, запоминаем активную ветвь
+                    if (currentNode.data.type === 'if') {
+                        console.log(`Условие ${currentNode.id} определило ветвь: ${activeOutput}`);
+                        this.activeBranches.set(currentNode.id, activeOutput);
+                    }
                 }
+            }
+
+            // Если текущий нод условный, и не найден активный выход, завершаем выполнение этой ветви
+            if (currentNode.data.type === 'if' && !nextNodeId) {
+                this.isComplete = true;
+                return {
+                    isComplete: true,
+                    lastNodeId: this.currentNodeId,
+                    context: this.state,
+                    dataTransfers: this.dataManager.getDataTransfers()
+                };
             }
 
             // Если по flow-выходам нет следующего нода, находим через GraphManager
             if (!nextNodeId) {
+                // Используем GraphManager только для нахождения следующего нода по данным
                 nextNodeId = this.graphManager.findNextNode(
                     currentNode,
                     result.outputs || {},
@@ -257,7 +320,11 @@ class ExecutionEngine {
                     this.dataManager.inputCache
                 );
 
-                if (nextNodeId) {
+                // Дополнительно проверяем, находится ли найденный нод в активной ветви
+                if (nextNodeId && !this.isNodeInActiveBranch(nextNodeId)) {
+                    console.log(`Нод ${nextNodeId} не в активной ветви выполнения, пропускаем`);
+                    nextNodeId = null;
+                } else if (nextNodeId) {
                     console.log("Следующий нод найден через GraphManager:", nextNodeId);
                 }
             }
@@ -336,6 +403,7 @@ class ExecutionEngine {
             this.isComplete = false;
             this.currentNodeId = null;
             this.stepCount = 0;
+            this.activeBranches.clear();
 
             // Сбрасываем состояние всех компонентов
             this.state.reset();
