@@ -413,6 +413,22 @@ export const getOutputPortPosition = (output, index, totalOutputs, nodeType) => 
         }
     }
 
+    // Для нода Loop, разделяем порты body и next
+    if (nodeType === 'loop') {
+        // Если это выход 'body' (тело цикла), помещаем его в верхнюю часть
+        if (output.name === 'body') {
+            return 30;
+        }
+        // Если это выход 'next' (после цикла), помещаем его в нижнюю часть
+        if (output.name === 'next') {
+            return 90;
+        }
+        // Для индекса - середина
+        if (output.name === 'index') {
+            return 60;
+        }
+    }
+
     // Для остальных нодов стандартное позиционирование
     if (output.dataType === 'flow') {
         return 24; // Фиксированная позиция для flow-выходов

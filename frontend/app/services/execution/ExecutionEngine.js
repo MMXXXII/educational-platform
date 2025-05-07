@@ -20,6 +20,7 @@ class ExecutionEngine {
 
         // Инициализируем компоненты движка
         this.state = new ExecutionState(globalVariables, setGlobalVariable);
+        this.state.nodes = nodes; // Сохраняем nodes в state для доступа в NodeExecutor
         this.dataManager = new DataManager(edges);
         this.graphManager = new GraphManager(nodes, edges);
         this.nodeExecutor = new NodeExecutor(this.dataManager, this.state);
@@ -28,6 +29,7 @@ class ExecutionEngine {
         this.isComplete = false;
         this.currentNodeId = null;
         this.maxSteps = 100; // Для предотвращения бесконечных циклов
+        this.stepCount = 0;
     }
 
     /**
@@ -35,11 +37,15 @@ class ExecutionEngine {
      * @returns {boolean} - Готов ли движок к выполнению
      */
     initialize() {
-        // Сбрасываем состояние
+        // Явно сбрасываем состояние всех нодов перед инициализацией
+        this.reset();
+        
+        // Сбрасываем состояние выполнения (это дублирование для надежности)
         this.state.reset();
         this.dataManager.reset();
         this.nodeExecutor.reset();
         this.isComplete = false;
+        this.stepCount = 0;
 
         if (this.nodes.length === 0) {
             this.state.log('error', "Ошибка: нет нодов для выполнения");
@@ -67,7 +73,7 @@ class ExecutionEngine {
      * @returns {Object} - Результат выполнения
      */
     runFull() {
-        // Сначала инициализируем движок
+        // Сначала инициализируем движок (включая сброс состояния всех нодов)
         if (!this.initialize()) {
             return {
                 isComplete: false,
@@ -77,47 +83,31 @@ class ExecutionEngine {
         }
 
         // Выполняем последовательно все ноды в правильном порядке
-        const result = this.executeAllNodes();
-        return result;
-    }
-
-    /**
-     * Выполняет все ноды в правильном порядке
-     * @returns {Object} - Результат выполнения
-     */
-    executeAllNodes() {
-        // Получаем порядок выполнения
-        const executionOrder = this.graphManager.getExecutionOrder();
-
-        // Добавляем сообщение о начале выполнения
         this.state.log('output', "Начинаем выполнение алгоритма");
 
-        // Выполняем все ноды по порядку
-        for (const nodeId of executionOrder) {
-            const node = this.graphManager.getNodeById(nodeId);
-            if (!node) continue;
+        // Запускаем выполнение пошагово, но с ограничением шагов
+        let stepResult;
+        let stepCounter = 0;
 
-            const result = this.nodeExecutor.executeNode(node);
-            if (result.error) {
+        do {
+            stepResult = this.step();
+            stepCounter++;
+
+            // Если превысили лимит шагов, останавливаем выполнение
+            if (stepCounter > this.maxSteps) {
+                this.state.log('error', `Превышено максимальное количество шагов (${this.maxSteps}). Возможно, в алгоритме есть бесконечный цикл.`);
                 return {
                     isComplete: true,
-                    error: result.error,
-                    errorNodeId: nodeId,
-                    context: this.state,
-                    dataTransfers: this.dataManager.getDataTransfers()
+                    error: "Превышен лимит шагов выполнения",
+                    context: this.state
                 };
             }
-        }
+        } while (!stepResult.isComplete);
 
         // Добавляем сообщение о завершении
         this.state.log('output', "Алгоритм выполнен успешно");
 
-        return {
-            isComplete: true,
-            executionPath: this.nodeExecutor.getExecutionPath(),
-            context: this.state,
-            dataTransfers: this.dataManager.getDataTransfers()
-        };
+        return stepResult;
     }
 
     /**
@@ -129,6 +119,20 @@ class ExecutionEngine {
         if (this.isComplete) {
             return {
                 isComplete: true,
+                context: this.state
+            };
+        }
+
+        // Увеличиваем счетчик шагов
+        this.stepCount++;
+
+        // Если превысили лимит шагов, останавливаем выполнение
+        if (this.stepCount > this.maxSteps) {
+            this.isComplete = true;
+            this.state.log('error', `Превышено максимальное количество шагов (${this.maxSteps}). Возможно, в алгоритме есть бесконечный цикл.`);
+            return {
+                isComplete: true,
+                error: "Превышен лимит шагов выполнения",
                 context: this.state
             };
         }
@@ -155,8 +159,10 @@ class ExecutionEngine {
                 throw new Error(`Нод с ID ${this.currentNodeId} не найден`);
             }
 
+            console.log("Выполнение шага, текущий нод:", this.currentNodeId, "тип:", currentNode.data.type);
+
             // Выполняем текущий нод
-            const result = this.nodeExecutor.executeNode(currentNode);
+            const result = this.nodeExecutor.executeNode(currentNode, this.graphManager);
             if (result.error) {
                 this.isComplete = true;
                 return {
@@ -168,13 +174,93 @@ class ExecutionEngine {
                 };
             }
 
+            // Проверяем, нужно ли вернуться в цикл
+            if (this.state.loopReturn) {
+                console.log("Активен возврат в цикл:", this.state.loopReturn);
+
+                // Получаем список нодов, относящихся к телу цикла
+                const loopBodyNodes = this.graphManager.findLoopBodyNodes(this.state.loopReturn);
+
+                // Проверяем, является ли текущий нод частью тела цикла
+                const isPartOfLoopBody = loopBodyNodes.includes(currentNode.id);
+
+                // Проверяем, есть ли следующий нод в теле цикла
+                let hasNextNodeInLoopBody = false;
+
+                // Проверяем все исходящие связи с нодами из тела цикла
+                if (isPartOfLoopBody) {
+                    const outgoingEdges = this.edges.filter(edge =>
+                        edge.source === currentNode.id &&
+                        loopBodyNodes.includes(edge.target)
+                    );
+                    hasNextNodeInLoopBody = outgoingEdges.length > 0;
+                }
+
+                // Проверяем, есть ли прямое соединение от текущего нода к циклу
+                const hasDirectReturnToLoop = this.edges.some(edge =>
+                    edge.source === currentNode.id &&
+                    edge.target === this.state.loopReturn &&
+                    edge.targetHandle === 'input-flow'
+                );
+
+                // Если текущий нод - последний в теле цикла или есть прямое соединение,
+                // возвращаемся в цикл
+                if ((isPartOfLoopBody && !hasNextNodeInLoopBody) || hasDirectReturnToLoop) {
+                    console.log("Возврат в цикл:", this.state.loopReturn);
+                    this.currentNodeId = this.state.loopReturn;
+
+                    return {
+                        isComplete: false,
+                        currentNodeId: this.currentNodeId,
+                        previousNodeId: currentNode.id,
+                        context: this.state,
+                        dataTransfers: this.dataManager.getDataTransfers()
+                    };
+                }
+            }
+
             // Находим следующий нод для выполнения
-            const nextNodeId = this.graphManager.findNextNode(
-                currentNode,
-                result.outputs,
-                this.state.visitedNodes,
-                this.dataManager.inputCache
-            );
+            let nextNodeId = null;
+
+            // Проверяем выходные значения нода для определения следующего нода
+            if (result.outputs) {
+                // Ищем активные flow-выходы
+                const flowOutputs = Object.keys(result.outputs).filter(key =>
+                    (key === 'flow' || key === 'true' || key === 'false' || key === 'body' || key === 'next') &&
+                    result.outputs[key]
+                );
+
+                if (flowOutputs.length > 0) {
+                    // Берем первый активный flow-выход
+                    const activeOutput = flowOutputs[0];
+
+                    // Ищем связи от этого выхода
+                    const sourceHandleId = `output-${activeOutput}`;
+                    const outgoingEdges = this.edges.filter(edge =>
+                        edge.source === currentNode.id &&
+                        edge.sourceHandle === sourceHandleId
+                    );
+
+                    if (outgoingEdges.length > 0) {
+                        nextNodeId = outgoingEdges[0].target;
+                        console.log("Следующий нод по flow-выходу:", nextNodeId);
+                    }
+                }
+            }
+
+            // Если по flow-выходам нет следующего нода, находим через GraphManager
+            if (!nextNodeId) {
+                nextNodeId = this.graphManager.findNextNode(
+                    currentNode,
+                    result.outputs || {},
+                    this.state.visitedNodes,
+                    this.dataManager.inputCache
+                );
+
+                if (nextNodeId) {
+                    console.log("Следующий нод найден через GraphManager:", nextNodeId);
+                }
+            }
 
             // Если следующий нод не найден, выполнение завершено
             if (!nextNodeId) {
@@ -197,6 +283,7 @@ class ExecutionEngine {
                 dataTransfers: this.dataManager.getDataTransfers()
             };
         } catch (error) {
+            console.error("Ошибка выполнения:", error);
             this.isComplete = true;
             this.state.log('error', `Ошибка выполнения: ${error.message}`);
 
@@ -236,6 +323,53 @@ class ExecutionEngine {
      */
     setDebugMode(enabled) {
         this.state.debug = enabled;
+    }
+
+    /**
+     * Полностью сбрасывает состояние движка выполнения
+     * Подготавливает движок к новому запуску
+     * @returns {boolean} - Успешно ли выполнен сброс
+     */
+    reset() {
+        try {
+            // Сбрасываем внутреннее состояние движка
+            this.isComplete = false;
+            this.currentNodeId = null;
+            this.stepCount = 0;
+
+            // Сбрасываем состояние всех компонентов
+            this.state.reset();
+            this.dataManager.reset();
+            this.nodeExecutor.reset();
+
+            // Сбрасываем состояние всех нодов
+            if (this.nodes && Array.isArray(this.nodes)) {
+                this.nodes.forEach(node => {
+                    if (node.data && node.data.nodeRef) {
+                        // Явно вызываем метод reset() для каждого нода, особенно для циклов
+                        if (typeof node.data.nodeRef.reset === 'function') {
+                            console.log(`Сброс нода ${node.id} типа ${node.data.type}`);
+                            node.data.nodeRef.reset();
+                        } else {
+                            // Если метода reset нет, просто очищаем state
+                            node.data.nodeRef.state = {};
+                        }
+
+                        // Удаляем визуальные стили нода
+                        if (node.style) {
+                            node.style = {};
+                        }
+                    }
+                });
+            }
+
+            console.log("Состояние всех нодов сброшено");
+            this.state.log('output', "Состояние алгоритма сброшено");
+            return true;
+        } catch (error) {
+            console.error("Ошибка при сбросе движка:", error);
+            return false;
+        }
     }
 }
 

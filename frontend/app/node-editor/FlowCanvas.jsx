@@ -176,6 +176,7 @@ const FlowMiniMap = () => {
                 // Используем функцию getNodeHexColor для получения цвета из реестра нодов
                 return getNodeHexColor(n.data.type);
             }}
+            pannable 
         />
     );
 };

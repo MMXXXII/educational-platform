@@ -60,7 +60,7 @@ class GraphManager {
      */
     buildDependencyGraph() {
         this.dependencyGraph = {};
-        
+
         // Инициализируем граф для каждого нода
         this.nodes.forEach(node => {
             this.dependencyGraph[node.id] = {
@@ -68,25 +68,25 @@ class GraphManager {
                 outputs: [] // ID нодов, которые зависят от текущего нода
             };
         });
-        
+
         // Анализируем все ребра
         this.edges.forEach(edge => {
             const sourceId = edge.source;
             const targetId = edge.target;
-            
+
             if (!this.dependencyGraph[sourceId] || !this.dependencyGraph[targetId]) {
                 return; // Пропускаем некорректные ребра
             }
-            
+
             // Определяем тип соединения (flow или data)
-            const isFlowConnection = 
-                (edge.sourceHandle && edge.sourceHandle.includes('flow')) || 
+            const isFlowConnection =
+                (edge.sourceHandle && edge.sourceHandle.includes('flow')) ||
                 (edge.targetHandle && edge.targetHandle.includes('flow'));
-            
+
             // Добавляем зависимость, приоритизируя соединения flow
             if (!this.dependencyGraph[targetId].inputs.includes(sourceId)) {
                 this.dependencyGraph[targetId].inputs.push(sourceId);
-                
+
                 // Если это flow-соединение, помещаем его в начало списка
                 if (isFlowConnection && this.dependencyGraph[targetId].inputs.length > 1) {
                     const idx = this.dependencyGraph[targetId].inputs.indexOf(sourceId);
@@ -94,10 +94,10 @@ class GraphManager {
                     this.dependencyGraph[targetId].inputs.unshift(sourceId);
                 }
             }
-            
+
             if (!this.dependencyGraph[sourceId].outputs.includes(targetId)) {
                 this.dependencyGraph[sourceId].outputs.push(targetId);
-                
+
                 // Если это flow-соединение, помещаем его в начало списка
                 if (isFlowConnection && this.dependencyGraph[sourceId].outputs.length > 1) {
                     const idx = this.dependencyGraph[sourceId].outputs.indexOf(targetId);
@@ -245,19 +245,19 @@ class GraphManager {
 
         // 2. Проверяем зависимости данных и находим следующий нод,
         // который готов к выполнению и получает данные от текущего нода
-        
+
         if (currentNode.id in this.dependencyGraph) {
             // Сначала проверяем непосредственных получателей данных от текущего нода
             const directDataReceivers = this.dependencyGraph[currentNode.id].outputs;
-            
+
             for (const targetId of directDataReceivers) {
                 const targetNode = this.getNodeById(targetId);
-                
+
                 // Если узел уже был посещен, пропускаем его
                 if (!targetNode || visitedNodes.has(targetId)) {
                     continue;
                 }
-                
+
                 // Проверяем готовность этого нода к выполнению
                 if (this.isNodeReadyForExecution(targetNode, visitedNodes, inputCache)) {
                     return targetId;
@@ -268,7 +268,7 @@ class GraphManager {
         // 3. Если еще не нашли следующий нод, выбираем любой готовый нод,
         // который еще не был посещен и следует логическому порядку выполнения
         const remainingOrder = this.executionOrder.filter(nodeId => !visitedNodes.has(nodeId));
-        
+
         for (const nodeId of remainingOrder) {
             const node = this.getNodeById(nodeId);
             if (node && this.isNodeReadyForExecution(node, visitedNodes, inputCache)) {
@@ -292,30 +292,30 @@ class GraphManager {
         if (!this.areAllInputsReady(node, visitedNodes, inputCache)) {
             return false;
         }
-        
+
         // Дополнительно проверяем, что все ноды-предшественники (по зависимостям данных) выполнены
         if (node.id in this.dependencyGraph) {
             const dependencies = this.dependencyGraph[node.id].inputs;
-            
+
             // Для всех зависимостей
             for (const depId of dependencies) {
                 // Проверяем, был ли уже выполнен этот нод-зависимость
                 if (!visitedNodes.has(depId)) {
                     return false;
                 }
-                
+
                 // Проверяем наличие данных от этого нода в кэше ввода
-                const edges = this.edges.filter(edge => 
-                    edge.source === depId && 
+                const edges = this.edges.filter(edge =>
+                    edge.source === depId &&
                     edge.target === node.id
                 );
-                
+
                 for (const edge of edges) {
                     // Проверяем только неуправляющие соединения (не flow)
                     if (!edge.sourceHandle.includes('flow') && !edge.targetHandle.includes('flow')) {
                         const outputName = edge.sourceHandle.replace('output-', '');
                         const cacheKey = `${depId}:${outputName}`;
-                        
+
                         // Если необходимые данные отсутствуют в кэше, нод не готов
                         if (inputCache[cacheKey] === undefined) {
                             return false;
@@ -324,7 +324,7 @@ class GraphManager {
                 }
             }
         }
-        
+
         return true;
     }
 
@@ -354,11 +354,11 @@ class GraphManager {
                 if (incomingEdges.length === 0) {
                     // Обязательный вход без связи - проверяем, есть ли у нода значение по умолчанию
                     const inputName = input.name;
-                    const hasDefaultValue = node.data.nodeRef && 
-                                          node.data.nodeRef.data && 
-                                          (node.data.nodeRef.data[inputName] !== undefined ||
-                                           node.data.nodeRef.data[`${inputName}Value`] !== undefined);
-                    
+                    const hasDefaultValue = node.data.nodeRef &&
+                        node.data.nodeRef.data &&
+                        (node.data.nodeRef.data[inputName] !== undefined ||
+                            node.data.nodeRef.data[`${inputName}Value`] !== undefined);
+
                     if (!hasDefaultValue) {
                         return false;
                     }
@@ -405,6 +405,104 @@ class GraphManager {
      */
     getExecutionOrder() {
         return this.executionOrder;
+    }
+
+    /**
+     * Находит все ноды, принадлежащие блоку цикла
+     * @param {string} loopNodeId - ID нода цикла
+     * @returns {Array} - Массив ID нодов, принадлежащих блоку цикла
+     */
+    findLoopBodyNodes(loopNodeId) {
+        // Проверяем, что нод существует и является циклом
+        const loopNode = this.getNodeById(loopNodeId);
+        if (!loopNode || loopNode.data.type !== 'loop') {
+            return [];
+        }
+
+        // Для хранения ID нодов, принадлежащих телу цикла
+        const bodyNodesIds = new Set();
+
+        // Ищем ноды, соединенные с выходом 'body' цикла
+        const loopBodyEdges = this.edges.filter(edge =>
+            edge.source === loopNodeId &&
+            edge.sourceHandle === 'output-body'
+        );
+
+        // Если нет соединений с телом цикла, возвращаем пустой массив
+        if (loopBodyEdges.length === 0) {
+            return [];
+        }
+
+        // Функция для рекурсивного обхода всех соединенных нодов
+        const traverseNodes = (nodeId, visited = new Set()) => {
+            // Если нод уже посещен, выходим
+            if (visited.has(nodeId)) {
+                return;
+            }
+
+            // Помечаем нод как посещенный
+            visited.add(nodeId);
+            bodyNodesIds.add(nodeId);
+
+            // Находим все ноды, соединенные с выходами текущего нода,
+            // кроме нодов, соединенных с нодом цикла через 'next'
+            const connectedEdges = this.edges.filter(edge =>
+                edge.source === nodeId &&
+                !(edge.target === loopNodeId && edge.targetHandle === 'input-flow')
+            );
+
+            // Для каждого соединения рекурсивно обходим соединенные ноды
+            connectedEdges.forEach(edge => {
+                traverseNodes(edge.target, visited);
+            });
+        };
+
+        // Начинаем обход с первого нода, соединенного с выходом 'body'
+        loopBodyEdges.forEach(edge => {
+            traverseNodes(edge.target);
+        });
+
+        return Array.from(bodyNodesIds);
+    }
+
+    /**
+     * Проверяет, нужно ли вернуться в цикл после выполнения нода
+     * @param {string} nodeId - ID текущего нода
+     * @param {Object} context - Контекст выполнения
+     * @returns {string|null} - ID нода цикла для возврата или null
+     */
+    checkLoopReturn(nodeId, context) {
+        // Если нет активного возврата в цикл, выходим
+        if (!context.loopReturn) {
+            return null;
+        }
+
+        // Проверяем, есть ли прямое соединение от текущего нода к ноду цикла
+        const hasDirectConnection = this.edges.some(edge =>
+            edge.source === nodeId &&
+            edge.target === context.loopReturn &&
+            edge.targetHandle === 'input-flow'
+        );
+
+        if (hasDirectConnection) {
+            return context.loopReturn;
+        }
+
+        // Если следующего нода нет или найдены все возможные следующие ноды,
+        // проверяем, принадлежит ли текущий нод телу цикла
+        const loopBodyNodes = this.findLoopBodyNodes(context.loopReturn);
+        const isLastNodeInLoop = loopBodyNodes.includes(nodeId) &&
+            !this.edges.some(edge =>
+                edge.source === nodeId &&
+                loopBodyNodes.includes(edge.target)
+            );
+
+        // Если это последний нод в теле цикла, возвращаемся в цикл
+        if (isLastNodeInLoop) {
+            return context.loopReturn;
+        }
+
+        return null;
     }
 }
 

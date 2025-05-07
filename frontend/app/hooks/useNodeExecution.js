@@ -34,6 +34,7 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
       * Инициализирует движок выполнения
       */
     const initializeEngine = useCallback(() => {
+        // Создаем новый экземпляр движка при каждой инициализации
         engineRef.current = new ExecutionEngine(nodes, edges, {}, null);
 
         const success = engineRef.current.initialize();
@@ -109,45 +110,45 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
      * Подготавливает и сбрасывает состояние для нового выполнения
      */
     const prepareExecution = useCallback(() => {
-        // Сбрасываем предыдущее состояние, если необходимо
-        if (isComplete || !isInitializedRef.current) {
-            setExecutionStep(0);
-            setActiveNodeId(null);
-            setIsComplete(false);
-            setError(null);
-            setConsoleOutput([]);
-            setDataFlows([]);
+        // Сбрасываем предыдущее состояние при каждом новом запуске
+        setExecutionStep(0);
+        setActiveNodeId(null);
+        setIsComplete(false);
+        setError(null);
+        setConsoleOutput([]);
+        setDataFlows([]);
 
-            // Сбрасываем выделение всех нодов
-            updateNodes(prevNodes =>
-                prevNodes.map(node => ({
-                    ...node,
-                    style: {}
-                }))
-            );
+        // Сбрасываем выделение всех нодов
+        updateNodes(prevNodes =>
+            prevNodes.map(node => ({
+                ...node,
+                style: {}
+            }))
+        );
 
-            // Сбрасываем флаг инициализации
-            isInitializedRef.current = false;
-        }
-
-        // Инициализируем движок, если не инициализирован
-        if (!isInitializedRef.current) {
-            return initializeEngine();
-        }
-
-        return true;
-    }, [isComplete, initializeEngine, updateNodes]);
+        // Всегда пересоздаем и инициализируем движок для нового выполнения
+        isInitializedRef.current = false;
+        return initializeEngine();
+    }, [initializeEngine, updateNodes]);
 
     /**
      * Выполняет один шаг алгоритма
      */
     const executeStep = useCallback(() => {
-        // Подготавливаем выполнение, если необходимо
-        if (!prepareExecution()) {
-            return { error: "Не удалось подготовить выполнение" };
-        }
-
         try {
+            // Подготавливаем выполнение ТОЛЬКО если это первый шаг или выполнение завершено
+            if (executionStep === 0 || isComplete) {
+                if (!prepareExecution()) {
+                    return { error: "Не удалось подготовить выполнение" };
+                }
+            }
+
+            // Проверяем, что движок инициализирован
+            if (!engineRef.current) {
+                console.error("Движок выполнения не инициализирован");
+                return { error: "Движок выполнения не инициализирован" };
+            }
+
             // Выполняем шаг
             const stepResult = engineRef.current.step();
 
@@ -159,7 +160,7 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
 
             // Обновляем консоль
             if (stepResult.context && stepResult.context.console) {
-                // Важно: заменяем всю консоль, чтобы видеть все сообщения
+                // Заменяем всю консоль, чтобы видеть все сообщения
                 setConsoleOutput(stepResult.context.console);
             }
 
@@ -207,7 +208,7 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
                 isComplete: true
             };
         }
-    }, [prepareExecution, updateNodesState]);
+    }, [prepareExecution, updateNodesState, executionStep, isComplete]);
 
     /**
      * Выполняет автоматический шаг алгоритма
@@ -241,7 +242,7 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
      */
     const runFullAlgorithm = useCallback(() => {
         try {
-            // Подготавливаем выполнение
+            // Подготавливаем выполнение с полным сбросом
             if (!prepareExecution()) {
                 return { error: "Не удалось подготовить выполнение" };
             }
@@ -340,6 +341,12 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
                 style: {}
             }))
         );
+
+        // Сбрасываем состояние движка если он существует
+        if (engineRef.current) {
+            console.log("Сброс состояния движка при остановке");
+            engineRef.current.reset();
+        }
     }, [updateNodes]);
 
     /**
