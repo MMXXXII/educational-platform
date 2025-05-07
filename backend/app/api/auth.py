@@ -19,6 +19,7 @@ from app.utils.vk import vk_login, vk_callback
 
 router = APIRouter()
 
+
 @router.post("/token", response_model=Token)
 async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -26,18 +27,22 @@ async def login_for_access_token(
 ):
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
-        raise HTTPException(status_code=400, detail="Неверное имя пользователя/email или пароль")
-    
-    access_token = create_access_token(data={"sub": user.username, "role": user.role})
-    refresh_token = create_refresh_token(data={"sub": user.username, "role": user.role})
-    
+        raise HTTPException(
+            status_code=400, detail="Неверное имя пользователя/email или пароль")
+
+    access_token = create_access_token(
+        data={"sub": user.username, "role": user.role})
+    refresh_token = create_refresh_token(
+        data={"sub": user.username, "role": user.role})
+
     save_refresh_token(db, user.id, refresh_token)
-    
+
     return Token(
         access_token=access_token,
         refresh_token=refresh_token,
         token_type="bearer"
     )
+
 
 @router.post("/refresh", response_model=Token)
 async def refresh_access_token(
@@ -52,13 +57,14 @@ async def refresh_access_token(
     )
 
     save_refresh_token(db, current_user.id, refresh_token)
-    
+
     return Token(
         access_token=access_token,
         refresh_token=refresh_token,
         token_type="bearer"
     )
-    
+
+
 @router.post("/custom-token", response_model=Token)
 async def login_with_username_or_email(
     username_or_email: str = Form(...),
@@ -72,21 +78,25 @@ async def login_with_username_or_email(
             detail="Неверное имя пользователя/email или пароль",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    access_token = create_access_token(data={"sub": user.username, "role": user.role})
-    refresh_token = create_refresh_token(data={"sub": user.username, "role": user.role})
-    
+
+    access_token = create_access_token(
+        data={"sub": user.username, "role": user.role})
+    refresh_token = create_refresh_token(
+        data={"sub": user.username, "role": user.role})
+
     save_refresh_token(db, user.id, refresh_token)
-    
+
     return Token(
         access_token=access_token,
         refresh_token=refresh_token,
         token_type="bearer"
     )
 
+
 @router.get("/login/vk")
 async def login_vk_route():
     return vk_login()
+
 
 @router.get("/vk-callback")
 async def vk_callback_route(code: str, db: Session = Depends(get_db)):

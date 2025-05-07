@@ -15,9 +15,11 @@ from app.core.schemas import FolderSchema, FileSchema
 from app.core.config import BASE_FOLDER_DIR, THUMBNAIL_DIR, BASE_URL
 from typing import List, Optional
 
+
 def get_absolute_path(user: User, relative_path: str) -> Path:
     """Convert relative path to absolute path for user"""
     return Path(BASE_FOLDER_DIR) / user.username / relative_path
+
 
 def get_folders(db: Session, user: User, parent_id: Optional[int] = None) -> List[FolderSchema]:
     """Get list of folders for user"""
@@ -25,12 +27,15 @@ def get_folders(db: Session, user: User, parent_id: Optional[int] = None) -> Lis
         UserFile.user_id == user.id,
         UserFile.is_folder == True
     )
-    query = query.filter(UserFile.parent_id == parent_id if parent_id is not None else UserFile.parent_id == None)
+    query = query.filter(
+        UserFile.parent_id == parent_id if parent_id is not None else UserFile.parent_id == None)
     folders = query.all()
     return [
-        FolderSchema(id=folder.id, name=folder.filename, parent=folder.parent_id)
+        FolderSchema(id=folder.id, name=folder.filename,
+                     parent=folder.parent_id)
         for folder in folders
     ]
+
 
 def create_folder(db: Session, user: User, folder_name: str, parent_id: Optional[int] = None) -> FolderSchema:
     """Create new folder"""
@@ -42,10 +47,12 @@ def create_folder(db: Session, user: User, folder_name: str, parent_id: Optional
             UserFile.is_folder == True
         ).first()
         if not parent:
-            raise HTTPException(status_code=404, detail="Parent folder not found")
-    
-    relative_path = folder_name if not parent else str(Path(parent.relative_path) / folder_name)
-    
+            raise HTTPException(
+                status_code=404, detail="Parent folder not found")
+
+    relative_path = folder_name if not parent else str(
+        Path(parent.relative_path) / folder_name)
+
     existing_folder = db.query(UserFile).filter(
         UserFile.user_id == user.id,
         UserFile.relative_path == relative_path,
@@ -75,18 +82,20 @@ def create_folder(db: Session, user: User, folder_name: str, parent_id: Optional
 
     return FolderSchema(id=new_folder.id, name=new_folder.filename, parent=new_folder.parent_id)
 
+
 def create_thumbnail(file_path: Path, user_username: str, thumbnail_size=(100, 100)) -> str:
     """Create thumbnail for image file"""
     user_thumbnail_dir = Path(THUMBNAIL_DIR) / user_username
     user_thumbnail_dir.mkdir(parents=True, exist_ok=True)
-    
+
     thumbnail_path = user_thumbnail_dir / f"th_{file_path.stem}.webp"
-    
+
     with Image.open(file_path) as img:
         img.thumbnail(thumbnail_size)
         img.save(thumbnail_path, "WEBP")
-    
+
     return f"{BASE_URL}/api/thumbnails/{user_username}/{thumbnail_path.name}"
+
 
 def get_thumbnail_path(file_path: Path, user_username: str) -> str:
     """Get thumbnail path for file"""
@@ -95,21 +104,23 @@ def get_thumbnail_path(file_path: Path, user_username: str) -> str:
     else:
         return f"{BASE_URL}/path/to/default/icon.png"
 
+
 def get_files(db: Session, user: User, folder_id: Optional[int] = None) -> List[FileSchema]:
     """Get list of files for user"""
     query = db.query(UserFile).filter(
         UserFile.user_id == user.id,
         UserFile.is_folder == False
     )
-    query = query.filter(UserFile.parent_id == folder_id if folder_id else UserFile.parent_id == None)
-    
+    query = query.filter(UserFile.parent_id ==
+                         folder_id if folder_id else UserFile.parent_id == None)
+
     files = query.all()
     file_schemas = []
-    
+
     for file in files:
         absolute_path = get_absolute_path(user, file.relative_path)
         thumbnail_path = get_thumbnail_path(absolute_path, user.username)
-        
+
         file_schemas.append(FileSchema(
             id=file.id,
             name=file.filename,
@@ -118,8 +129,9 @@ def get_files(db: Session, user: User, folder_id: Optional[int] = None) -> List[
             folder=file.parent_id,
             thumbnail=thumbnail_path
         ))
-    
+
     return file_schemas
+
 
 def upload_file(db: Session, user: User, file: UploadFile, folder_id: Optional[int] = None) -> FileSchema:
     """Upload new file"""
@@ -131,9 +143,11 @@ def upload_file(db: Session, user: User, file: UploadFile, folder_id: Optional[i
             UserFile.is_folder == True
         ).first()
         if not parent:
-            raise HTTPException(status_code=404, detail="Parent folder not found")
+            raise HTTPException(
+                status_code=404, detail="Parent folder not found")
 
-    relative_path = file.filename if not parent else str(Path(parent.relative_path) / file.filename)
+    relative_path = file.filename if not parent else str(
+        Path(parent.relative_path) / file.filename)
     absolute_path = get_absolute_path(user, relative_path)
 
     # Create user directory if it doesn't exist
@@ -167,11 +181,13 @@ def upload_file(db: Session, user: User, file: UploadFile, folder_id: Optional[i
         thumbnail=thumbnail_path
     )
 
+
 def delete_recursive(db: Session, item: UserFile):
     """Recursively delete folder contents"""
     for child in item.children:
         delete_recursive(db, child)
         db.delete(child)
+
 
 def delete_folder(db: Session, user: User, folder_id: int):
     """Delete folder and its contents"""
@@ -191,6 +207,7 @@ def delete_folder(db: Session, user: User, folder_id: int):
 
     shutil.rmtree(absolute_path, ignore_errors=True)
 
+
 def delete_file(db: Session, user: User, file_id: int):
     """Delete single file"""
     file = db.query(UserFile).filter(
@@ -202,13 +219,15 @@ def delete_file(db: Session, user: User, file_id: int):
         raise HTTPException(status_code=404, detail="File not found")
 
     absolute_path = get_absolute_path(user, file.relative_path)
-    thumbnail_path = Path(THUMBNAIL_DIR) / user.username / f"th_{absolute_path.stem}.webp"
+    thumbnail_path = Path(THUMBNAIL_DIR) / user.username / \
+        f"th_{absolute_path.stem}.webp"
 
     db.delete(file)
     db.commit()
 
     absolute_path.unlink(missing_ok=True)
     thumbnail_path.unlink(missing_ok=True)
+
 
 def download_file(db: Session, user: User, file_id: int):
     """Download file"""
@@ -229,6 +248,7 @@ def download_file(db: Session, user: User, file_id: int):
         media_type='application/octet-stream'
     )
 
+
 def read_file_content(db: Session, file_id: int):
     """Read text file content"""
     file = db.query(UserFile).filter(UserFile.id == file_id).first()
@@ -236,14 +256,14 @@ def read_file_content(db: Session, file_id: int):
         raise HTTPException(status_code=404, detail="File not found")
 
     absolute_path = Path(BASE_FOLDER_DIR) / 'admin' / file.relative_path
-   
+
     try:
         with open(absolute_path, 'r', encoding='utf-8') as f:
             content = f.read()
         return {"id": file.id, "name": file.filename, "content": content}
     except UnicodeDecodeError:
         raise HTTPException(status_code=400, detail="File is not a text file")
-    
+
 
 def rename_item(db: Session, user: User, item_id: int, new_name: str, is_folder: bool) -> UserFile:
     """Rename file or folder"""
@@ -256,7 +276,7 @@ def rename_item(db: Session, user: User, item_id: int, new_name: str, is_folder:
 
     if not item:
         raise HTTPException(
-            status_code=404, 
+            status_code=404,
             detail="Folder not found" if is_folder else "File not found"
         )
 
@@ -286,13 +306,16 @@ def rename_item(db: Session, user: User, item_id: int, new_name: str, is_folder:
 
         # If it's a file and has a thumbnail, rename it too
         if not is_folder and old_path.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']:
-            old_thumbnail = Path(THUMBNAIL_DIR) / user.username / f"th_{old_path.stem}.webp"
-            new_thumbnail = Path(THUMBNAIL_DIR) / user.username / f"th_{new_path.stem}.webp"
+            old_thumbnail = Path(THUMBNAIL_DIR) / \
+                user.username / f"th_{old_path.stem}.webp"
+            new_thumbnail = Path(THUMBNAIL_DIR) / \
+                user.username / f"th_{new_path.stem}.webp"
             if old_thumbnail.exists():
                 os.rename(old_thumbnail, new_thumbnail)
 
     except OSError as e:
-        raise HTTPException(status_code=500, detail=f"Failed to rename: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to rename: {str(e)}")
 
     # Update database
     item.filename = new_name

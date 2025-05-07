@@ -16,14 +16,18 @@ from app.core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
+
 # Token handling
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
 
 def create_token(data: dict, expires_delta: Optional[timedelta] = None, is_refresh: bool = False):
     to_encode = data.copy()
@@ -36,25 +40,30 @@ def create_token(data: dict, expires_delta: Optional[timedelta] = None, is_refre
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return create_token(data, expires_delta)
+
 
 def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None):
     return create_token(data, expires_delta, is_refresh=True)
 
+
 def save_refresh_token(db: Session, user_id: int, token: str):
     # Delete existing refresh tokens for this user
     db.query(RefreshToken).filter(RefreshToken.user_id == user_id).delete()
-    
+
     db_token = RefreshToken(
-        user_id=user_id, 
-        token=token, 
-        expires_at=datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
+        user_id=user_id,
+        token=token,
+        expires_at=datetime.now(timezone.utc) +
+        timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
     )
     db.add(db_token)
     db.commit()
     db.refresh(db_token)
     return db_token
+
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
@@ -72,11 +81,12 @@ async def get_current_user(
             raise credentials_exception
     except jwt.PyJWTError:
         raise credentials_exception
-        
+
     user = db.query(User).filter(User.username == username).first()
     if user is None:
         raise credentials_exception
     return user
+
 
 async def get_current_active_user(
     current_user: User = Depends(get_current_user)
@@ -84,6 +94,7 @@ async def get_current_active_user(
     if current_user.disabled:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
+
 
 class RoleChecker:
     def __init__(self, allowed_roles: list):

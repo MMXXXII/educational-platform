@@ -17,6 +17,7 @@ from app.utils.files import (
 
 router = APIRouter()
 
+
 @router.get("/folders", response_model=List[FolderSchema])
 async def list_folders(
     parent: Optional[int] = None,
@@ -25,6 +26,7 @@ async def list_folders(
 ):
     return get_folders(db, current_user, parent)
 
+
 @router.post("/folders", response_model=FolderSchema, status_code=status.HTTP_201_CREATED)
 async def create_new_folder(
     folder: FolderCreate,
@@ -32,6 +34,7 @@ async def create_new_folder(
     db: Session = Depends(get_db)
 ):
     return create_folder(db, current_user, folder.name, folder.parent)
+
 
 @router.delete("/folders/{folder_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_folder(
@@ -42,6 +45,7 @@ async def remove_folder(
     delete_folder(db, current_user, folder_id)
     return {"status": "success"}
 
+
 @router.get("/files", response_model=List[FileSchema])
 async def list_files(
     folder: Optional[int] = None,
@@ -49,6 +53,7 @@ async def list_files(
     db: Session = Depends(get_db)
 ):
     return get_files(db, current_user, folder)
+
 
 @router.post("/files", response_model=FileSchema)
 async def upload_new_file(
@@ -59,6 +64,7 @@ async def upload_new_file(
 ):
     return upload_file(db, current_user, file, folder)
 
+
 @router.delete("/files/{file_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_file(
     file_id: int,
@@ -68,6 +74,7 @@ async def remove_file(
     delete_file(db, current_user, file_id)
     return {"status": "success"}
 
+
 @router.get("/files/{file_id}/download")
 async def download_single_file(
     file_id: int,
@@ -76,12 +83,14 @@ async def download_single_file(
 ):
     return download_file(db, current_user, file_id)
 
+
 @router.get("/files/{file_id}/read")
 async def read_file_contents(
     file_id: int,
     db: Session = Depends(get_db)
 ):
     return read_file_content(db, file_id)
+
 
 @router.put("/folders/{folder_id}/rename", response_model=FolderSchema)
 async def rename_folder(
@@ -92,6 +101,7 @@ async def rename_folder(
 ):
     """Rename folder"""
     return rename_item(db, current_user, folder_id, new_name, is_folder=True)
+
 
 @router.put("/files/{file_id}/rename", response_model=FileSchema)
 async def rename_file(

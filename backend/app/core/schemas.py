@@ -6,16 +6,19 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime
 
+
 class UserBase(BaseModel):
     username: str
     email: EmailStr
     role: str = "user"
+
 
 class UserCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
     role: str = "user"
+
 
 class UserOut(UserBase):
     id: int
@@ -25,17 +28,21 @@ class UserOut(UserBase):
     class Config:
         from_attributes = True
 
+
 class Token(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
 
+
 class TokenData(BaseModel):
     username: Optional[str] = None
+
 
 class FolderCreate(BaseModel):
     name: str
     parent: Optional[int] = None
+
 
 class FolderSchema(BaseModel):
     id: int
@@ -44,6 +51,7 @@ class FolderSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 class FileSchema(BaseModel):
     id: int
