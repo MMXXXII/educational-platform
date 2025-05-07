@@ -34,10 +34,10 @@ export function AuthProvider({ children }) {
     }, []);
 
     // Функция входа в систему
-    const login = async (email, password) => {
+    const login = async (username_or_email, password) => {
         try {
             // Авторизация
-            const authData = await authService.login(email, password);
+            const authData = await authService.login(username_or_email, password);
             setTokens(authData.access_token, authData.refresh_token);
 
             // Получение данных пользователя

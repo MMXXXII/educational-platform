@@ -72,7 +72,7 @@ export function SignUp() {
                         {/* Username Field */}
                         <div className="mb-4">
                             <label htmlFor="username" className="block text-sm font-medium mb-1">
-                                Никнейм
+                                Имя пользователя или Email
                             </label>
                             <input
                                 className="w-full bg-gray-800 rounded p-2 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-600"

@@ -27,17 +27,32 @@ export function SignIn() {
         event.preventDefault();
         setError('');
         const data = new FormData(event.currentTarget);
-
+    
         try {
             await login(
-                data.get('email'),
+                data.get('username_or_email'),
                 data.get('password')
             );
-
+    
             navigate(from, { replace: true });
         } catch (error) {
             console.error('Error:', error);
-            setError(error.response?.data?.detail || 'Authentication failed');
+            // Проверяем структуру ошибки и извлекаем читаемое сообщение
+            if (error.response?.data?.detail) {
+                // Если detail - это строка
+                if (typeof error.response.data.detail === 'string') {
+                    setError(error.response.data.detail);
+                }
+                // Если detail - это объект или массив (валидационные ошибки FastAPI)
+                else if (Array.isArray(error.response.data.detail)) {
+                    setError(error.response.data.detail.map(err => err.msg).join(', '));
+                } 
+                else {
+                    setError(JSON.stringify(error.response.data.detail));
+                }
+            } else {
+                setError('Ошибка аутентификации');
+            }
         }
     };
 
@@ -62,18 +77,17 @@ export function SignIn() {
 
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="w-full mt-4">
-                        {/* Email Field */}
+                        {/* Username or Email Field */}
                         <div className="mb-4">
-                            <label htmlFor="email" className="block text-sm font-medium mb-1">
-                                Электронная почта
+                            <label htmlFor="username_or_email" className="block text-sm font-medium mb-1">
+                                Имя пользователя или Email
                             </label>
                             <input
                                 className="w-full bg-gray-800 rounded p-2 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-600"
                                 required
-                                id="email"
-                                name="email"
-                                // type="email"
-                                autoComplete="email"
+                                id="username_or_email"
+                                name="username_or_email"
+                                autoComplete="username email"
                                 autoFocus
                             />
                         </div>
