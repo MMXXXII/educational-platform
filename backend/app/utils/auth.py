@@ -2,7 +2,7 @@
 Authentication utilities
 """
 from fastapi.security import OAuth2PasswordBearer
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 import jwt
 from fastapi import Depends, HTTPException, status
@@ -28,9 +28,9 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 def create_token(data: dict, expires_delta: Optional[timedelta] = None, is_refresh: bool = False):
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(
+        expire = datetime.now(timezone.utc) + timedelta(
             minutes=REFRESH_TOKEN_EXPIRE_MINUTES if is_refresh else ACCESS_TOKEN_EXPIRE_MINUTES
         )
     to_encode.update({"exp": expire})
@@ -49,7 +49,7 @@ def save_refresh_token(db: Session, user_id: int, token: str):
     db_token = RefreshToken(
         user_id=user_id, 
         token=token, 
-        expires_at=datetime.utcnow() + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
+        expires_at=datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRE_MINUTES)
     )
     db.add(db_token)
     db.commit()
