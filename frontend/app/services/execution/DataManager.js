@@ -11,6 +11,7 @@ class DataManager {
         this.edges = edges;
         this.inputCache = {};
         this.dataTransfers = [];
+        this.executionContext = null; // Добавляем ссылку на контекст выполнения
     }
 
     /**
@@ -27,6 +28,37 @@ class DataManager {
     reset() {
         this.inputCache = {};
         this.dataTransfers = [];
+    }
+
+    /**
+     * Устанавливает контекст выполнения для разрешения reference-типов
+     * @param {Object} context - Контекст выполнения
+     */
+    setExecutionContext(context) {
+        this.executionContext = context;
+    }
+
+    /**
+     * Извлекает значение из reference-типа или возвращает обычное значение без изменений
+     * @param {any} value - Входное значение (может быть reference-типом)
+     * @returns {any} - Извлеченное значение
+     */
+    resolveReference(value) {
+        // Проверяем, является ли значение ссылкой на переменную
+        if (value && typeof value === 'object' && value.type === 'reference') {
+            const variableName = value.name;
+            
+            // Проверяем наличие контекста выполнения
+            if (this.executionContext && this.executionContext.variables) {
+                const resolvedValue = this.executionContext.variables[variableName];
+                return resolvedValue !== undefined ? resolvedValue : undefined;
+            }
+            
+            return undefined;
+        }
+        
+        // Если значение не является ссылкой, возвращаем его без изменений
+        return value;
     }
 
     /**
@@ -66,7 +98,11 @@ class DataManager {
                     const cacheKey = `${sourceNode}:${outputName}`;
 
                     if (this.inputCache[cacheKey] !== undefined) {
-                        const value = this.inputCache[cacheKey];
+                        let value = this.inputCache[cacheKey];
+                        
+                        // Разрешаем reference-тип, если значение таковым является
+                        value = this.resolveReference(value);
+                        
                         inputValues[inputName] = value;
 
                         // Записываем информацию о передаче данных для анимации

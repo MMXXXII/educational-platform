@@ -22,6 +22,34 @@ class ExecutionState {
     }
 
     /**
+     * Форматирует значение для вывода в лог, учитывая reference
+     * @param {any} value - Значение для форматирования
+     * @returns {string} - Отформатированное значение
+     */
+    formatValueForLog(value) {
+        if (value === null) return 'null';
+        if (value === undefined) return 'undefined';
+        
+        // Если это ссылка на переменную (reference), выводим её значение
+        if (value && typeof value === 'object' && value.type === 'reference') {
+            // Возвращаем значение переменной из контекста
+            const variableName = value.name;
+            const variableValue = this.variables[variableName];
+            return variableValue !== undefined ? String(variableValue) : 'undefined';
+        }
+        
+        if (typeof value === 'object') {
+            try {
+                return JSON.stringify(value);
+            } catch (e) {
+                return '[Объект]';
+            }
+        }
+        
+        return String(value);
+    }
+
+    /**
      * Сбрасывает состояние выполнения, сохраняя глобальные переменные
      */
     reset() {

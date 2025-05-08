@@ -42,42 +42,32 @@ export class MathNode extends BaseNode {
         this.addInput('right', 'Right', 'any', true);
         
         this.addOutput('flow', 'Flow', 'flow');  // Flow-выход для продолжения выполнения
-        this.addOutput('result', 'Result', 'any');
-    }
-
-    /**
-     * Преобразует значение к нужному типу
-     * @param {any} value - Значение для преобразования
-     * @param {string} type - Целевой тип (number, string, boolean)
-     * @returns {any} - Преобразованное значение
-     */
-    convertValue(value, type) {
-        if (value === undefined || value === null) {
-            return null;
-        }
-
-        switch (type) {
-            case 'number':
-                return Number(value) || 0;
-            case 'string':
-                return String(value);
-            case 'boolean':
-                return Boolean(value);
-            default:
-                return value;
-        }
+        this.addOutput('result', 'Result', 'any'); // Результат всегда выдаётся как прямое значение
     }
 
     /**
      * Выполняет логику нода
-     * @param {Object} inputValues - Входные значения
+     * @param {Object} inputValues - Входные значения (уже с разрешенными reference-типами)
      * @param {Object} context - Контекст выполнения
      * @returns {Object} - Выходные значения
      */
     execute(inputValues, context) {
-        // Используем значения из входов или значения по умолчанию
-        const left = inputValues.left !== undefined ? inputValues.left : this.convertValue(this.data.leftValue, this.data.leftType);
-        const right = inputValues.right !== undefined ? inputValues.right : this.convertValue(this.data.rightValue, this.data.rightType);
+        // Получаем значения из входов
+        const leftValue = inputValues.left !== undefined ? inputValues.left : this.data.leftValue;
+        const rightValue = inputValues.right !== undefined ? inputValues.right : this.data.rightValue;
+        
+        // Преобразуем значения в соответствии с типом
+        let left = leftValue;
+        let right = rightValue;
+        
+        // Преобразуем типы по необходимости
+        if (this.data.leftType === 'number' && typeof left !== 'number') {
+            left = Number(left) || 0;
+        }
+        
+        if (this.data.rightType === 'number' && typeof right !== 'number') {
+            right = Number(right) || 0;
+        }
         
         let result;
 
@@ -104,9 +94,22 @@ export class MathNode extends BaseNode {
         // Обновляем состояние нода
         this.state = { left, right, result };
 
+        // Получаем символ операции для вывода в лог
+        let opSymbol = '';
+        switch (this.data.operation) {
+            case 'add': opSymbol = '+'; break;
+            case 'subtract': opSymbol = '-'; break;
+            case 'multiply': opSymbol = '*'; break;
+            case 'divide': opSymbol = '/'; break;
+            case 'modulo': opSymbol = '%'; break;
+        }
+
+        // Логирование с уже извлеченными значениями
+        context.log('output', `Вычисление: ${left} ${opSymbol} ${right} = ${result}`);
+
         return { 
             flow: true,  // Сигнал для продолжения выполнения
-            result 
+            result       // Результат операции
         };
     }
 

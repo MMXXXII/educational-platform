@@ -100,53 +100,8 @@ class NodeExecutor {
         }
 
         if (node.data.type === 'math') {
-            // Показываем промежуточные результаты вычислений
-            const nodeRef = node.data.nodeRef;
-            const operation = nodeRef.data.operation;
-
-            const formatValue = (value) => {
-                if (value === undefined || value === null) return 'не задано';
-                return value;
-            };
-
-            // Получаем левый операнд (из inputValues или из настроек нода)
-            let left = inputValues.left;
-            if (left === undefined && nodeRef.data && nodeRef.data.leftValue !== undefined) {
-                left = nodeRef.data.leftValue;
-            }
-            left = formatValue(left);
-
-            // Получаем правый операнд (из inputValues или из настроек нода)
-            let right = inputValues.right;
-            if (right === undefined && nodeRef.data && nodeRef.data.rightValue !== undefined) {
-                right = nodeRef.data.rightValue;
-            }
-            right = formatValue(right);
-
-            const result = outputs.result;
-
-            let opSymbol = '';
-            switch (operation) {
-                case 'add': opSymbol = '+'; break;
-                case 'subtract': opSymbol = '-'; break;
-                case 'multiply': opSymbol = '*'; break;
-                case 'divide': opSymbol = '/'; break;
-                case 'modulo': opSymbol = '%'; break;
-            }
-
-            // Выводим в основной лог (не в отладочный)
-            this.state.log('output', `Вычисление: ${left} ${opSymbol} ${right} = ${result}${loopInfo}`);
-
-            // Если мы в цикле, добавим информацию для отладки
-            if (iteration >= 0) {
-                // Используем индекс для вычислений в цикле (если нужно)
-                console.log(`Мат.операция в цикле (индекс=${iteration}): ${left} ${opSymbol} ${right} = ${result}`);
-            }
-        } else if (node.data.type === 'variable') {
-            // Логируем изменение переменной
-            const name = node.data.nodeRef.data.name;
-            const value = outputs.value;
-            this.state.log('output', `Переменная ${name} = ${value}${loopInfo}`);
+            // Эта логика теперь перенесена в MathNode.execute для лучшего форматирования
+            // Здесь можем добавить дополнительную информацию, если необходимо
         } else if (node.data.type === 'if') {
             // Логируем результат условия
             const result = node.data.nodeRef.state.result;

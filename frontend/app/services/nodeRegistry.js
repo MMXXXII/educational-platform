@@ -10,7 +10,8 @@ import {
     CalculatorIcon,
     ArrowsRightLeftIcon,
     CubeTransparentIcon,
-    ServerIcon
+    ServerIcon,
+    ClipboardDocumentIcon
 } from '@heroicons/react/24/outline';
 
 /**
@@ -43,6 +44,25 @@ const nodeRegistry = {
         getActiveValue: node => node.state?.currentValue,
         getPortColor: dataType => getPortColorForType(dataType),
         defaultData: { name: 'x', initialValue: '', variableType: 'any' }
+    },
+    
+    // Нод присваивания
+    assignment: {
+        type: 'assignment',
+        category: NODE_CATEGORIES.OPERATIONS,
+        name: 'Присваивание',
+        description: 'Присваивает значение переменной',
+        iconComponent: ClipboardDocumentIcon,
+        color: {
+            bg: 'bg-teal-100 dark:bg-teal-900',
+            border: 'border-teal-500',
+            text: 'text-teal-800 dark:text-teal-200'
+        },
+        paletteColor: 'bg-teal-500 hover:bg-teal-600',
+        hexColor: '#14b8a6', // teal-500
+        getActiveValue: node => node.state?.result,
+        getPortColor: dataType => getPortColorForType(dataType),
+        defaultData: { leftValue: '', rightValue: '', leftType: 'any', rightType: 'any' }
     },
     
     // Ноды категории "Операции"

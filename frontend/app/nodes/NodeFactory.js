@@ -8,6 +8,7 @@ import { LoopNode } from './types/LoopNode';
 import { MathNode } from './types/MathNode';
 import { LogicalNode } from './types/LogicalNode';
 import { IfNode } from './types/IfNode';
+import { AssignmentNode } from './types/AssignmentNode';
 
 
 // Создаем реестр типов узлов
@@ -18,6 +19,7 @@ const registry = {
     math: MathNode,
     logical: LogicalNode,
     if: IfNode,
+    assignment: AssignmentNode,
 };
 
 /**

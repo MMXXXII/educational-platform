@@ -6,6 +6,7 @@ import VariableNode from './components/VariableNode';
 import OperationNode from './components/OperationNode';
 import ControlNode from './components/ControlNode';
 import PrintNode from './components/PrintNode';
+import AssignmentNode from './components/AssignmentNode';
 
 /**
  * Главный компонент NodeRenderer, маршрутизирующий рендеринг нодов разных типов
@@ -26,6 +27,16 @@ const NodeRenderer = ({ data, selected, id }) => {
         case 'variable':
             return (
                 <VariableNode
+                    id={id}
+                    data={data}
+                    selected={selected}
+                    nodeDefinition={nodeDefinition}
+                />
+            );
+            
+        case 'assignment':
+            return (
+                <AssignmentNode
                     id={id}
                     data={data}
                     selected={selected}

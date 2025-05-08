@@ -30,10 +30,10 @@ class ExecutionEngine {
         this.currentNodeId = null;
         this.maxSteps = 100; // Для предотвращения бесконечных циклов
         this.stepCount = 0;
-        
+
         // Отслеживаем активные пути выполнения для условных ветвлений
         this.activeBranches = new Map();
-        
+
         // Отслеживаем текущее тело цикла
         this.currentLoopBody = {
             loopId: null,
@@ -46,19 +46,23 @@ class ExecutionEngine {
     /**
      * Инициализирует движок и находит стартовые ноды
      * @returns {boolean} - Готов ли движок к выполнению
-     */
+    */
     initialize() {
         // Явно сбрасываем состояние всех нодов перед инициализацией
         this.reset();
-        
+
         // Сбрасываем состояние выполнения (это дублирование для надежности)
         this.state.reset();
         this.dataManager.reset();
+
+        // Передаем контекст выполнения в DataManager
+        this.dataManager.setExecutionContext(this.state);
+
         this.nodeExecutor.reset();
         this.isComplete = false;
         this.stepCount = 0;
         this.activeBranches.clear();
-        
+
         // Сбрасываем текущее тело цикла
         this.currentLoopBody = {
             loopId: null,
@@ -144,29 +148,29 @@ class ExecutionEngine {
         // Проверяем каждую активную ветвь
         for (const [ifNodeId, branchType] of this.activeBranches) {
             // Находим все исходящие связи от условного нода
-            const outgoingEdges = this.edges.filter(edge => 
-                edge.source === ifNodeId && 
+            const outgoingEdges = this.edges.filter(edge =>
+                edge.source === ifNodeId &&
                 edge.sourceHandle === `output-${branchType}`
             );
-            
+
             // Если нод непосредственно связан с активной ветвью условного нода
             if (outgoingEdges.some(edge => edge.target === nodeId)) {
                 return true;
             }
-            
+
             // Рекурсивно проверяем ноды, связанные с активной ветвью
             const directTargets = outgoingEdges.map(edge => edge.target);
             for (const targetId of directTargets) {
-                const childEdges = this.edges.filter(edge => 
+                const childEdges = this.edges.filter(edge =>
                     edge.source === targetId
                 );
-                
+
                 if (childEdges.some(edge => edge.target === nodeId)) {
                     return true;
                 }
             }
         }
-        
+
         // Если нод не связан ни с одной активной ветвью, считаем его неактивным
         return false;
     }
@@ -183,20 +187,20 @@ class ExecutionEngine {
         }
 
         // Пытаемся найти первый нод тела цикла (тот, к которому идет body-output из цикла)
-        const bodyStartNodes = this.edges.filter(edge => 
-            edge.source === loopNodeId && 
+        const bodyStartNodes = this.edges.filter(edge =>
+            edge.source === loopNodeId &&
             edge.sourceHandle === 'output-body'
         ).map(edge => edge.target);
 
         // Если нет прямого соединения с output-body, ищем первый нод в теле цикла
         let startNodes = bodyStartNodes.length > 0 ? bodyStartNodes : [];
-        
+
         // Если все еще нет начальных нодов, ищем все ноды, которые могут быть первыми в цепочке
         if (startNodes.length === 0) {
             // Находим все ноды тела цикла с входящими соединениями 
             // непосредственно от цикла (но не через input-flow)
-            startNodes = this.edges.filter(edge => 
-                edge.source === loopNodeId && 
+            startNodes = this.edges.filter(edge =>
+                edge.source === loopNodeId &&
                 edge.target !== loopNodeId &&
                 bodyNodes.includes(edge.target) &&
                 edge.targetHandle !== 'input-flow'
@@ -208,13 +212,13 @@ class ExecutionEngine {
             // Создаем множество нодов, в которые входят ребра от других нодов тела цикла
             const nodesWithIncomingEdges = new Set();
             this.edges.forEach(edge => {
-                if (bodyNodes.includes(edge.source) && 
-                    bodyNodes.includes(edge.target) && 
+                if (bodyNodes.includes(edge.source) &&
+                    bodyNodes.includes(edge.target) &&
                     edge.source !== edge.target) {
                     nodesWithIncomingEdges.add(edge.target);
                 }
             });
-            
+
             // Ноды без входящих соединений - потенциальные начальные
             startNodes = bodyNodes.filter(nodeId => !nodesWithIncomingEdges.has(nodeId));
         }
@@ -238,9 +242,9 @@ class ExecutionEngine {
             executionOrder.push(nodeId);
 
             // Находим все исходящие flow-соединения
-            const flowEdges = this.edges.filter(edge => 
-                edge.source === nodeId && 
-                bodyNodes.includes(edge.target) && 
+            const flowEdges = this.edges.filter(edge =>
+                edge.source === nodeId &&
+                bodyNodes.includes(edge.target) &&
                 edge.sourceHandle && edge.sourceHandle.includes('flow')
             );
 
@@ -251,9 +255,9 @@ class ExecutionEngine {
                 }
             } else {
                 // Если нет flow-соединений, проверяем соединения по данным
-                const dataEdges = this.edges.filter(edge => 
-                    edge.source === nodeId && 
-                    bodyNodes.includes(edge.target) && 
+                const dataEdges = this.edges.filter(edge =>
+                    edge.source === nodeId &&
+                    bodyNodes.includes(edge.target) &&
                     !edge.sourceHandle.includes('flow')
                 );
 
@@ -307,7 +311,7 @@ class ExecutionEngine {
      * @returns {string|null} - ID следующего нода или null, если все ноды выполнены
      */
     findNextNodeInLoopBody() {
-        if (!this.currentLoopBody.loopId || 
+        if (!this.currentLoopBody.loopId ||
             this.currentLoopBody.executionOrder.length === 0 ||
             this.currentLoopBody.currentIndex >= this.currentLoopBody.executionOrder.length) {
             return null;
@@ -405,13 +409,13 @@ class ExecutionEngine {
                 this.updateCurrentLoopBody(currentNode.id);
                 // Сбрасываем индекс выполнения тела цикла для новой итерации
                 this.resetLoopBodyExecution();
-                
+
                 // Находим первый нод для выполнения в теле цикла
                 const firstBodyNode = this.findNextNodeInLoopBody();
                 if (firstBodyNode) {
                     console.log("Начинаем выполнение тела цикла с нода:", firstBodyNode);
                     this.currentNodeId = firstBodyNode;
-                    
+
                     return {
                         isComplete: false,
                         currentNodeId: this.currentNodeId,
@@ -425,18 +429,18 @@ class ExecutionEngine {
             // Проверяем, активен ли возврат в цикл и выполняются ли ноды тела цикла
             if (this.state.loopReturn) {
                 console.log("Активен возврат в цикл:", this.state.loopReturn);
-                
+
                 // Обновляем информацию о текущем теле цикла, если не обновлена
                 this.updateCurrentLoopBody(this.state.loopReturn);
-                
+
                 // Если текущий нод в теле цикла, проверяем, есть ли еще ноды для выполнения
                 if (this.currentLoopBody.bodyNodes.includes(currentNode.id)) {
                     const nextNodeInLoop = this.findNextNodeInLoopBody();
-                    
+
                     if (nextNodeInLoop) {
                         console.log("Следующий нод в теле цикла:", nextNodeInLoop);
                         this.currentNodeId = nextNodeInLoop;
-                        
+
                         return {
                             isComplete: false,
                             currentNodeId: this.currentNodeId,
@@ -445,12 +449,12 @@ class ExecutionEngine {
                             dataTransfers: this.dataManager.getDataTransfers()
                         };
                     }
-                    
+
                     // Если все ноды тела цикла выполнены, возвращаемся в цикл
                     if (this.isLoopBodyComplete()) {
                         console.log("Все ноды тела цикла выполнены, возвращаемся в цикл");
                         this.currentNodeId = this.state.loopReturn;
-                        
+
                         return {
                             isComplete: false,
                             currentNodeId: this.currentNodeId,
@@ -460,7 +464,7 @@ class ExecutionEngine {
                         };
                     }
                 }
-                
+
                 // Если текущий нод - это цикл и выход next активен, продолжаем выполнение
                 if (currentNode.id === this.state.loopReturn && result.outputs && result.outputs.next) {
                     console.log("Выход из цикла");
@@ -473,7 +477,7 @@ class ExecutionEngine {
                     if (firstBodyNode) {
                         console.log("Продолжаем выполнение тела цикла с нода:", firstBodyNode);
                         this.currentNodeId = firstBodyNode;
-                        
+
                         return {
                             isComplete: false,
                             currentNodeId: this.currentNodeId,
@@ -511,7 +515,7 @@ class ExecutionEngine {
                         nextNodeId = outgoingEdges[0].target;
                         console.log("Следующий нод по flow-выходу:", nextNodeId);
                     }
-                    
+
                     // Если это условный нод, запоминаем активную ветвь
                     if (currentNode.data.type === 'if') {
                         console.log(`Условие ${currentNode.id} определило ветвь: ${activeOutput}`);
@@ -625,7 +629,7 @@ class ExecutionEngine {
             this.currentNodeId = null;
             this.stepCount = 0;
             this.activeBranches.clear();
-            
+
             // Сбрасываем информацию о текущем теле цикла
             this.currentLoopBody = {
                 loopId: null,

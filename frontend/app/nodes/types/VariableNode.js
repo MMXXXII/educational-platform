@@ -21,17 +21,19 @@ export class VariableNode extends BaseNode {
             ...data
         });
 
-
+        // Добавляем входы
         this.addInput('flow', 'Flow', 'flow');  
         this.addInput('value', 'Value', data.variableType || 'any'); 
 
+        // Добавляем выходы
         this.addOutput('flow', 'Flow', 'flow'); 
-        this.addOutput('value', 'Value', data.variableType || 'any'); 
+        // Используем только один выход - ссылка на переменную
+        this.addOutput('reference', 'Variable', 'reference'); 
     }
 
     /**
      * Выполняет логику нода
-     * @param {Object} inputValues - Входные значения
+     * @param {Object} inputValues - Входные значения (уже с разрешенными reference-типами)
      * @param {Object} context - Контекст выполнения
      * @returns {Object} - Выходные значения
      */
@@ -56,15 +58,27 @@ export class VariableNode extends BaseNode {
         // Сохраняем значение в контексте выполнения
         if (context.variables) {
             context.variables[this.data.name] = value;
+            
+            // Используем значение, а не объект для вывода в лог
+            context.log('output', `Переменная ${this.data.name} = ${value}`);
         }
 
         // Обновляем состояние нода
         this.state = { currentValue: value };
 
-        // Возвращаем значение на выходные порты
+        // Создаем объект-ссылку на переменную
+        // Не сохраняем значение в reference, только метаданные
+        const variableRef = {
+            type: 'reference',
+            name: this.data.name,
+            variableType: this.data.variableType
+            // Все ноды должны обращаться к контексту за актуальным значением
+        };
+
+        // Возвращаем только ссылку на переменную
         return { 
             flow: true,  // Сигнал для продолжения выполнения
-            value: value // Значение переменной
+            reference: variableRef // Ссылка на переменную
         };
     }
 
@@ -84,14 +98,9 @@ export class VariableNode extends BaseNode {
         // Если обновился тип переменной, обновляем типы портов
         if (key === 'variableType') {
             const inputs = this.inputs.filter(input => input.name === 'value');
-            const outputs = this.outputs.filter(output => output.name === 'value');
             
             if (inputs.length > 0) {
                 inputs[0].dataType = value;
-            }
-            
-            if (outputs.length > 0) {
-                outputs[0].dataType = value;
             }
         }
 
