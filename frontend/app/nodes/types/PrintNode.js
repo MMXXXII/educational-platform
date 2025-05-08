@@ -8,13 +8,17 @@ export class PrintNode extends BaseNode {
     /**
      * @param {string} id - Идентификатор нода
      * @param {Object} data - Данные нода
+     * @param {string} data.message - Сообщение по умолчанию для вывода
      */
     constructor(id = uuidv4(), data = {}) {
-        super(id, 'print', 'Output', data);
+        super(id, 'print', 'Вывод', {
+            message: data.message || '',
+            ...data
+        });
 
         // Добавление портов
         this.addInput('flow', '', 'flow');  // Flow-вход для управления выполнением
-        this.addInput('value', 'Value', 'any', true);
+        this.addInput('value', 'Value', 'any');
         
         this.addOutput('flow', '', 'flow');  // Flow-выход для продолжения выполнения
     }
@@ -26,7 +30,8 @@ export class PrintNode extends BaseNode {
      * @returns {Object} - Выходные значения
      */
     execute(inputValues, context) {
-        const value = inputValues.value;
+        // Используем входное значение, если оно есть, иначе используем сообщение по умолчанию
+        const value = inputValues.value !== undefined ? inputValues.value : this.data.message;
 
         // Явно преобразуем значение в строку для вывода
         let displayValue;

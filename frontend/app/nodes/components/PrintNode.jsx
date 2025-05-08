@@ -1,5 +1,6 @@
-import React from 'react';
-import { getNodeClassName } from '../../utils/nodeUtils';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useStore } from 'reactflow';
+import { getNodeClassName, checkNodeConnections } from '../../utils/nodeUtils';
 import { InputHandles, OutputHandles, NodeStateIndicator } from './NodeHandles';
 
 /**
@@ -12,6 +13,58 @@ import { InputHandles, OutputHandles, NodeStateIndicator } from './NodeHandles';
  * @returns {JSX.Element} JSX элемент
  */
 const PrintNode = ({ id, data, selected, nodeDefinition }) => {
+    const [localState, setLocalState] = useState({
+        message: ''
+    });
+
+    const [externalConnections, setExternalConnections] = useState({
+        value: false
+    });
+
+    // Получаем все рёбра из хранилища ReactFlow
+    const edges = useStore((state) => state.edges);
+
+    // Проверяем наличие внешних подключений
+    const checkExternalConnections = useCallback(() => {
+        if (!id) return;
+
+        const valueConnection = edges.some(edge =>
+            edge.target === id &&
+            edge.targetHandle === 'input-value'
+        );
+
+        setExternalConnections({
+            value: valueConnection
+        });
+    }, [edges, id]);
+
+    // Инициализируем локальное состояние из данных нода
+    useEffect(() => {
+        if (data.nodeRef) {
+            setLocalState({
+                message: data.nodeRef.data.message || ''
+            });
+        }
+    }, [data.nodeRef]);
+
+    // Проверяем соединения при монтировании и при изменении рёбер
+    useEffect(() => {
+        checkExternalConnections();
+
+        // Добавляем периодическую проверку для сложных взаимодействий
+        const interval = setInterval(checkExternalConnections, 300);
+        return () => clearInterval(interval);
+    }, [checkExternalConnections]);
+
+    // Обработчик изменения значений в интерактивных элементах
+    const handleChange = (key, value) => {
+        setLocalState(prev => ({ ...prev, [key]: value }));
+
+        if (data.nodeRef) {
+            data.nodeRef.setProperty(key, value);
+        }
+    };
+
     // Получаем стили для нода
     const nodeColors = nodeDefinition?.color || {
         bg: 'bg-gray-100 dark:bg-gray-800',
@@ -30,9 +83,22 @@ const PrintNode = ({ id, data, selected, nodeDefinition }) => {
             </div>
 
             {/* Содержимое нода */}
-            <div className="flex justify-center mb-4 w-full">
-                <div className="w-full text-center text-sm">
-                    Выводит значение в консоль
+            <div className="flex flex-col w-full px-2">
+
+                {/* Поле ввода сообщения или метка "внешние данные" */}
+                <div className="w-full">
+                    {externalConnections.value ? (
+                        <div className="bg-gray-700 text-white p-1 text-xs rounded text-center w-full">
+                            (внешние данные)
+                        </div>
+                    ) : (
+                        <textarea
+                            value={localState.message || ''}
+                            onChange={(e) => handleChange('message', e.target.value)}
+                            className="w-full p-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm nodrag min-h-[40px] resize-none"
+                            placeholder="Введите сообщение для вывода"
+                        />
+                    )}
                 </div>
             </div>
 
@@ -41,6 +107,7 @@ const PrintNode = ({ id, data, selected, nodeDefinition }) => {
                 inputs={data.inputs}
                 nodeId={id}
                 nodeType="print"
+                onConnect={checkExternalConnections}
             />
             <OutputHandles
                 outputs={data.outputs}
