@@ -7,6 +7,7 @@ import OperationNode from './components/OperationNode';
 import ControlNode from './components/ControlNode';
 import PrintNode from './components/PrintNode';
 import AssignmentNode from './components/AssignmentNode';
+import BooleanLogicNode from './components/BooleanLogicNode';
 
 /**
  * Главный компонент NodeRenderer, маршрутизирующий рендеринг нодов разных типов
@@ -48,6 +49,16 @@ const NodeRenderer = ({ data, selected, id }) => {
         case 'logical':
             return (
                 <OperationNode
+                    id={id}
+                    data={data}
+                    selected={selected}
+                    nodeDefinition={nodeDefinition}
+                />
+            );
+            
+        case 'booleanLogic':
+            return (
+                <BooleanLogicNode
                     id={id}
                     data={data}
                     selected={selected}

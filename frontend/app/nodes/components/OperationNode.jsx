@@ -117,6 +117,20 @@ const OperationNode = ({ id, data, selected, nodeDefinition }) => {
                     </select>
                 </>
             );
+        } else if (nodeType === 'booleanLogic') {
+            return (
+                <>
+                    {/* Выбор логической операции AND/OR */}
+                    <select
+                        value={localState.operation || 'and'}
+                        onChange={(e) => handleChange('operation', e.target.value)}
+                        className="w-full p-1 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm nodrag mb-2"
+                    >
+                        <option value="and">Логическое И (AND)</option>
+                        <option value="or">Логическое ИЛИ (OR)</option>
+                    </select>
+                </>
+            );
         }
         return null;
     };

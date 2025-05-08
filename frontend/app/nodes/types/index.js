@@ -4,3 +4,4 @@ export { MathNode } from './MathNode';
 export { LogicalNode } from './LogicalNode';
 export { IfNode } from './IfNode';
 export { AssignmentNode } from './AssignmentNode';
+export { BooleanLogicNode } from './BooleanLogicNode';

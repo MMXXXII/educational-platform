@@ -9,7 +9,7 @@ import { MathNode } from './types/MathNode';
 import { LogicalNode } from './types/LogicalNode';
 import { IfNode } from './types/IfNode';
 import { AssignmentNode } from './types/AssignmentNode';
-
+import { BooleanLogicNode } from './types/BooleanLogicNode';
 
 // Создаем реестр типов узлов
 const registry = {
@@ -20,6 +20,7 @@ const registry = {
     logical: LogicalNode,
     if: IfNode,
     assignment: AssignmentNode,
+    booleanLogic: BooleanLogicNode,
 };
 
 /**

@@ -45,7 +45,7 @@ const nodeRegistry = {
         getPortColor: dataType => getPortColorForType(dataType),
         defaultData: { name: 'x', initialValue: '', variableType: 'any' }
     },
-    
+
     // Нод присваивания
     assignment: {
         type: 'assignment',
@@ -64,7 +64,7 @@ const nodeRegistry = {
         getPortColor: dataType => getPortColorForType(dataType),
         defaultData: { leftValue: '', rightValue: '', leftType: 'any', rightType: 'any' }
     },
-    
+
     // Ноды категории "Операции"
     math: {
         type: 'math',
@@ -83,11 +83,11 @@ const nodeRegistry = {
         getPortColor: dataType => getPortColorForType(dataType),
         defaultData: { operation: 'add' }
     },
-    
+
     logical: {
         type: 'logical',
         category: NODE_CATEGORIES.OPERATIONS,
-        name: 'Лог. операция',
+        name: 'Сравнение',
         description: 'Выполняет логическую операцию сравнения',
         iconComponent: ArrowsRightLeftIcon,
         color: {
@@ -101,7 +101,25 @@ const nodeRegistry = {
         getPortColor: dataType => getPortColorForType(dataType),
         defaultData: { operation: 'equal' }
     },
-    
+
+    booleanLogic: {
+        type: 'booleanLogic',
+        category: NODE_CATEGORIES.OPERATIONS,
+        name: 'Логика',
+        description: 'Выполняет логическую операцию AND/OR',
+        iconComponent: ArrowsRightLeftIcon,
+        color: {
+            bg: 'bg-indigo-100 dark:bg-indigo-900',
+            border: 'border-indigo-500',
+            text: 'text-indigo-800 dark:text-indigo-200'
+        },
+        paletteColor: 'bg-indigo-500 hover:bg-indigo-600',
+        hexColor: '#6366f1', // indigo-500
+        getActiveValue: node => node.state?.result !== undefined ? (node.state.result ? 'TRUE' : 'FALSE') : null,
+        getPortColor: dataType => getPortColorForType(dataType),
+        defaultData: { operation: 'and' }
+    },
+
     print: {
         type: 'print',
         category: NODE_CATEGORIES.OPERATIONS,
@@ -118,7 +136,7 @@ const nodeRegistry = {
         getActiveValue: node => 'Выполнен',
         getPortColor: dataType => getPortColorForType(dataType)
     },
-    
+
     // Ноды категории "Управление"
     if: {
         type: 'if',
@@ -136,7 +154,7 @@ const nodeRegistry = {
         getActiveValue: node => node.state?.result !== undefined ? (node.state.result ? 'Истина' : 'Ложь') : null,
         getPortColor: dataType => getPortColorForType(dataType)
     },
-    
+
     loop: {
         type: 'loop',
         category: NODE_CATEGORIES.CONTROL,
@@ -193,7 +211,7 @@ export function getNodeHexColor(nodeType) {
 export function formatDisplayValue(value) {
     if (value === null) return 'null';
     if (value === undefined) return 'undefined';
-    
+
     if (typeof value === 'object') {
         try {
             return JSON.stringify(value);
@@ -201,14 +219,14 @@ export function formatDisplayValue(value) {
             return '[Объект]';
         }
     }
-    
+
     const stringValue = String(value);
-    
+
     // Ограничиваем длину строки для отображения
     if (stringValue.length > 10) {
         return stringValue.substring(0, 8) + '...';
     }
-    
+
     return stringValue;
 }
 
@@ -254,7 +272,7 @@ export function getNodesByCategory(category) {
  */
 export function getNodeCategories() {
     const categories = {};
-    
+
     // Инициализируем категории
     Object.values(NODE_CATEGORIES).forEach(category => {
         categories[category] = {
@@ -263,9 +281,9 @@ export function getNodeCategories() {
             nodes: []
         };
     });
-    
+
     // Заполняем категории нодами
-    Object.values(nodeRegistry).forEach(nodeDef => {        
+    Object.values(nodeRegistry).forEach(nodeDef => {
         const category = nodeDef.category;
         if (categories[category]) {
             categories[category].nodes.push({
@@ -274,7 +292,7 @@ export function getNodeCategories() {
             });
         }
     });
-    
+
     return Object.values(categories);
 }
 
