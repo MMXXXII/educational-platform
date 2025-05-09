@@ -1,16 +1,13 @@
+// frontend/courses/CourseCard.jsx
 import React from 'react';
 import { Link } from 'react-router';
 
-// Компонент карточки курса
 export function CourseCard({ course }) {
-    // Функция для создания заглушки с инициалами курса
     const getInitialsPlaceholder = (title) => {
         return title.substring(0, 2).toUpperCase();
     };
 
-    // Функция для получения цвета фона на основе категории курса
-    const getCategoryColor = (category) => {
-        // Универсальная система цветов на основе строки категории
+    const getCategoryColor = (categoryName) => {
         const colorOptions = [
             { bg: 'bg-blue-100', text: 'text-blue-600' },
             { bg: 'bg-green-100', text: 'text-green-600' },
@@ -24,57 +21,64 @@ export function CourseCard({ course }) {
             { bg: 'bg-teal-100', text: 'text-teal-600' }
         ];
 
-        // Генерация числового хеша из строки категории
+        if (!categoryName) return `${colorOptions[0].bg} ${colorOptions[0].text}`;
+
         let hash = 0;
-        for (let i = 0; i < category.length; i++) {
-            hash = ((hash << 5) - hash) + category.charCodeAt(i);
-            hash |= 0; // Преобразование в 32-битное целое число
+        for (let i = 0; i < categoryName.length; i++) {
+            hash = ((hash << 5) - hash) + categoryName.charCodeAt(i);
+            hash |= 0;
         }
 
-        // Выбор цвета из массива на основе хеша
-        const colorIndex = Math.abs(hash) % colorOptions.length;
-        const colors = colorOptions[colorIndex];
-
+        const colors = colorOptions[Math.abs(hash) % colorOptions.length];
         return `${colors.bg} ${colors.text}`;
     };
 
-    // Система рендеринга изображения с заглушкой
+    const categoryName = course.categories?.[0]?.name || '';
+
     const renderImage = () => {
-        if (!course.imageUrl || course.imageUrl.startsWith('/images/')) {
-            // Если нет URL изображения или URL начинается с /images/ (что вызовет ошибку),
-            // показать заглушку с инициалами
-            const [bgClass, textClass] = getCategoryColor(course.category).split(' ');
+        // Основное изменение: проверяем наличие валидного URL изображения
+        const isValidImage = course.image_url && (
+            course.image_url.startsWith('http://') ||
+            course.image_url.startsWith('https://') ||
+            course.image_url.startsWith('data:image')
+        );
+
+        if (!isValidImage) {
+            const [bgClass, textClass] = getCategoryColor(categoryName).split(' ');
             return (
                 <div className={`w-full h-full flex items-center justify-center ${bgClass}`}>
-                    <span className={`font-bold text-lg ${textClass}`}>{getInitialsPlaceholder(course.title)}</span>
+                    <span className={`font-bold text-lg ${textClass}`}>
+                        {getInitialsPlaceholder(course.title)}
+                    </span>
                 </div>
             );
         }
 
-        // Для реальных внешних URL изображений
         return (
             <img
-                src={course.imageUrl}
+                src={course.image_url}
                 alt={course.title}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                    e.target.onerror = null; // Предотвращение бесконечных циклов ошибок
-                    // Создание React-совместимой заглушку при ошибке загрузки
-                    const [bgClass, textClass] = getCategoryColor(course.category).split(' ');
-
-                    // Замена изображения на заглушку с инициалами
-                    // React.createElement вместо прямого DOM-манипулирования
-                    // для лучшей совместимости с React
+                    e.target.onerror = null;
+                    const [bgClass, textClass] = getCategoryColor(categoryName).split(' ');
                     const parent = e.target.parentNode;
                     if (parent) {
-                        const placeholder = document.createElement('div');
-                        placeholder.className = `w-full h-full flex items-center justify-center ${bgClass}`;
-                        placeholder.innerHTML = `<span class="font-bold text-lg ${textClass}">${getInitialsPlaceholder(course.title)}</span>`;
-                        parent.replaceChild(placeholder, e.target);
+                        parent.innerHTML = `
+                            <div class="w-full h-full flex items-center justify-center ${bgClass}">
+                                <span class="font-bold text-lg ${textClass}">
+                                    ${getInitialsPlaceholder(course.title)}
+                                </span>
+                            </div>
+                        `;
                     }
                 }}
             />
         );
+    };
+
+    const formatLevel = (level) => {
+        return level ? level.charAt(0).toUpperCase() + level.slice(1) : '';
     };
 
     return (
@@ -82,10 +86,11 @@ export function CourseCard({ course }) {
             <div className="h-40 bg-gray-200 relative">
                 {renderImage()}
                 <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                    {course.level}
+                    {formatLevel(course.level)}
                 </div>
             </div>
 
+            {/* Остальная часть компонента без изменений */}
             <div className="p-4">
                 <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-2">{course.title}</h3>
                 <p className="text-gray-600 text-sm mb-3 line-clamp-2">{course.description}</p>
@@ -93,7 +98,7 @@ export function CourseCard({ course }) {
                 <div className="flex items-center text-sm text-gray-500 mb-3">
                     <span>Автор: {course.author}</span>
                     <span className="mx-2">•</span>
-                    <span>{course.lessons} уроков</span>
+                    <span>{course.lessons_count || 0} уроков</span>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -101,7 +106,7 @@ export function CourseCard({ course }) {
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
-                        {course.students} учеников
+                        {course.students_count || 0} учеников
                     </div>
 
                     <Link
