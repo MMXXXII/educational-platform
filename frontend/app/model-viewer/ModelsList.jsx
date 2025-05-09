@@ -77,7 +77,7 @@ export function ModelsList({ models, selectedModelId, onSelectModel, onFileSelec
       </h3>
       
       <div className="flex flex-col gap-2 mb-3">
-        {models.map(model => (
+        {models.map(model => ( model.filename &&
           <div 
             key={model.id} 
             className={`p-2 rounded cursor-pointer transition-colors ${

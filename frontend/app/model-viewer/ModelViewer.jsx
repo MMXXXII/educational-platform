@@ -388,7 +388,6 @@ export function ModelViewer() {
       
       // Подготавливаем данные для сериализации
       const serializedData = {
-        version: "1.0",
         timestamp: Date.now(),
         models: models.map(model => {
           // Преобразуем Uint8Array в base64 для хранения бинарных данных
@@ -455,11 +454,6 @@ export function ModelViewer() {
         try {
           const jsonData = JSON.parse(event.target.result);
           
-          // Проверяем версию формата
-          if (!jsonData.version) {
-            throw new Error("Неверный формат файла сцены");
-          }
-          
           // Очищаем текущую сцену
           clearScene();
           
@@ -504,6 +498,49 @@ export function ModelViewer() {
   // Загрузка модели из сериализованных данных
   const loadModelFromSerialized = async (modelData) => {
     try {
+      if (modelData.id.startsWith("map")){
+          let rootMesh = BABYLON.MeshBuilder.CreateBox(modelData.id, { size: 1 }, sceneRef.current);
+          const cubeMaterial = new BABYLON.StandardMaterial("cubeMaterial", sceneRef.current);
+          switch (modelData.type){
+            case 'cube':
+                cubeMaterial.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.8);
+                rootMesh.material = cubeMaterial;
+                rootMesh.position = new BABYLON.Vector3(modelData.transform.position.x, modelData.transform.position.y, modelData.transform.position.z);
+                rootMesh.rotation = new BABYLON.Vector3(modelData.transform.rotation.x, modelData.transform.rotation.y, modelData.transform.rotation.z);
+                rootMesh.scaling = new BABYLON.Vector3(modelData.transform.scaling.x, modelData.transform.scaling.y, modelData.transform.scaling.z);
+                break;
+            case 'player':
+                cubeMaterial.diffuseColor = new BABYLON.Color3(0, 1, 0);
+                rootMesh.visibility = 0.7;
+                rootMesh.material = cubeMaterial;
+                rootMesh.position = new BABYLON.Vector3(modelData.transform.position.x, modelData.transform.position.y, modelData.transform.position.z);
+                rootMesh.rotation = new BABYLON.Vector3(modelData.transform.rotation.x, modelData.transform.rotation.y, modelData.transform.rotation.z);
+                rootMesh.scaling = new BABYLON.Vector3(modelData.transform.scaling.x, modelData.transform.scaling.y, modelData.transform.scaling.z);
+                break;
+            case 'exit':
+                cubeMaterial.diffuseColor = new BABYLON.Color3(1, 0, 0);
+                rootMesh.visibility = 0.7;
+                rootMesh.material = cubeMaterial;
+                rootMesh.position = new BABYLON.Vector3(modelData.transform.position.x, modelData.transform.position.y, modelData.transform.position.z);
+                rootMesh.rotation = new BABYLON.Vector3(modelData.transform.rotation.x, modelData.transform.rotation.y, modelData.transform.rotation.z);
+                rootMesh.scaling = new BABYLON.Vector3(modelData.transform.scaling.x, modelData.transform.scaling.y, modelData.transform.scaling.z);
+                break;
+            default:
+                rootMesh.visibility = 0;
+          }
+          
+          const newModel = {
+            id: modelData.id,
+            type: modelData.type,
+            metadata: modelData.metadata,
+            rootMeshId: rootMesh.id,
+            transform: modelData.transform
+          };
+
+          setModels(prevModels => [...prevModels, newModel]);
+          return;
+      }
+      
       // Восстанавливаем бинарные данные из base64
       const binaryData = base64ToArrayBuffer(modelData.fileData);
       
@@ -617,7 +654,7 @@ export function ModelViewer() {
   };
 
   return (
-    <div className="flex flex-col items-center w-full">
+    <div className="flex flex-col items-center w-full no-scrollbar">
       <div 
         className={`relative w-full h-full ${dragActive ? 'border-4 border-blue-500 bg-blue-50': null}`}
         onDragEnter={handleDrag}
