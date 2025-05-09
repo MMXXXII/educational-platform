@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useStore } from 'reactflow';
-import { getNodeClassName, checkNodeConnections } from '../../utils/nodeUtils';
+import { checkNodeConnections } from '../../utils/nodeUtils';
 import { InputHandles, OutputHandles, NodeStateIndicator } from './NodeHandles';
 
 /**
@@ -73,7 +73,20 @@ const PrintNode = ({ id, data, selected, nodeDefinition }) => {
     };
 
     return (
-        <div className={getNodeClassName(nodeColors, selected, 'print')}>
+        <div
+            className={`${nodeColors.bg} ${nodeColors.text} flex flex-col relative`}
+            style={{
+                minWidth: '200px',
+                minHeight: '120px',
+                padding: '1rem',
+                borderRadius: '0.375rem',
+                borderWidth: '2px',
+                borderStyle: 'solid',
+                borderColor: selected ? '#ffffff' : '#f59e0b', // белый при выделении, amber-500 по умолчанию
+                boxShadow: selected ? '0 0 0 1px #f59e0b, 0 4px 6px -1px rgba(0, 0, 0, 0.1)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.2s ease'
+            }}
+        >
             {/* Индикатор активного состояния */}
             <NodeStateIndicator nodeRef={data.nodeRef} nodeType="print" />
 
@@ -83,8 +96,7 @@ const PrintNode = ({ id, data, selected, nodeDefinition }) => {
             </div>
 
             {/* Содержимое нода */}
-            <div className="flex flex-col w-full px-2">
-
+            <div className="flex flex-col w-full">
                 {/* Поле ввода сообщения или метка "внешние данные" */}
                 <div className="w-full">
                     {externalConnections.value ? (
@@ -95,8 +107,9 @@ const PrintNode = ({ id, data, selected, nodeDefinition }) => {
                         <textarea
                             value={localState.message || ''}
                             onChange={(e) => handleChange('message', e.target.value)}
-                            className="w-full p-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm nodrag min-h-[40px] resize-none"
+                            className="w-full p-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm nodrag min-h-[40px] resize-y"
                             placeholder="Введите сообщение для вывода"
+                            rows={Math.max(2, (localState.message || '').split('\n').length)}
                         />
                     )}
                 </div>

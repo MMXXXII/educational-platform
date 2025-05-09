@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { getNodeClassName } from '../../utils/nodeUtils';
 import { InputHandles, OutputHandles, NodeStateIndicator } from './NodeHandles';
 
 /**
  * Компонент для отображения нода булевой логики
+ * @param {Object} props - Свойства компонента
+ * @param {string} props.id - ID нода
+ * @param {Object} props.data - Данные нода
+ * @param {boolean} props.selected - Выбран ли нод
+ * @param {Object} props.nodeDefinition - Определение типа нода
+ * @returns {JSX.Element} JSX элемент
  */
 const BooleanLogicNode = ({ id, data, selected, nodeDefinition }) => {
     const [operation, setOperation] = useState('and');
@@ -30,16 +35,27 @@ const BooleanLogicNode = ({ id, data, selected, nodeDefinition }) => {
         text: 'text-indigo-800 dark:text-indigo-200'
     };
 
-    // Используем стандартный класс для узлов
-    const nodeClass = getNodeClassName(nodeColors, selected, 'booleanLogic');
-
     return (
-        <div className={nodeClass}>
+        <div
+            className={`${nodeColors.bg} ${nodeColors.text} flex flex-col relative`}
+            style={{
+                minWidth: '180px',
+                minHeight: '120px',
+                padding: '1rem',
+                borderRadius: '0.375rem',
+                borderWidth: '2px',
+                borderStyle: 'solid',
+                borderColor: selected ? '#ffffff' : '#6366f1', // белый при выделении, indigo-500 по умолчанию
+                boxShadow: selected ? '0 0 0 1px #6366f1, 0 4px 6px -1px rgba(0, 0, 0, 0.1)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.2s ease'
+            }}
+        >
             {/* Индикатор активного состояния */}
             <NodeStateIndicator nodeRef={data.nodeRef} nodeType="booleanLogic" />
 
-            {/* Центрируем селектор внутри узла */}
-            <div className="flex items-center justify-center h-full w-full">
+            {/* Содержимое нода */}
+            <div className="flex flex-grow items-center justify-center">
+                {/* Селектор операции */}
                 <select
                     value={operation}
                     onChange={(e) => handleOperationChange(e.target.value)}

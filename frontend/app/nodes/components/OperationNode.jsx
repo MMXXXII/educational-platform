@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useStore } from 'reactflow';
-import { getNodeClassName, checkNodeConnections } from '../../utils/nodeUtils';
+import { checkNodeConnections } from '../../utils/nodeUtils';
 import { InputHandles, OutputHandles, NodeStateIndicator } from './NodeHandles';
 
 /**
@@ -235,16 +235,31 @@ const OperationNode = ({ id, data, selected, nodeDefinition }) => {
     };
 
     return (
-        <div className={getNodeClassName(nodeColors, selected, nodeType)}>
+        <div
+            className={`${nodeColors.bg} ${nodeColors.text} flex flex-col relative`}
+            style={{
+                minWidth: '200px',
+                minHeight: '150px',
+                padding: '1rem',
+                borderRadius: '0.375rem',
+                borderWidth: '2px',
+                borderStyle: 'solid',
+                borderColor: selected ? '#ffffff' : (
+                    nodeType === 'math' ? '#a855f7' : '#3b82f6'  // purple-500 для math, blue-500 для logical
+                ),
+                boxShadow: selected ?
+                    `0 0 0 1px ${nodeType === 'math' ? '#a855f7' : '#3b82f6'}, 0 4px 6px -1px rgba(0, 0, 0, 0.1)` :
+                    '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.2s ease'
+            }}
+        >
             {/* Индикатор активного состояния */}
             <NodeStateIndicator nodeRef={data.nodeRef} nodeType={nodeType} />
 
-            {/* Содержимое нода - без заголовка для операционных нодов */}
-            <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-full px-3">
-                    {renderContent()}
-                    {renderOperands()}
-                </div>
+            {/* Содержимое нода */}
+            <div className="w-full">
+                {renderContent()}
+                {renderOperands()}
             </div>
 
             {/* Порты */}

@@ -10,7 +10,7 @@ export class IfNode extends BaseNode {
      * @param {Object} data - Данные нода
      */
     constructor(id = uuidv4(), data = {}) {
-        super(id, 'if', 'Condition', data);
+        super(id, 'if', 'Если', data);
 
         // Добавление портов
         this.addInput('flow', '', 'flow');  // Flow-вход для управления выполнением

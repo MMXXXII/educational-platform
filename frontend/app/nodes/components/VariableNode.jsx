@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useStore } from 'reactflow';
-import { getNodeClassName } from '../../utils/nodeUtils';
+import { checkNodeConnections } from '../../utils/nodeUtils';
 import { InputHandles, OutputHandles, NodeStateIndicator } from './NodeHandles';
 
 /**
@@ -77,7 +77,20 @@ const VariableNode = ({ id, data, selected, nodeDefinition }) => {
     };
 
     return (
-        <div className={getNodeClassName(nodeColors, selected, 'variable')}>
+        <div
+            className={`${nodeColors.bg} ${nodeColors.text} flex flex-col relative`}
+            style={{
+                minWidth: '220px',
+                minHeight: '120px',
+                padding: '1rem',
+                borderRadius: '0.375rem',
+                borderWidth: '2px',
+                borderStyle: 'solid',
+                borderColor: selected ? '#ffffff' : '#22c55e', // белый при выделении, green-500 по умолчанию
+                boxShadow: selected ? '0 0 0 1px #22c55e, 0 4px 6px -1px rgba(0, 0, 0, 0.1)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.2s ease'
+            }}
+        >
             {/* Индикатор активного состояния */}
             <NodeStateIndicator nodeRef={data.nodeRef} nodeType="variable" />
 
@@ -87,52 +100,51 @@ const VariableNode = ({ id, data, selected, nodeDefinition }) => {
             </div>
 
             {/* Содержимое нода */}
-            <div className="flex justify-center mb-4 w-full">
-                <div className="w-full">
-                    <div className="flex flex-col space-y-2 items-center">
-                        {/* Контейнер макета с двумя колонками */}
-                        <div className="grid grid-cols-2 gap-4 w-full">
-                            {/* Левая колонка - Значение переменной или метка init */}
-                            <div className="flex flex-col items-center">
-                                {externalConnections.value ? (
-                                    <div className="bg-gray-700 rounded-full text-white px-3 py-1 text-sm w-full text-center">
-                                        init
-                                    </div>
-                                ) : (
-                                    <input
-                                        type={localState.variableType === 'number' ? 'number' : 'text'}
-                                        value={localState.initialValue !== undefined ? localState.initialValue : ''}
-                                        onChange={(e) => handleChange('initialValue',
-                                            localState.variableType === 'number' ? Number(e.target.value) : e.target.value)}
-                                        className="bg-gray-600 rounded-full text-white px-3 py-1 text-sm w-full text-center outline-none focus:ring-2 focus:ring-blue-400 nodrag"
-                                        placeholder="Значение"
-                                    />
-                                )}
-                            </div>
-                            {/* Правая колонка - Имя переменной */}
-                            <div className="flex flex-col items-center">
-                                <input
-                                    type="text"
-                                    value={localState.name || ''}
-                                    onChange={(e) => handleChange('name', e.target.value)}
-                                    className="bg-yellow-600 rounded-full text-white px-3 py-1 text-sm w-full text-center outline-none focus:ring-2 focus:ring-blue-400 nodrag"
-                                    placeholder="Имя переменной"
-                                />
-                            </div>
-                        </div>
+            <div className="flex flex-col space-y-2 w-full">
+                {/* Верхняя строка: имя переменной */}
+                <div className="flex items-center">
+                    <label className="text-xs text-gray-600 dark:text-gray-400 w-16">Имя:</label>
+                    <input
+                        type="text"
+                        value={localState.name || ''}
+                        onChange={(e) => handleChange('name', e.target.value)}
+                        className="w-full p-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm nodrag"
+                        placeholder="Имя"
+                    />
+                </div>
 
-                        {/* Переключатель типа переменной */}
-                        <select
-                            className="bg-gray-700 rounded-full text-white px-3 py-1 text-sm outline-none focus:ring-2 focus:ring-blue-400 nodrag w-full"
-                            value={localState.variableType || 'any'}
-                            onChange={(e) => handleChange('variableType', e.target.value)}
-                        >
-                            <option value="any">Любой тип</option>
-                            <option value="number">Число</option>
-                            <option value="string">Строка</option>
-                            <option value="boolean">Логический</option>
-                        </select>
-                    </div>
+                {/* Вторая строка: начальное значение */}
+                <div className="flex items-center">
+                    <label className="text-xs text-gray-600 dark:text-gray-400 w-16">Значение:</label>
+                    {externalConnections.value ? (
+                        <div className="bg-gray-700 text-white p-1 text-xs rounded text-center w-full">
+                            (внешние данные)
+                        </div>
+                    ) : (
+                        <input
+                            type={localState.variableType === 'number' ? 'number' : 'text'}
+                            value={localState.initialValue !== undefined ? localState.initialValue : ''}
+                            onChange={(e) => handleChange('initialValue',
+                                localState.variableType === 'number' ? Number(e.target.value) : e.target.value)}
+                            className="w-full p-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm nodrag"
+                            placeholder="Значение"
+                        />
+                    )}
+                </div>
+
+                {/* Третья строка: тип переменной */}
+                <div className="flex items-center">
+                    <label className="text-xs text-gray-600 dark:text-gray-400 w-16">Тип:</label>
+                    <select
+                        className="w-full p-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded shadow-sm nodrag"
+                        value={localState.variableType || 'any'}
+                        onChange={(e) => handleChange('variableType', e.target.value)}
+                    >
+                        <option value="any">Любой тип</option>
+                        <option value="number">Число</option>
+                        <option value="string">Строка</option>
+                        <option value="boolean">Логический</option>
+                    </select>
                 </div>
             </div>
 

@@ -42,7 +42,6 @@ const nodeRegistry = {
         paletteColor: 'bg-green-500 hover:bg-green-600',
         hexColor: '#22c55e', // green-500
         getActiveValue: node => node.state?.currentValue,
-        getPortColor: dataType => getPortColorForType(dataType),
         defaultData: { name: 'x', initialValue: '', variableType: 'any' }
     },
 
@@ -61,7 +60,6 @@ const nodeRegistry = {
         paletteColor: 'bg-teal-500 hover:bg-teal-600',
         hexColor: '#14b8a6', // teal-500
         getActiveValue: node => node.state?.result,
-        getPortColor: dataType => getPortColorForType(dataType),
         defaultData: { leftValue: '', rightValue: '', leftType: 'any', rightType: 'any' }
     },
 
@@ -80,7 +78,6 @@ const nodeRegistry = {
         paletteColor: 'bg-purple-500 hover:bg-purple-600',
         hexColor: '#a855f7', // purple-500
         getActiveValue: node => node.state?.result,
-        getPortColor: dataType => getPortColorForType(dataType),
         defaultData: { operation: 'add' }
     },
 
@@ -98,7 +95,6 @@ const nodeRegistry = {
         paletteColor: 'bg-blue-500 hover:bg-blue-600',
         hexColor: '#3b82f6', // blue-500
         getActiveValue: node => node.state?.result !== undefined ? (node.state.result ? 'Истина' : 'Ложь') : null,
-        getPortColor: dataType => getPortColorForType(dataType),
         defaultData: { operation: 'equal' }
     },
 
@@ -116,7 +112,6 @@ const nodeRegistry = {
         paletteColor: 'bg-indigo-500 hover:bg-indigo-600',
         hexColor: '#6366f1', // indigo-500
         getActiveValue: node => node.state?.result !== undefined ? (node.state.result ? 'TRUE' : 'FALSE') : null,
-        getPortColor: dataType => getPortColorForType(dataType),
         defaultData: { operation: 'and' }
     },
 
@@ -134,7 +129,6 @@ const nodeRegistry = {
         paletteColor: 'bg-yellow-500 hover:bg-yellow-600',
         hexColor: '#eab308', // yellow-500
         getActiveValue: node => 'Выполнен',
-        getPortColor: dataType => getPortColorForType(dataType)
     },
 
     // Ноды категории "Управление"
@@ -152,7 +146,6 @@ const nodeRegistry = {
         paletteColor: 'bg-indigo-500 hover:bg-indigo-600',
         hexColor: '#6366f1', // indigo-500
         getActiveValue: node => node.state?.result !== undefined ? (node.state.result ? 'Истина' : 'Ложь') : null,
-        getPortColor: dataType => getPortColorForType(dataType)
     },
 
     loop: {
@@ -170,29 +163,8 @@ const nodeRegistry = {
         hexColor: '#ef4444', // red-500
         getActiveValue: node => node.state?.currentIteration !== undefined ?
             `Итерация ${node.state.currentIteration + 1}/${node.state.count}` : null,
-        getPortColor: dataType => getPortColorForType(dataType)
     },
 };
-
-/**
- * Получает цвет для порта в зависимости от типа данных
- * @param {string} dataType - Тип данных
- * @returns {string} - CSS-класс цвета
- */
-export function getPortColorForType(dataType) {
-    switch (dataType) {
-        case 'number':
-            return 'bg-green-500';
-        case 'string':
-            return 'bg-blue-500';
-        case 'boolean':
-            return 'bg-yellow-500';
-        case 'flow':
-            return 'bg-red-500';
-        default:
-            return 'bg-gray-500';
-    }
-}
 
 /**
  * Получает HEX-цвет нода по его типу

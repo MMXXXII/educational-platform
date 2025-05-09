@@ -347,22 +347,6 @@ export const autoArrangeNodes = (nodes, edges) => {
     return updatedNodes;
 };
 
-
-/**
- * Получает цвет для порта в зависимости от типа данных
- * @param {string} dataType - Тип данных
- * @returns {string} - CSS-класс цвета
- */
-export const getPortColor = (dataType) => {
-    switch (dataType) {
-        case 'number': return 'bg-green-500';
-        case 'string': return 'bg-blue-500';
-        case 'boolean': return 'bg-yellow-500';
-        case 'flow': return 'bg-red-500';
-        default: return 'bg-gray-500';
-    }
-};
-
 /**
  * Форматирует значение для отображения
  * @param {any} value - Значение для форматирования
@@ -509,12 +493,11 @@ export const getNodeClassName = (nodeColors, selected, nodeType) => {
     const isOperationNode = nodeType === 'math' || nodeType === 'logical';
 
     return `
-    ${nodeColors.bg} ${nodeColors.border} ${nodeColors.text}
-    p-3 rounded-md border-2 w-48
-    ${nodeType === 'logical' || nodeType === 'math' ? 'min-h-[160px]' : isOperationNode ? 'h-[120px]' : 'min-h-[140px]'}
-    ${selected ? 'shadow-lg ring-2 ring-blue-400' : 'shadow'}
-    flex flex-col relative
-`;
+        ${nodeColors.bg} ${nodeColors.border} ${nodeColors.text}
+        p-3 rounded-md border-2
+        ${selected ? 'shadow-lg ring-2 ring-blue-400' : 'shadow'}
+        flex flex-col relative
+    `;
 };
 
 export default {
@@ -528,7 +511,6 @@ export default {
     getSelectionCenter,
     findOptimalNodePosition,
     autoArrangeNodes,
-    getPortColor,
     formatDisplayValue,
     getOutputPortPosition,
     getInputPortPosition,

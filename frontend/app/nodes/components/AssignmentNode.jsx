@@ -1,62 +1,46 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useStore } from 'reactflow';
-import { getNodeClassName, checkNodeConnections } from '../../utils/nodeUtils';
+import { checkNodeConnections } from '../../utils/nodeUtils';
 import { InputHandles, OutputHandles, NodeStateIndicator } from './NodeHandles';
 
+/**
+ * Компонент для отображения нода присваивания
+ * @param {Object} props - Свойства компонента
+ * @param {string} props.id - ID нода
+ * @param {Object} props.data - Данные нода
+ * @param {boolean} props.selected - Выбран ли нод
+ * @param {Object} props.nodeDefinition - Определение типа нода
+ * @returns {JSX.Element} JSX элемент
+ */
 const AssignmentNode = ({ id, data, selected, nodeDefinition }) => {
-    const [localState, setLocalState] = useState({
-        leftValue: '',
-        rightValue: '',
-        leftType: 'string',
-        rightType: 'any'
-    });
-
-    const [externalConnections, setExternalConnections] = useState({
-        left: false,
-        right: false
-    });
-
     // Получаем все рёбра из хранилища ReactFlow
     const edges = useStore((state) => state.edges);
 
     // Проверяем наличие внешних подключений
-    const checkExternalConnections = useCallback(() => {
+    const [inputConnections, setInputConnections] = useState({
+        left: false,
+        right: false,
+        flow: false
+    });
+
+    // Функция для проверки соединений
+    const checkConnections = useCallback(() => {
         const connections = checkNodeConnections(id, edges);
-        setExternalConnections({
+        setInputConnections({
             left: connections.inputs.left || false,
-            right: connections.inputs.right || false
+            right: connections.inputs.right || false,
+            flow: connections.inputs.flow || false
         });
     }, [edges, id]);
 
-    // Инициализируем локальное состояние из данных нода
-    useEffect(() => {
-        if (data.nodeRef) {
-            setLocalState({
-                leftValue: data.nodeRef.data.leftValue !== undefined ? data.nodeRef.data.leftValue : '',
-                rightValue: data.nodeRef.data.rightValue !== undefined ? data.nodeRef.data.rightValue : '',
-                leftType: data.nodeRef.data.leftType || 'string',
-                rightType: data.nodeRef.data.rightType || 'any'
-            });
-        }
-    }, [data.nodeRef]);
-
     // Проверяем соединения при монтировании и при изменении рёбер
     useEffect(() => {
-        checkExternalConnections();
+        checkConnections();
 
-        // Добавляем периодическую проверку для сложных взаимодействий
-        const interval = setInterval(checkExternalConnections, 300);
+        // Добавляем периодическую проверку
+        const interval = setInterval(checkConnections, 300);
         return () => clearInterval(interval);
-    }, [checkExternalConnections]);
-
-    // Обработчик изменения значений в интерактивных элементах
-    const handleChange = (key, value) => {
-        setLocalState(prev => ({ ...prev, [key]: value }));
-
-        if (data.nodeRef) {
-            data.nodeRef.setProperty(key, value);
-        }
-    };
+    }, [checkConnections]);
 
     // Получаем стили для нода
     const nodeColors = nodeDefinition?.color || {
@@ -66,93 +50,37 @@ const AssignmentNode = ({ id, data, selected, nodeDefinition }) => {
     };
 
     return (
-        <div className={getNodeClassName(nodeColors, selected, 'assignment')}>
+        <div
+            className={`${nodeColors.bg} ${nodeColors.text} flex flex-col items-center relative`}
+            style={{
+                minWidth: '180px',
+                minHeight: '120px',
+                padding: '1rem',
+                borderRadius: '0.375rem',
+                borderWidth: '2px',
+                borderStyle: 'solid',
+                borderColor: selected ? '#ffffff' : '#10b981', // белый при выделении, teal-500 по умолчанию
+                boxShadow: selected ? '0 0 0 1px #10b981, 0 4px 6px -1px rgba(0, 0, 0, 0.1)' : '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.2s ease'
+            }}
+        >
+            {/* Индикатор активного состояния */}
             <NodeStateIndicator nodeRef={data.nodeRef} nodeType="assignment" />
 
-            <div className="font-bold text-center mb-2 pb-1 border-b border-gray-300 dark:border-gray-600">
+            {/* Заголовок нода */}
+            <div className="font-bold text-center mb-3 w-full pb-1 border-b border-gray-300 dark:border-gray-600">
                 {data.label}
             </div>
 
-            <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-full px-3 pt-8">
-                    <div className="text-center font-bold text-xl mb-3">=</div>
-                    
-                    <div className="flex flex-col space-y-2 mt-2">
-                        {/* Левая часть - имя переменной */}
-                        <div className="flex items-center space-x-1">
-                            <label className="text-xs text-gray-500 dark:text-gray-400 mr-1">Имя:</label>
-                            {externalConnections.left ? (
-                                <div className="bg-gray-700 text-white p-1 text-xs rounded text-center w-full">
-                                    (внешние данные)
-                                </div>
-                            ) : (
-                                <>
-                                    <input
-                                        type="text"
-                                        value={localState.leftValue !== undefined ? localState.leftValue : ''}
-                                        onChange={(e) => handleChange('leftValue', e.target.value)}
-                                        className="w-full p-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded nodrag"
-                                        placeholder="Имя переменной"
-                                    />
-                                </>
-                            )}
-                        </div>
+            {/* Визуальное представление операции присваивания */}
+            <div className="text-center text-xl font-bold my-2">=</div>
 
-                        {/* Правая часть - значение */}
-                        <div className="flex items-center space-x-1">
-                            <label className="text-xs text-gray-500 dark:text-gray-400 mr-1">Знач:</label>
-                            {externalConnections.right ? (
-                                <div className="bg-gray-700 text-white p-1 text-xs rounded text-center w-full">
-                                    (внешние данные)
-                                </div>
-                            ) : (
-                                <>
-                                    {localState.rightType === 'boolean' ? (
-                                        <select
-                                            value={String(localState.rightValue)}
-                                            onChange={(e) => handleChange('rightValue', e.target.value === 'true')}
-                                            className="w-20 p-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded nodrag"
-                                        >
-                                            <option value="true">Истина</option>
-                                            <option value="false">Ложь</option>
-                                        </select>
-                                    ) : (
-                                        <input
-                                            type={localState.rightType === 'number' ? 'number' : 'text'}
-                                            value={localState.rightValue !== undefined ? localState.rightValue : ''}
-                                            onChange={(e) => {
-                                                let value = e.target.value;
-                                                if (localState.rightType === 'number') {
-                                                    value = e.target.value !== '' ? Number(e.target.value) : 0;
-                                                }
-                                                handleChange('rightValue', value);
-                                            }}
-                                            className="w-20 p-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded nodrag"
-                                        />
-                                    )}
-
-                                    <select
-                                        value={localState.rightType || 'any'}
-                                        onChange={(e) => handleChange('rightType', e.target.value)}
-                                        className="flex-1 p-1 text-xs bg-gray-600 text-white rounded nodrag"
-                                    >
-                                        <option value="any">Любой</option>
-                                        <option value="number">Число</option>
-                                        <option value="string">Текст</option>
-                                        <option value="boolean">Лог.</option>
-                                    </select>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+            {/* Порты */}
             <InputHandles
                 inputs={data.inputs}
                 nodeId={id}
                 nodeType="assignment"
-                onConnect={checkExternalConnections}
+                onConnect={checkConnections}
             />
             <OutputHandles
                 outputs={data.outputs}
