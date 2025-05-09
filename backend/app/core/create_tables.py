@@ -1,5 +1,9 @@
+"""
+Скрипт для заполнения базы данных таблицами.
+Запуск: python -m app.core.create_tables
+"""
+
 import logging
-from sqlalchemy import inspect
 
 logging.basicConfig()
 

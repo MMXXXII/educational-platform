@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.core.config import CORS_ORIGINS, THUMBNAIL_DIR
 from app.core.create_tables import create_tables
-from app.api import auth, files, users
+from app.api import auth, files, users, courses  # Добавляем импорт модуля courses
 
 
 async def lifespan(app: FastAPI):
@@ -36,6 +36,7 @@ app.mount("/thumbnails", StaticFiles(directory=THUMBNAIL_DIR), name="thumbnails"
 app.include_router(auth.router, tags=["auth"])
 app.include_router(files.router, tags=["files"])
 app.include_router(users.router, tags=["users"])
+app.include_router(courses.router, tags=["courses"])
 
 if __name__ == "__main__":
     import uvicorn
