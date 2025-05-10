@@ -21,5 +21,6 @@ export default [
         route("sign-in", "./routes/sign-in.tsx"),
         route("sign-up", "./routes/sign-up.tsx"),
         route("viewer", "./routes/model-viewer.tsx"),
+        route("level-walkthrough", "./routes/level-walkthrough.tsx"),
     ]),
 ] satisfies RouteConfig;

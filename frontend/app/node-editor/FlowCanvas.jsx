@@ -13,14 +13,32 @@ import RightSidebar from './RightSidebar';
 import useDragAndDrop from '../hooks/useDragAndDrop';
 import useNodeOperations from '../hooks/useNodeOperations';
 import useEdgeDataFlow from '../hooks/useEdgeDataFlow';
-import { getNodeHexColor } from '../services/nodeRegistry'; // Импортируем функцию
+import { getNodeHexColor } from '../services/nodeRegistry';
 import './flowStyles.css';
 import './reactFlowTheme.css';
 
 /**
- * Компонент для отображения и работы с графом нодов
+ * Обновленный компонент для отображения и работы с графом нодов
+ * Позволяет настраивать сайдбар и другие элементы управления
+ * 
+ * @param {Object} props - Свойства компонента
+ * @param {React.Component} props.sidebarComponent - Кастомный компонент сайдбара (опционально)
+ * @param {Object} props.sidebarProps - Пропсы для компонента сайдбара (опционально)
+ * @param {boolean} props.hideSidebar - Флаг скрытия сайдбара (опционально)
+ * @param {boolean} props.hideControls - Флаг скрытия элементов управления (опционально)
+ * @param {boolean} props.hideMiniMap - Флаг скрытия мини-карты (опционально)
+ * @param {boolean} props.hideBackground - Флаг скрытия фона (опционально)
+ * @param {Function} props.onNodeSelect - Обработчик выбора нода (опционально)
  */
-const FlowCanvas = () => {
+const FlowCanvas = ({
+    sidebarComponent: SidebarComponent = RightSidebar,
+    sidebarProps = {},
+    hideSidebar = false,
+    hideControls = false,
+    hideMiniMap = false,
+    hideBackground = false,
+    onNodeSelect,
+}) => {
     // Получаем данные и методы из контекста редактора
     const {
         nodes,
@@ -60,13 +78,24 @@ const FlowCanvas = () => {
     );
 
     // Хук для операций с нодами
-    const { onConnect, onSelectionChange, handleNodesChange, validateExistingEdges } = useNodeOperations(
+    const { onConnect, onSelectionChange: baseOnSelectionChange, handleNodesChange, validateExistingEdges } = useNodeOperations(
         setEdges,
         setNodes,
         onNodesChange,
         setIsModified,
         setSelectedNodeId
     );
+
+    // Кастомный обработчик выбора нода
+    const onSelectionChange = useCallback((selection) => {
+        // Вызываем базовый обработчик
+        baseOnSelectionChange(selection);
+        
+        // Если предоставлен внешний обработчик, вызываем его с выбранными нодами
+        if (onNodeSelect && selection.nodes.length > 0) {
+            onNodeSelect(selection.nodes[0]);
+        }
+    }, [baseOnSelectionChange, onNodeSelect]);
 
     // Рёбра с информацией о потоках данных
     const edgesWithData = useEdgeDataFlow(edges, dataFlows, nodes);
@@ -112,6 +141,27 @@ const FlowCanvas = () => {
         }
     }, [needsFitView, setNeedsFitView, validateExistingEdges]);
 
+    // Подготовка свойств для сайдбара
+    const completeNodeData = useMemo(() => {
+        return selectedNodeId 
+            ? nodes.find(node => node.id === selectedNodeId) 
+            : null;
+    }, [selectedNodeId, nodes]);
+
+    // Соединяем стандартные свойства сайдбара с пользовательскими
+    const mergedSidebarProps = {
+        isExecuting,
+        executionStep,
+        onStop: stopExecution,
+        onStep: executeStep, 
+        onRunFull: runFullAlgorithm,
+        consoleOutput,
+        selectedNodeId,
+        selectedNode: completeNodeData,
+        nodes,
+        ...sidebarProps
+    };
+
     return (
         <div className="flex flex-1 h-full">
             <div className="flex-1 h-full" ref={reactFlowWrapper}>
@@ -135,31 +185,16 @@ const FlowCanvas = () => {
                     fitView
                     className="theme-flow"
                 >
-                    <FlowControls />
-                    <FlowMiniMap />
-                    <FlowBackground />
+                    {!hideControls && <Controls />}
+                    {!hideMiniMap && <FlowMiniMap />}
+                    {!hideBackground && <FlowBackground />}
 
-                    <RightSidebar
-                        isExecuting={isExecuting}
-                        executionStep={executionStep}
-                        onStop={stopExecution}
-                        onStep={executeStep}
-                        onRunFull={runFullAlgorithm}
-                        consoleOutput={consoleOutput}
-                        selectedNodeId={selectedNodeId}
-                        nodes={nodes}
-                    />
+                    {/* Рендерим сайдбар только если он не скрыт */}
+                    {!hideSidebar && <SidebarComponent {...mergedSidebarProps} />}
                 </ReactFlow>
             </div>
         </div>
     );
-};
-
-/**
- * Компонент элементов управления
- */
-const FlowControls = () => {
-    return <Controls />;
 };
 
 /**
