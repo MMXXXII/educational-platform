@@ -1,14 +1,13 @@
 """
 Вспомогательные функции для работы с курсами
 """
-from typing import Dict, List, Optional, Any, Tuple, Union
+from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 from sqlalchemy import func, desc, asc, and_, or_
 from sqlalchemy.orm import Session, joinedload, contains_eager
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.models import Course, Category, CourseEnrollment, User, course_categories
-from app.core.schemas import CourseOut, CategoryOut
 
 
 def get_filtered_courses_query(
@@ -16,86 +15,80 @@ def get_filtered_courses_query(
     category_id: Optional[int] = None,
     level: Optional[str] = None,
     search: Optional[str] = None,
-    tags: Optional[List[str]] = None,
+    category_names: Optional[List[str]] = None,
     author: Optional[str] = None,
     sort_by: Optional[str] = "created_at",
     sort_order: Optional[str] = "desc"
 ) -> Any:
     """
-    Создает и возвращает базовый запрос SQL для фильтруемых курсов
+    Создает SQLAlchemy запрос для фильтрации курсов с заданными параметрами
 
     Args:
         db: Сессия базы данных
         category_id: ID категории для фильтрации
-        level: Уровень сложности для фильтрации
-        search: Строка поиска (ищет в названии, описании и тегах)
-        tags: Список тегов для фильтрации
+        level: Уровень сложности курса
+        search: Строка поиска только для заголовка и описания
+        category_names: Список имен категорий для фильтрации
         author: Имя автора для фильтрации
-        sort_by: Поле для сортировки результатов
-        sort_order: Порядок сортировки ('asc' или 'desc')
+        sort_by: Поле для сортировки
+        sort_order: Порядок сортировки ("asc" или "desc")
 
     Returns:
         SQLAlchemy Query объект с примененными фильтрами
     """
     try:
-        # Базовый запрос с загрузкой категорий
+        # Загружаем связанные категории для каждого курса
         query = db.query(Course).options(joinedload(Course.categories))
 
-        # Фильтрация по категории (учитывая связь многие-ко-многим)
+        # Фильтрация по ID категории
         if category_id:
-            query = query.join(course_categories).join(
-                Category,
-                and_(
-                    Category.id == course_categories.c.category_id,
-                    Category.id == category_id
-                )
-            )
+            subquery = db.query(course_categories).filter(
+                course_categories.c.course_id == Course.id,
+                course_categories.c.category_id == category_id
+            ).exists()
+            query = query.filter(subquery)
 
-        # Применение фильтров
+        # Фильтрация по уровню
         if level:
             query = query.filter(Course.level == level)
 
+        # Фильтрация по автору
         if author:
             search_author = f"%{author.lower()}%"
             query = query.filter(func.lower(Course.author).like(search_author))
 
-        if tags:
-            # Предполагаем, что теги хранятся в виде строки, разделенной запятыми
-            # Улучшенная фильтрация по тегам
-            tag_conditions = []
-            for tag in tags:
-                search_tag = f"%{tag.lower()}%"
-                tag_conditions.append(func.lower(Course.tags).like(search_tag))
+        # Фильтрация по названиям категорий
+        if category_names:
+            category_conditions = []
+            for name in category_names:
+                subquery = db.query(course_categories).join(Category).filter(
+                    course_categories.c.course_id == Course.id,
+                    func.lower(Category.name).ilike(f"%{name.lower()}%")
+                ).exists()
+                category_conditions.append(subquery)
+            query = query.filter(or_(*category_conditions))
 
-            # Объединяем условия с помощью OR
-            if tag_conditions:
-                query = query.filter(or_(*tag_conditions))
-
+        # Поиск по названию и описанию
         if search:
             search_term = f"%{search.lower()}%"
             query = query.filter(
                 or_(
                     func.lower(Course.title).like(search_term),
-                    func.lower(Course.description).like(search_term),
-                    func.lower(Course.tags).like(search_term),
-                    func.lower(Course.author).like(search_term)
+                    func.lower(Course.description).like(search_term)
                 )
             )
 
-        # Применение сортировки
+        # Сортировка
         sort_column = getattr(Course, sort_by, Course.created_at)
         if sort_order.lower() == "asc":
             query = query.order_by(asc(sort_column))
-        else:  # desc по умолчанию
+        else:
             query = query.order_by(desc(sort_column))
 
         return query
 
     except SQLAlchemyError as e:
-        # Логирование ошибки (в реальном приложении)
         print(f"Database error in get_filtered_courses_query: {str(e)}")
-        # Возвращаем пустой запрос в случае ошибки
-        # Гарантированно пустой результат
         return db.query(Course).filter(Course.id == -1)
 
 

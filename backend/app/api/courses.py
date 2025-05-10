@@ -112,8 +112,9 @@ async def list_courses(
     level: Optional[str] = Query(
         None, description="Фильтр по уровню сложности"),
     search: Optional[str] = Query(
-        None, description="Поиск по названию, описанию или тегам"),
-    tags: Optional[List[str]] = Query(None, description="Фильтр по тегам"),
+        None, description="Поиск только по названию и описанию"),
+    category_names: Optional[List[str]] = Query(
+        None, description="Фильтр по названиям категорий"),
     author: Optional[str] = Query(None, description="Фильтр по автору"),
     sort_by: Optional[str] = Query(
         "created_at", description="Поле для сортировки"),
@@ -123,7 +124,6 @@ async def list_courses(
 ):
     """Получение списка курсов с возможностью фильтрации и сортировки"""
     try:
-        # Используем utils функцию для получения пагинированных курсов
         courses, total, pages = get_paginated_courses(
             db, page, size,
             sort_by=sort_by,
@@ -131,7 +131,7 @@ async def list_courses(
             category_id=category_id,
             level=level,
             search=search,
-            tags=tags,
+            category_names=category_names,
             author=author
         )
 
