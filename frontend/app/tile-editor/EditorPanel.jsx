@@ -217,8 +217,8 @@ export function EditorPanel (){
     // Кликнули на плоскость или на другой объект
     if (pickedMesh && pickedMesh.name === "positioningPlane") {
       // Размещение на базовой плоскости
-      const x = Math.floor(hitPoint.x / CELL_SIZE) * CELL_SIZE;
-      const z = Math.floor(hitPoint.z / CELL_SIZE) * CELL_SIZE;
+      const x = Math.floor(hitPoint.x / CELL_SIZE + 0.5) * CELL_SIZE;
+      const z = Math.floor(hitPoint.z / CELL_SIZE + 0.5) * CELL_SIZE;
       
       // Показываем куб на позиции размещения
       if (placementBoxRef.current) {
