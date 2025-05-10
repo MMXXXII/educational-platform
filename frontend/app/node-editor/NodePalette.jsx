@@ -52,16 +52,42 @@ const NodePalette = ({
     });
 
     // Обновляем состояние при изменении параметров фильтрации
+    // Используем строковый ключ для отслеживания изменений категорий
+    const categoriesKey = filteredCategories.map(c => c.id).join(',');
+    
     useEffect(() => {
-        const newState = {};
-        filteredCategories.forEach(category => {
-            // Сохраняем текущее состояние, если оно есть, иначе используем defaultExpanded
-            newState[category.id] = expandedCategories[category.id] !== undefined 
-                ? expandedCategories[category.id] 
-                : defaultExpanded;
+        // Только обновляем состояние, если категории изменились
+        setExpandedCategories(prev => {
+            const newState = {};
+            let hasChanges = false;
+            
+            filteredCategories.forEach(category => {
+                // Если категория уже существует, сохраняем её состояние
+                // иначе используем defaultExpanded
+                const expanded = prev[category.id] !== undefined 
+                    ? prev[category.id] 
+                    : defaultExpanded;
+                
+                newState[category.id] = expanded;
+                
+                // Проверяем, есть ли изменения
+                if (prev[category.id] !== expanded) {
+                    hasChanges = true;
+                }
+            });
+            
+            // Проверяем, есть ли категории, которые исчезли
+            const prevKeys = Object.keys(prev);
+            const currentKeys = filteredCategories.map(c => c.id);
+            if (prevKeys.length !== currentKeys.length) {
+                hasChanges = true;
+            }
+            
+            // Возвращаем новое состояние только если есть изменения
+            // иначе возвращаем предыдущее состояние, чтобы избежать ре-рендера
+            return hasChanges ? newState : prev;
         });
-        setExpandedCategories(newState);
-    }, [allowedCategories, allowedNodeTypes, excludedNodeTypes]);
+    }, [categoriesKey, defaultExpanded]);
 
     /**
      * Обработчик начала перетаскивания нода
