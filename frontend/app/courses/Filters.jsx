@@ -1,5 +1,3 @@
-import React from 'react';
-
 // Компонент фильтрации
 export function Filters({ categories, levels, setActiveFilters, activeFilters }) {
     // Обработчик изменения категории
@@ -50,11 +48,10 @@ export function Filters({ categories, levels, setActiveFilters, activeFilters })
                             <button
                                 key={category.value}
                                 onClick={() => handleCategoryChange(category.value)}
-                                className={`px-3 py-1 text-sm rounded-full ${
-                                    activeFilters.categories.includes(category.value)
+                                className={`px-3 py-1 text-sm rounded-full ${activeFilters.categories.includes(category.value)
                                         ? 'bg-blue-600 text-white'
                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
+                                    }`}
                             >
                                 {category.label}
                             </button>
@@ -72,11 +69,10 @@ export function Filters({ categories, levels, setActiveFilters, activeFilters })
                         <button
                             key={level.value}
                             onClick={() => handleLevelChange(level.value)}
-                            className={`px-3 py-1 text-sm rounded-full ${
-                                activeFilters.levels.includes(level.value)
+                            className={`px-3 py-1 text-sm rounded-full ${activeFilters.levels.includes(level.value)
                                     ? 'bg-blue-600 text-white'
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
+                                }`}
                         >
                             {level.label}
                         </button>

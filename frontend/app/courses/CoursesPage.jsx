@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CourseCard } from './CourseCard';
 import { Filters } from './Filters';
 import { SearchBar } from './SearchBar';
 import { EmptyState } from './EmptyState';
 import { LoadingState } from './LoadingState';
+import { Pagination } from './Pagination';
 import { coursesApi, categoriesApi } from '../api/coursesService';
 
 export function CoursesPage() {
@@ -12,11 +13,34 @@ export function CoursesPage() {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState([]);
-    const [levelOptions, setLevelOptions] = useState([]);
+    const [levelOptions, setLevelOptions] = useState([
+        { value: 'начинающий', label: 'Начинающий' },
+        { value: 'средний', label: 'Средний' },
+        { value: 'продвинутый', label: 'Продвинутый' }
+    ]);
     const [activeFilters, setActiveFilters] = useState({
         categories: [],
         levels: []
     });
+    // Состояние для дебаунса поиска
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
+    // Состояния для пагинации
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [pageSize, setPageSize] = useState(12);
+    const [totalItems, setTotalItems] = useState(0);
+
+    // Настройка дебаунса для поисковых запросов
+    useEffect(() => {
+        const timerId = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+        }, 500); // задержка 500мс перед отправкой запроса
+
+        return () => {
+            clearTimeout(timerId);
+        };
+    }, [searchQuery]);
 
     // Получение категорий с сервера
     useEffect(() => {
@@ -41,82 +65,81 @@ export function CoursesPage() {
         fetchCategories();
     }, []);
 
-    // Получение всех доступных уровней сложности
-    useEffect(() => {
-        const fetchAllLevels = async () => {
-            try {
-                // Запрашиваем курсы без фильтров, чтобы получить все возможные уровни
-                const data = await coursesApi.getCourses({
-                    page: 1,
-                    size: 100  // Запрашиваем большее количество курсов для получения всех возможных уровней
-                });
-
-                if (data.items?.length > 0) {
-                    const uniqueLevels = [...new Set(data.items.map(course => course.level))]
-                        .filter(Boolean)
-                        .map(level => ({
-                            value: level,
-                            label: level
-                        }));
-
-                    setLevelOptions(uniqueLevels);
-                }
-            } catch (error) {
-                console.error('Failed to fetch all levels:', error);
-                // В случае ошибки используем стандартные уровни
-                setLevelOptions([
-                    { value: 'начинающий', label: 'Начинающий' },
-                    { value: 'средний', label: 'Средний' },
-                    { value: 'продвинутый', label: 'Продвинутый' }
-                ]);
-            }
-        };
-
-        fetchAllLevels();
-    }, []);
-
     // Получение курсов с сервера
-    useEffect(() => {
-        const fetchCourses = async () => {
-            setLoading(true);
-            try {
-                // Используем API сервис для получения данных
-                const params = {
-                    page: 1,
-                    size: 12,
-                    search: searchQuery || undefined
-                };
+    const fetchCourses = useCallback(async () => {
+        setLoading(true);
+        try {
+            // Используем API сервис для получения данных
+            const params = {
+                page: currentPage,
+                size: pageSize
+            };
 
-                // Добавляем фильтры категорий, если они выбраны
-                if (activeFilters.categories.length > 0) {
-                    // Бэкенд ожидает один category_id, а не массив
-                    // Преобразуем массив в отдельные параметры
-                    params.category_id = activeFilters.categories[0];
-                }
-
-                // Добавляем фильтры уровней, если они выбраны
-                if (activeFilters.levels.length > 0) {
-                    // Бэкенд ожидает один level параметр, а не массив
-                    params.level = activeFilters.levels[0];
-                }
-
-                const data = await coursesApi.getCourses(params);
-                setCourses(data.items || []);
-            } catch (error) {
-                console.error('Failed to fetch courses:', error);
-                setCourses([]);
-            } finally {
-                setLoading(false);
+            // Добавляем строку поиска, если она не пустая
+            if (debouncedSearchQuery.trim()) {
+                params.search = debouncedSearchQuery.trim();
             }
-        };
 
+            // Добавляем фильтры категорий, если они выбраны
+            if (activeFilters.categories.length > 0) {
+                // Бэкенд ожидает один category_id, а не массив
+                params.category_id = activeFilters.categories[0];
+            }
+
+            // Добавляем фильтры уровней, если они выбраны
+            if (activeFilters.levels.length > 0) {
+                // Бэкенд ожидает один level параметр, а не массив
+                params.level = activeFilters.levels[0];
+            }
+
+            const data = await coursesApi.getCourses(params);
+            setCourses(data.items || []);
+
+            // Обновляем информацию о пагинации
+            setTotalItems(data.total || 0);
+            setTotalPages(Math.ceil((data.total || 0) / pageSize));
+        } catch (error) {
+            console.error('Failed to fetch courses:', error);
+            setCourses([]);
+            setTotalPages(1);
+        } finally {
+            setLoading(false);
+        }
+    }, [debouncedSearchQuery, activeFilters, currentPage, pageSize]);
+
+    // Запускаем поиск курсов при изменении фильтров, поисковой строки или страницы
+    useEffect(() => {
         fetchCourses();
-    }, [searchQuery, activeFilters]);
+    }, [fetchCourses]);
 
-    // Функция сброса фильтров
+    // Функция сброса фильтров и поиска
     const resetFilters = () => {
-        setSearchQuery('');
         setActiveFilters({ categories: [], levels: [] });
+        setSearchQuery(''); // Также сбрасываем поиск
+        setCurrentPage(1); // Возвращаемся на первую страницу при сбросе фильтров
+    };
+
+    // Обработчик для поиска при нажатии Enter
+    const handleSearchSubmit = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            setCurrentPage(1); // Возвращаемся на первую страницу при новом поиске
+            fetchCourses();
+        }
+    };
+
+    // Обработчик изменения страницы
+    const handlePageChange = (pageNumber) => {
+        // Прокручиваем страницу вверх при смене страницы
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setCurrentPage(pageNumber);
+    };
+
+    // Обработчик изменения размера страницы
+    const handlePageSizeChange = (e) => {
+        const newSize = parseInt(e.target.value);
+        setPageSize(newSize);
+        setCurrentPage(1); // Сбрасываем на первую страницу при изменении размера
     };
 
     return (
@@ -135,15 +158,23 @@ export function CoursesPage() {
                         setActiveFilters={setActiveFilters}
                         activeFilters={activeFilters}
                     />
+                    <button
+                        onClick={resetFilters}
+                        className="w-full bg-blue-600 hover:hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                    >
+                        Сбросить фильтры
+                    </button>
                 </div>
 
                 <div className="flex-1">
+
                     {/* Верхняя панель поиска и фильтров */}
                     <SearchBar
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
                         showFilters={showFilters}
                         setShowFilters={setShowFilters}
+                        onKeyDown={handleSearchSubmit}
                     />
 
                     {/* Мобильные фильтры */}
@@ -158,16 +189,56 @@ export function CoursesPage() {
                         </div>
                     )}
 
+                    {/* Добавляем постоянную мобильную кнопку под поиском */}
+                    <div className="md:hidden mb-4">
+                        <button
+                            onClick={resetFilters}
+                            className="w-full bg-blue-600 hover:hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                        >
+                            Сбросить фильтры
+                        </button>
+                    </div>
+
                     {loading ? (
                         // Индикатор загрузки
                         <LoadingState />
                     ) : courses.length > 0 ? (
-                        // Сетка курсов
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {courses.map((course) => (
-                                <CourseCard key={course.id} course={course} />
-                            ))}
-                        </div>
+                        <>
+                            {/* Статистика результатов и выбор количества на странице */}
+                            <div className="flex justify-between items-center mb-6 mt-4 text-sm text-gray-600">
+                                <div>
+                                    Показано {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, totalItems)} из {totalItems} курсов
+                                </div>
+                                <div className="flex items-center">
+                                    <label htmlFor="pageSize" className="mr-2">На странице:</label>
+                                    <select
+                                        id="pageSize"
+                                        value={pageSize}
+                                        onChange={handlePageSizeChange}
+                                        className="border rounded px-2 py-1 text-sm"
+                                    >
+                                        <option value="6">6</option>
+                                        <option value="12">12</option>
+                                        <option value="24">24</option>
+                                        <option value="48">48</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Сетка курсов */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {courses.map((course) => (
+                                    <CourseCard key={course.id} course={course} />
+                                ))}
+                            </div>
+
+                            {/* Компонент пагинации */}
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={handlePageChange}
+                            />
+                        </>
                     ) : (
                         // Состояние пустого результата
                         <EmptyState resetFilters={resetFilters} />

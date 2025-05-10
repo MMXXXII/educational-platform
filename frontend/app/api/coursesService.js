@@ -1,4 +1,3 @@
-// frontend/api/coursesService.js
 import axios from 'axios';
 import config from '../../config';
 
@@ -33,7 +32,7 @@ export const coursesApi = {
       handleError(error);
     }
   },
-  
+
   // Получение данных о конкретном курсе
   getCourseById: async (courseId) => {
     try {
@@ -43,7 +42,7 @@ export const coursesApi = {
       handleError(error);
     }
   },
-  
+
   // Получение популярных курсов
   getPopularCourses: async (limit = 5) => {
     try {
@@ -53,7 +52,7 @@ export const coursesApi = {
       handleError(error);
     }
   },
-  
+
   // Получение недавних курсов
   getRecentCourses: async (limit = 5) => {
     try {
@@ -63,7 +62,7 @@ export const coursesApi = {
       handleError(error);
     }
   },
-  
+
   // Получение рекомендованных курсов
   getRecommendedCourses: async (limit = 5) => {
     try {
@@ -73,7 +72,7 @@ export const coursesApi = {
       handleError(error);
     }
   },
-  
+
   // Запись на курс
   enrollInCourse: async (courseId) => {
     try {
@@ -83,7 +82,7 @@ export const coursesApi = {
       handleError(error);
     }
   },
-  
+
   // Получение записей пользователя на курсы
   getUserEnrollments: async () => {
     try {
@@ -93,7 +92,7 @@ export const coursesApi = {
       handleError(error);
     }
   },
-  
+
   // Получение курсов пользователя с пагинацией
   getMyCourses: async (page = 1, size = 10) => {
     try {
@@ -103,7 +102,7 @@ export const coursesApi = {
       handleError(error);
     }
   },
-  
+
   // Обновление прогресса прохождения курса
   updateEnrollment: async (enrollmentId, data) => {
     try {
@@ -113,7 +112,7 @@ export const coursesApi = {
       handleError(error);
     }
   },
-  
+
   // Отмена записи на курс
   unenrollFromCourse: async (enrollmentId) => {
     try {
@@ -123,7 +122,7 @@ export const coursesApi = {
       handleError(error);
     }
   },
-  
+
   // Получение прогресса по курсу
   getCourseProgress: async (courseId) => {
     try {
@@ -146,7 +145,7 @@ export const categoriesApi = {
       handleError(error);
     }
   },
-  
+
   // Получение категории по ID
   getCategoryById: async (categoryId) => {
     try {
@@ -161,7 +160,7 @@ export const categoriesApi = {
 // Функция обработки ошибок
 const handleError = (error) => {
   let errorMessage = 'Произошла ошибка при обращении к API';
-  
+
   if (error.response) {
     // Ответ от сервера был получен с кодом ошибки
     const { status, data } = error.response;
@@ -170,7 +169,7 @@ const handleError = (error) => {
     // Запрос был сделан, но ответ не получен
     errorMessage = 'Нет ответа от сервера';
   }
-  
+
   // Создаем и выбрасываем ошибку с деталями
   const customError = new Error(errorMessage);
   customError.originalError = error;
