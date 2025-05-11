@@ -1,0 +1,212 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router';
+import { UserIcon, ArrowRightEndOnRectangleIcon, BookOpenIcon, PlayIcon, PencilSquareIcon, Bars3Icon, XMarkIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../contexts/AuthContext';
+
+export function Header() {
+    const { isAuthenticated, hasRole } = useAuth();
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    // Обработчик для предотвращения контекстного меню на логотипе
+    const preventContextMenu = (e) => {
+        e.preventDefault();
+        return false;
+    };
+
+    const toggleMobileMenu = () => {
+        setMobileMenuOpen(!mobileMenuOpen);
+    };
+
+    return (
+        <header className="bg-white shadow-md relative z-20">
+            <div className="container mx-auto px-4 sm:px-6 py-3">
+                <div className="flex justify-between items-center">
+                    {/* Защищенный логотип с использованием CSS background-image */}
+                    <Link
+                        to="/"
+                        className="block relative"
+                        onContextMenu={preventContextMenu}
+                    >
+                        <img
+                            src="/logo.png"
+                            alt="EduPlatform Logo"
+                            className="h-12 sm:h-15 w-auto select-none"
+                            style={{
+                                pointerEvents: 'none',
+                                userSelect: 'none',
+                                WebkitUserSelect: 'none'
+                            }}
+                            draggable="false"
+                        />
+                        {/* Защитный слой поверх изображения */}
+                        <div
+                            className="absolute inset-0 z-10"
+                            onContextMenu={preventContextMenu}
+                            onClick={(e) => e.stopPropagation()}
+                        ></div>
+                    </Link>
+
+                    {/* Desktop Navigation */}
+                    <nav className="hidden md:flex space-x-4 items-center">
+                        {isAuthenticated ? (
+                            <>
+                                {/* Ссылка "Пройти курс" для всех авторизованных пользователей */}
+                                <Link
+                                    to="/node-editor"
+                                    className="text-gray-700 hover:text-blue-600 flex items-center"
+                                >
+                                    <PlayIcon className="h-5 w-5 mr-1" />
+                                    <span>Пройти курс</span>
+                                </Link>
+
+                                {/* Ссылка "Курсы" для всех авторизованных пользователей */}
+                                <Link
+                                    to="/courses"
+                                    className="text-gray-700 hover:text-blue-600 flex items-center"
+                                >
+                                    <BookOpenIcon className="h-5 w-5 mr-1" />
+                                    <span>Курсы</span>
+                                </Link>
+
+                                {/* Ссылка "Создать курс" только для администраторов */}
+                                {hasRole(['admin']) && (
+                                    <Link
+                                        to="/editor"
+                                        className="text-gray-700 hover:text-blue-600 flex items-center"
+                                    >
+                                        <PencilSquareIcon className="h-5 w-5 mr-1" />
+                                        <span>Создать курс</span>
+                                    </Link>
+                                )}
+
+                                {/* Ссылка "Файлы" только для администраторов */}
+                                {hasRole(['admin']) && (
+                                    <Link
+                                        to="/file-manager"
+                                        className="text-gray-700 hover:text-blue-600 flex items-center"
+                                    >
+                                        <DocumentTextIcon className="h-5 w-5 mr-1" />
+                                        <span>Файлы</span>
+                                    </Link>
+                                )}
+
+                                {/* Ссылка "Профиль" для всех авторизованных пользователей */}
+                                <Link
+                                    to="/profile"
+                                    className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 flex items-center"
+                                >
+                                    <UserIcon className="h-5 w-5 mr-1" />
+                                    <span>Профиль</span>
+                                </Link>
+                            </>
+                        ) : (
+                            <>
+                                <Link
+                                    to="/sign-in"
+                                    className="px-4 py-2 border border-blue-600 text-blue-600 font-semibold rounded-lg hover:bg-blue-50 flex items-center"
+                                >
+                                    <ArrowRightEndOnRectangleIcon className="h-5 w-5 mr-1" />
+                                    <span>Войти</span>
+                                </Link>
+                                <Link
+                                    to="/sign-up"
+                                    className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
+                                >
+                                    Регистрация
+                                </Link>
+                            </>
+                        )}
+                    </nav>
+
+                    {/* Mobile menu button */}
+                    <button
+                        className="md:hidden text-gray-700 focus:outline-none"
+                        onClick={toggleMobileMenu}
+                    >
+                        {mobileMenuOpen ? (
+                            <XMarkIcon className="h-6 w-6" />
+                        ) : (
+                            <Bars3Icon className="h-6 w-6" />
+                        )}
+                    </button>
+                </div>
+
+                {/* Mobile Navigation */}
+                {mobileMenuOpen && (
+                    <div className="md:hidden absolute top-full left-0 right-0 bg-white shadow-lg py-4 px-6 z-10">
+                        <nav className="flex flex-col space-y-4">
+                            {isAuthenticated ? (
+                                <>
+                                    <Link
+                                        to="/node-editor"
+                                        className="text-gray-700 hover:text-blue-600 flex items-center"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        <PlayIcon className="h-5 w-5 mr-2" />
+                                        <span>Пройти курс</span>
+                                    </Link>
+
+                                    <Link
+                                        to="/courses"
+                                        className="text-gray-700 hover:text-blue-600 flex items-center"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        <BookOpenIcon className="h-5 w-5 mr-2" />
+                                        <span>Курсы</span>
+                                    </Link>
+
+                                    {hasRole(['admin']) && (
+                                        <Link
+                                            to="/editor"
+                                            className="text-gray-700 hover:text-blue-600 flex items-center"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                        >
+                                            <PencilSquareIcon className="h-5 w-5 mr-2" />
+                                            <span>Создать курс</span>
+                                        </Link>
+                                    )}
+
+                                    {hasRole(['admin']) && (
+                                        <Link
+                                            to="/file-manager"
+                                            className="text-gray-700 hover:text-blue-600 flex items-center"
+                                        >
+                                            <DocumentTextIcon className="h-5 w-5 mr-1" />
+                                            <span>Файлы</span>
+                                        </Link>
+                                    )}
+
+                                    <Link
+                                        to="/profile"
+                                        className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 flex items-center justify-center"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        <UserIcon className="h-5 w-5 mr-2" />
+                                        <span>Профиль</span>
+                                    </Link>
+                                </>
+                            ) : (
+                                <>
+                                    <Link
+                                        to="/sign-in"
+                                        className="px-4 py-2 border border-blue-600 text-blue-600 font-semibold rounded-lg hover:bg-blue-50 flex items-center justify-center"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        <span>Войти</span>
+                                    </Link>
+                                    <Link
+                                        to="/sign-up"
+                                        className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 flex items-center justify-center"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        Регистрация
+                                    </Link>
+                                </>
+                            )}
+                        </nav>
+                    </div>
+                )}
+            </div>
+        </header>
+    );
+}

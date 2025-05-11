@@ -1,0 +1,127 @@
+/* Стили для анимации потока данных */
+
+@keyframes flowAnimation {
+    0% {
+        stroke-dashoffset: 40;
+    }
+
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+/* Анимация мерцания */
+@keyframes pulseAnimation {
+    0% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.6;
+    }
+}
+
+/* Стили для активных нодов */
+.react-flow__node.active {
+    box-shadow: 0 0 0 2px #3b82f6, 0 4px 10px rgba(59, 130, 246, 0.5) !important;
+    transform: scale(1.02);
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+/* Стили для завершенных нодов */
+.react-flow__node.completed {
+    box-shadow: 0 0 0 1px #10b981;
+}
+
+/* Стили для нодов с ошибками */
+.react-flow__node.error {
+    box-shadow: 0 0 0 2px #ef4444, 0 4px 10px rgba(239, 68, 68, 0.5) !important;
+}
+
+/* Стили для ребер с данными */
+.react-flow__edge.data-transfer .react-flow__edge-path {
+    stroke: #3b82f6;
+    stroke-width: 2;
+}
+
+.react-flow__edge.flow-transfer .react-flow__edge-path {
+    stroke: #ef4444;
+    stroke-width: 2;
+    stroke-dasharray: 5, 5;
+    animation: flowAnimation 1s linear infinite;
+}
+
+/* Стили для активных ребер */
+.react-flow__edge.active .react-flow__edge-path {
+    animation: pulseAnimation 1.5s ease-in-out infinite;
+}
+
+/* Стили для подписей значений */
+.data-value-label {
+    background-color: white;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #333;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+    z-index: 1000;
+}
+
+/* Стили для частиц потока данных */
+.flow-particle {
+    fill: #3b82f6;
+    animation: pulseAnimation 1s ease-in-out infinite;
+}
+
+/* Стили для улучшенного отображения состояния */
+.node-state-indicator {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #3b82f6;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
+/* Стили для контейнера выполнения */
+.execution-panel {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 16px;
+    max-width: 320px;
+    width: 100%;
+}
+
+/* Анимация появления панели */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.execution-panel {
+    animation: slideIn 0.3s ease-out;
+}
