@@ -9,6 +9,7 @@ import OpenProjectModal from './components/OpenProjectModal';
 import NotificationPanel from './components/NotificationPanel';
 import NodePalette from '../node-editor/NodePalette';
 import FlowCanvas from './FlowCanvas';
+import { NODE_CATEGORIES } from '../services/nodeRegistry';
 
 /**
  * Страница редактора логических структур
@@ -30,7 +31,7 @@ export function NodeEditor() {
     // Состояния для модальных окон
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showOpenModal, setShowOpenModal] = useState(false);
-    
+
     // Состояние для уведомлений
     const [notification, setNotification] = useState(null);
 
@@ -68,11 +69,11 @@ export function NodeEditor() {
 
         // Создаем новый проект
         const success = createNewProject(newProjectName.trim());
-        
+
         if (success) {
             // Сразу же сохраняем проект в localStorage
             const saveSuccess = saveProject(newProjectName.trim());
-            
+
             if (saveSuccess) {
                 setShowCreateModal(false);
                 showNotification(`Создан новый проект: ${newProjectName}`, "success");
@@ -125,10 +126,17 @@ export function NodeEditor() {
         setNotification(null);
     };
 
+    // Список разрешенных типов нодов (пока все разрешены)
+    const allowedNodeTypes = [
+    ];
+    const allowedCategories = [
+        NODE_CATEGORIES.VARIABLES, NODE_CATEGORIES.CONTROL, NODE_CATEGORIES.OPERATIONS,
+    ];
+
     return (
         <div className="w-full h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
             {/* Шапка редактора */}
-            <EditorHeader 
+            <EditorHeader
                 projectName={projectName}
                 isModified={isModified}
                 onSave={handleSaveProject}
@@ -137,14 +145,14 @@ export function NodeEditor() {
             />
 
             {/* Уведомления */}
-            <NotificationPanel 
-                notification={notification} 
+            <NotificationPanel
+                notification={notification}
                 onClose={closeNotification}
                 autoHideTime={5000}
             />
 
             {/* Модальное окно создания проекта */}
-            <CreateProjectModal 
+            <CreateProjectModal
                 isOpen={showCreateModal}
                 onClose={() => setShowCreateModal(false)}
                 onCreate={handleCreateProject}
@@ -152,7 +160,7 @@ export function NodeEditor() {
             />
 
             {/* Модальное окно открытия проекта */}
-            <OpenProjectModal 
+            <OpenProjectModal
                 isOpen={showOpenModal}
                 onClose={() => setShowOpenModal(false)}
                 onOpen={handleLoadProject}
@@ -165,8 +173,10 @@ export function NodeEditor() {
                 {isMounted && (
                     <ReactFlowProvider>
                         {/* Палитра с фильтрацией */}
-                        <NodePalette />
-                        
+                        <NodePalette
+                            allowedCategories={allowedCategories}
+                        />
+
                         {/* Область редактирования */}
                         <FlowCanvas />
                     </ReactFlowProvider>

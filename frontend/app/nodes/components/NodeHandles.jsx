@@ -64,6 +64,28 @@ export const InputHandles = ({ inputs, nodeId, nodeType, onConnect }) => {
                 flow: 22,
                 left: 52,
                 right: 72
+            },
+            player: {
+                flow: 22,
+            },
+            move: {
+                flow: 22,
+                entity: 50,
+            },
+            turn: {
+              flow: 22,
+              entity: 50,  
+            },
+            wallAhead: {
+                flow: 22,
+                entity: 50
+            },
+            exitReached: {
+                flow: 22,
+                entity: 50
+            },
+            jump: {
+                flow: 22,
             }
         };
         
@@ -182,8 +204,35 @@ export const OutputHandles = ({ outputs, nodeId, nodeType }) => {
                 result: 68
             },
             booleanLogic: {
-                flow: 24,
+                flow: 22,
                 result: 62
+            },
+            player: {
+                flow: 22,
+                actions: 50,
+                direction: 70,
+            },
+            move: {
+                flow: 22,
+                success: 50,
+            },
+            turn: {
+                flow: 22,
+                direction: 50,
+            },
+            wallAhead: {
+                flow: null,
+                true: 22,
+                false: 45,
+                result: 70,
+            },
+            exitReached: {
+                flow: 22,
+                result: 50,
+            },
+            jump: {
+                flow: 22,
+                success: 50,
             }
         };
         

@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import ExecutionEngine from '../services/execution';
+import Scene3DContext from '../contexts/Scene3DContext';
 
 /**
  * Хук для управления выполнением нодового графа
@@ -7,9 +8,27 @@ import ExecutionEngine from '../services/execution';
  * @param {Array} nodes - Массив нодов
  * @param {Array} edges - Массив связей между нодами
  * @param {Function} updateNodes - Функция для обновления состояния нодов
+ * @param {Object} options - Дополнительные параметры
+ * @param {Function} options.resetVisualizerState - Функция для сброса состояния визуализатора
  * @returns {Object} - Методы и состояние для управления выполнением
  */
-const useNodeExecution = (nodes, edges, updateNodes) => {
+const useNodeExecution = (nodes, edges, updateNodes, options = {}) => {
+    // Получаем resetVisualizerState из опций
+    const { resetVisualizerState } = options;
+
+    // Безопасное получение контекста 3D сцены (если доступен)
+    // Используем безопасный подход - пробуем получить контекст, но не выбрасываем ошибку, если его нет
+    let scene3dContext = null;
+    try {
+        scene3dContext = useContext(Scene3DContext);
+        // Проверяем, что контекст имеет реальные значения, а не просто пустой объект
+        if (scene3dContext && (!scene3dContext.nodeActions || !scene3dContext.resetScene)) {
+            scene3dContext = null;
+        }
+    } catch (error) {
+        console.log("3D сцена недоступна, продолжаем без неё");
+    }
+
     // Состояние выполнения
     const [isExecuting, setIsExecuting] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
@@ -35,7 +54,21 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
       */
     const initializeEngine = useCallback(() => {
         // Создаем новый экземпляр движка при каждой инициализации
-        engineRef.current = new ExecutionEngine(nodes, edges, {}, null);
+        // Передаем контекст 3D сцены в качестве внешнего контекста (если он доступен)
+        const externalContexts = {};
+        
+        // Если контекст 3D сцены доступен, добавляем его
+        if (scene3dContext) {
+            externalContexts.scene3d = scene3dContext;
+        }
+        
+        engineRef.current = new ExecutionEngine(
+            nodes, 
+            edges, 
+            {}, // глобальные переменные 
+            null, // функция установки глобальных переменных
+            externalContexts // внешние контексты (может быть пустым объектом)
+        );
 
         const success = engineRef.current.initialize();
         isInitializedRef.current = success;
@@ -50,7 +83,7 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
         }
 
         return success;
-    }, [nodes, edges]);
+    }, [nodes, edges, scene3dContext]);
 
     /**
      * Обновляет визуальное состояние нодов
@@ -128,8 +161,16 @@ const useNodeExecution = (nodes, edges, updateNodes) => {
 
         // Всегда пересоздаем и инициализируем движок для нового выполнения
         isInitializedRef.current = false;
-        return initializeEngine();
-    }, [initializeEngine, updateNodes]);
+        const success = initializeEngine();
+        
+        // ВАЖНО: Для полного сброса состояния сцены необходимо вызвать
+        // внешний метод сброса из LevelWalkthrough
+        if (typeof resetVisualizerState === 'function') {
+            resetVisualizerState();
+        }
+        
+        return success;
+    }, [initializeEngine, updateNodes, resetVisualizerState]);
 
     /**
      * Выполняет один шаг алгоритма

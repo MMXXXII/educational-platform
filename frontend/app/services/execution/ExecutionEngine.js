@@ -13,8 +13,9 @@ class ExecutionEngine {
      * @param {Array} edges - Массив связей между нодами
      * @param {Object} globalVariables - Глобальные переменные
      * @param {Function} setGlobalVariable - Функция для установки глобальной переменной
+     * @param {Object} externalContexts - Внешние контексты для нодов (например, Scene3DContext)
      */
-    constructor(nodes, edges, globalVariables = {}, setGlobalVariable = null) {
+    constructor(nodes, edges, globalVariables = {}, setGlobalVariable = null, externalContexts = {}) {
         this.nodes = nodes;
         this.edges = edges;
 
@@ -24,6 +25,16 @@ class ExecutionEngine {
         this.dataManager = new DataManager(edges);
         this.graphManager = new GraphManager(nodes, edges);
         this.nodeExecutor = new NodeExecutor(this.dataManager, this.state);
+        
+        // Устанавливаем внешние контексты
+        this.externalContexts = externalContexts;
+        
+        // Добавляем внешние контексты в NodeExecutor
+        if (externalContexts) {
+            Object.entries(externalContexts).forEach(([key, value]) => {
+                this.nodeExecutor.setExternalContext(key, value);
+            });
+        }
 
         // Состояние движка
         this.isComplete = false;
@@ -41,6 +52,16 @@ class ExecutionEngine {
             executionOrder: [], // Порядок выполнения нодов в теле цикла, основанный на flow-соединениях
             currentIndex: 0     // Текущий индекс в порядке выполнения
         };
+    }
+
+    /**
+     * Устанавливает внешний контекст для нодов
+     * @param {string} contextName - Имя контекста
+     * @param {Object} contextValue - Значение контекста
+     */
+    setExternalContext(contextName, contextValue) {
+        this.externalContexts[contextName] = contextValue;
+        this.nodeExecutor.setExternalContext(contextName, contextValue);
     }
 
     /**

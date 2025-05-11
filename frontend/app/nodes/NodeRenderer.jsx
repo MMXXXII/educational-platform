@@ -9,6 +9,14 @@ import PrintNode from './components/PrintNode';
 import AssignmentNode from './components/AssignmentNode';
 import BooleanLogicNode from './components/BooleanLogicNode';
 
+// Импорт компонентов для 3D-сцены
+import PlayerNode from './components/PlayerNode';
+import MoveNode from './components/MoveNode';
+import TurnNode from './components/TurnNode';
+import WallAheadNode from './components/WallAheadNode';
+import ExitReachedNode from './components/ExitReachedNode';
+import JumpNode from './components/JumpNode';
+
 /**
  * Главный компонент NodeRenderer, маршрутизирующий рендеринг нодов разных типов
  * @param {Object} props - Свойства компонента
@@ -19,12 +27,13 @@ import BooleanLogicNode from './components/BooleanLogicNode';
  */
 const NodeRenderer = ({ data, selected, id }) => {
     const nodeType = data?.type;
-    
+
     // Получаем определение типа нода из реестра
     const nodeDefinition = getNodeDefinition(nodeType);
-    
+
     // Выбираем компонент в зависимости от типа нода
     switch (nodeType) {
+        // Стандартные ноды
         case 'variable':
             return (
                 <VariableNode
@@ -34,7 +43,7 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
-            
+
         case 'assignment':
             return (
                 <AssignmentNode
@@ -44,8 +53,8 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
-            
-        case 'math':
+
+        case 'math':    
         case 'logical':
             return (
                 <OperationNode
@@ -55,7 +64,7 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
-            
+
         case 'booleanLogic':
             return (
                 <BooleanLogicNode
@@ -65,7 +74,7 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
-            
+
         case 'if':
         case 'loop':
             return (
@@ -76,7 +85,7 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
-            
+
         case 'print':
             return (
                 <PrintNode
@@ -86,7 +95,68 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
-            
+
+        // 3D-сцена ноды
+        case 'player':
+            return (
+                <PlayerNode
+                    id={id}
+                    data={data}
+                    selected={selected}
+                    nodeDefinition={nodeDefinition}
+                />
+            );
+
+        case 'move':
+            return (
+                <MoveNode
+                    id={id}
+                    data={data}
+                    selected={selected}
+                    nodeDefinition={nodeDefinition}
+                />
+            );
+
+        case 'turn':
+            return (
+                <TurnNode
+                    id={id}
+                    data={data}
+                    selected={selected}
+                    nodeDefinition={nodeDefinition}
+                />
+            );
+
+        case 'wallAhead':
+            return (
+                <WallAheadNode
+                    id={id}
+                    data={data}
+                    selected={selected}
+                    nodeDefinition={nodeDefinition}
+                />
+            );
+
+        case 'exitReached':
+            return (
+                <ExitReachedNode
+                    id={id}
+                    data={data}
+                    selected={selected}
+                    nodeDefinition={nodeDefinition}
+                />
+            );
+
+        case 'jump':
+            return (
+                <JumpNode
+                    id={id}
+                    data={data}
+                    selected={selected}
+                    nodeDefinition={nodeDefinition}
+                />
+            );
+
         default:
             // Возвращаем стандартный компонент для неизвестных типов нодов
             return (

@@ -11,6 +11,14 @@ import { IfNode } from './types/IfNode';
 import { AssignmentNode } from './types/AssignmentNode';
 import { BooleanLogicNode } from './types/BooleanLogicNode';
 
+// Импорт 3D Scene нодов
+import { PlayerNode } from './types/PlayerNode';
+import { MoveNode } from './types/MoveNode';
+import { TurnNode } from './types/TurnNode';
+import { WallAheadNode } from './types/WallAheadNode';
+import { ExitReachedNode } from './types/ExitReachedNode';
+import { JumpNode } from './types/JumpNode';
+
 // Создаем реестр типов узлов
 const registry = {
     variable: VariableNode,
@@ -21,6 +29,14 @@ const registry = {
     if: IfNode,
     assignment: AssignmentNode,
     booleanLogic: BooleanLogicNode,
+
+    // 3D Scene ноды
+    player: PlayerNode,
+    move: MoveNode,
+    turn: TurnNode,
+    wallAhead: WallAheadNode,
+    exitReached: ExitReachedNode,
+    jump: JumpNode,
 };
 
 /**
@@ -39,7 +55,7 @@ export function createNode(type, data = {}) {
             initialValue: data.value || 0
         });
     }
-    
+
     if (type === 'string') {
         return createNode('variable', {
             ...data,
@@ -47,7 +63,7 @@ export function createNode(type, data = {}) {
             initialValue: data.value || ''
         });
     }
-    
+
     const NodeClass = registry[type];
     if (!NodeClass) {
         throw new Error(`Неизвестный тип узла: ${type}`);

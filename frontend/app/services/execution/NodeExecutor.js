@@ -12,6 +12,9 @@ class NodeExecutor {
         this.dataManager = dataManager;
         this.state = state;
         this.executionPath = [];
+
+        // Хранилище для внешних контекстов
+        this.externalContexts = {};
     }
 
     /**
@@ -19,6 +22,15 @@ class NodeExecutor {
      */
     reset() {
         this.executionPath = [];
+    }
+
+    /**
+     * Устанавливает внешний контекст для нодов
+     * @param {string} contextName - Имя контекста
+     * @param {Object} contextValue - Значение контекста
+     */
+    setExternalContext(contextName, contextValue) {
+        this.externalContexts[contextName] = contextValue;
     }
 
     /**
@@ -49,8 +61,16 @@ class NodeExecutor {
                 throw new Error(`Нод с ID ${node.id} не имеет ссылки на реализацию`);
             }
 
+            // Создаем контекст выполнения с внешними контекстами
+            const executeContext = {
+                ...this.state,
+                ...this.externalContexts,
+                // Гарантируем, что метод log взят из this.state
+                log: this.state.log?.bind(this.state)
+            };
+
             // Выполняем нод
-            const outputs = nodeRef.execute(inputValues, this.state);
+            const outputs = nodeRef.execute(inputValues, executeContext);
 
             // Сохраняем выходные значения в кэше
             this.dataManager.cacheOutputValues(node, outputs);

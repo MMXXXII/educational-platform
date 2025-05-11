@@ -20,7 +20,8 @@ import {
 export const NODE_CATEGORIES = {
     VARIABLES: 'variables',
     OPERATIONS: 'operations',
-    CONTROL: 'control'
+    CONTROL: 'control',
+    SCENE_3D: 'scene3d'   // Новая категория для 3D нодов
 };
 
 /**
@@ -164,6 +165,105 @@ const nodeRegistry = {
         getActiveValue: node => node.state?.currentIteration !== undefined ?
             `Итерация ${node.state.currentIteration + 1}/${node.state.count}` : null,
     },
+
+    // Ноды для 3D сцены
+    player: {
+        type: 'player',
+        category: NODE_CATEGORIES.SCENE_3D,
+        name: 'Игрок',
+        description: 'Персонаж, управляемый в 3D сцене',
+        iconComponent: VariableIcon,
+        color: {
+            bg: 'bg-blue-100 dark:bg-blue-900',
+            border: 'border-blue-500',
+            text: 'text-blue-800 dark:text-blue-200'
+        },
+        paletteColor: 'bg-blue-500 hover:bg-blue-600',
+        hexColor: '#3b82f6', // blue-500
+        getActiveValue: node => node.state?.position ? `X:${node.state.position.x}, Z:${node.state.position.z}` : null,
+    },
+
+    move: {
+        type: 'move',
+        category: NODE_CATEGORIES.SCENE_3D,
+        name: 'Движение',
+        description: 'Перемещает персонажа вперед',
+        iconComponent: ArrowPathIcon,
+        color: {
+            bg: 'bg-green-100 dark:bg-green-900',
+            border: 'border-green-500',
+            text: 'text-green-800 dark:text-green-200'
+        },
+        paletteColor: 'bg-green-500 hover:bg-green-600',
+        hexColor: '#22c55e', // green-500
+        getActiveValue: node => node.state?.steps ? `${node.state.steps} шаг(ов)` : null,
+        defaultData: { steps: 1 }
+    },
+
+    turn: {
+        type: 'turn',
+        category: NODE_CATEGORIES.SCENE_3D,
+        name: 'Поворот',
+        description: 'Поворачивает персонажа',
+        iconComponent: ArrowsRightLeftIcon,
+        color: {
+            bg: 'bg-yellow-100 dark:bg-yellow-900',
+            border: 'border-yellow-500',
+            text: 'text-yellow-800 dark:text-yellow-200'
+        },
+        paletteColor: 'bg-yellow-500 hover:bg-yellow-600',
+        hexColor: '#eab308', // yellow-500
+        getActiveValue: node => node.state?.direction,
+        defaultData: { direction: 'right' }
+    },
+
+    wallAhead: {
+        type: 'wallAhead',
+        category: NODE_CATEGORIES.SCENE_3D,
+        name: 'Стена впереди',
+        description: 'Проверяет наличие стены перед персонажем',
+        iconComponent: ServerIcon,
+        color: {
+            bg: 'bg-red-100 dark:bg-red-900',
+            border: 'border-red-500',
+            text: 'text-red-800 dark:text-red-200'
+        },
+        paletteColor: 'bg-red-500 hover:bg-red-600',
+        hexColor: '#ef4444', // red-500
+        getActiveValue: node => node.state?.result !== undefined ? (node.state.result ? 'Да' : 'Нет') : null,
+    },
+
+    exitReached: {
+        type: 'exitReached',
+        category: NODE_CATEGORIES.SCENE_3D,
+        name: 'Выход достигнут',
+        description: 'Проверяет, достиг ли персонаж выхода',
+        iconComponent: CubeTransparentIcon,
+        color: {
+            bg: 'bg-purple-100 dark:bg-purple-900',
+            border: 'border-purple-500',
+            text: 'text-purple-800 dark:text-purple-200'
+        },
+        paletteColor: 'bg-purple-500 hover:bg-purple-600',
+        hexColor: '#a855f7', // purple-500
+        getActiveValue: node => node.state?.result !== undefined ? (node.state.result ? 'Да' : 'Нет') : null,
+    },
+
+    jump: {
+        type: 'jump',
+        category: NODE_CATEGORIES.SCENE_3D,
+        name: 'Прыжок',
+        description: 'Заставляет персонажа прыгнуть',
+        iconComponent: HashtagIcon,
+        color: {
+            bg: 'bg-cyan-100 dark:bg-cyan-900',
+            border: 'border-cyan-500',
+            text: 'text-cyan-800 dark:text-cyan-200'
+        },
+        paletteColor: 'bg-cyan-500 hover:bg-cyan-600',
+        hexColor: '#06b6d4', // cyan-500
+        getActiveValue: node => node.state?.executed ? 'Выполнен' : null,
+    },
 };
 
 /**
@@ -281,6 +381,8 @@ function getCategoryName(categoryId) {
             return 'Операции';
         case NODE_CATEGORIES.CONTROL:
             return 'Управление';
+        case NODE_CATEGORIES.SCENE_3D:
+            return '3D Объекты';
         default:
             return 'Другое';
     }
