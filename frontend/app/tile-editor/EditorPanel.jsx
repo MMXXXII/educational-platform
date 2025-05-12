@@ -38,8 +38,6 @@ export function EditorPanel (){
   const [savedLevels, setSavedLevels] = useState([]);
   const [currentLevelName, setCurrentLevelName] = useState('');
   const [notification, setNotification] = useState(null);
-
-  // Режимы редактирования
   const [editMode, setEditMode] = useState('place'); // 'place', 'move', 'rotate', 'delete'
   
   // Ссылки
@@ -48,6 +46,7 @@ export function EditorPanel (){
   const sceneRef = useRef(null);
   const gridRef = useRef(null);
   const selectedMeshRef = useRef(null);
+  const editModeRef = useRef('place');
   
   const highlightLayerRef = useRef(null);
   const ghostMeshRef = useRef(null);
@@ -108,14 +107,15 @@ export function EditorPanel (){
     // Обработка движения указателя для подсветки граней
     scene.onPointerObservable.add((pointerInfo) => {
       // При движении мыши
-      if (pointerInfo.type === PointerEventTypes.POINTERMOVE && editMode === 'place') {
+      console.log(editModeRef.current);
+      if (pointerInfo.type === PointerEventTypes.POINTERMOVE && editModeRef.current === 'place') {
         updatePlacementIndicator(scene, pointerInfo);
       }
       
       // При клике
       if (pointerInfo.type === PointerEventTypes.POINTERDOWN) {
         // Если видимый индикатор размещения существует и мы в режиме размещения
-        if (placementBoxRef.current && placementBoxRef.current.isVisible && editMode === 'place') {
+        if (placementBoxRef.current && placementBoxRef.current.isVisible && editModeRef.current === 'place') {
           placeAssetAtIndicatorPosition();
           return;
         }
@@ -145,6 +145,11 @@ export function EditorPanel (){
       engine.dispose();
     };
   }, []);
+
+  useEffect(() => {
+    editModeRef.current = editMode;
+  }, [editMode]);
+
 
   // Создание сетки
   const createGrid = (scene) => {
@@ -194,7 +199,7 @@ export function EditorPanel (){
 
   // Обновление индикатора размещения при движении мыши
   const updatePlacementIndicator = (scene, pointerInfo) => {
-    if (!scene || editMode !== 'place' || !selectedAssetRef.current) return;
+    if (!scene || editModeRef.current !== 'place' || !selectedAssetRef.current) return;
     
     // Выполняем пикинг для определения, на что наведен курсор
     const pickResult = scene.pick(scene.pointerX, scene.pointerY);
@@ -422,7 +427,7 @@ export function EditorPanel (){
         new ExecuteCodeAction(
           ActionManager.OnPickTrigger,
           (evt) => {
-            if (editMode !== 'place') {
+            if (editModeRef.current !== 'place') {
               handleObjectPick(mesh);
             }
           }
@@ -448,7 +453,7 @@ export function EditorPanel (){
   // Обработка выбора объекта
   const handleObjectPick = (mesh) => {
     // Если режим удаления, удаляем объект
-    if (editMode === 'delete') {
+    if (editModeRef.current === 'delete') {
       deleteObject(mesh);
       return;
     }
@@ -474,13 +479,6 @@ export function EditorPanel (){
       if (highlightLayerRef.current) {
         highlightLayerRef.current.addMesh(mesh, new Color3(1, 0.6, 0.1));
       }
-    }
-    
-    // Если режим перемещения, включаем перетаскивание
-    if (editMode === 'move') {
-      enableGizmo('position');
-    } else if (editMode === 'rotate') {
-      enableGizmo('rotation');
     }
   };
 
@@ -836,25 +834,13 @@ export function EditorPanel (){
         <div className="flex gap-2">
           <button 
             className={`px-3 py-1 rounded ${editMode === 'place' ? 'bg-blue-600' : 'bg-gray-600'}`}
-            onClick={() => setEditMode('place')}
+            onClick={() => setEditMode('place') & console.log(editMode)}
           >
             Размещение
           </button>
           <button 
-            className={`px-3 py-1 rounded ${editMode === 'move' ? 'bg-blue-600' : 'bg-gray-600'}`}
-            onClick={() => setEditMode('move')}
-          >
-            Перемещение
-          </button>
-          <button 
-            className={`px-3 py-1 rounded ${editMode === 'rotate' ? 'bg-blue-600' : 'bg-gray-600'}`}
-            onClick={() => setEditMode('rotate')}
-          >
-            Вращение
-          </button>
-          <button 
             className={`px-3 py-1 rounded ${editMode === 'delete' ? 'bg-red-600' : 'bg-gray-600'}`}
-            onClick={() => setEditMode('delete')}
+            onClick={() => setEditMode('delete') & console.log(editMode)}
           >
             Удаление
           </button>
