@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { ReactFlowProvider } from 'reactflow';
 import { Link } from 'react-router';
-import { ArrowLeftIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import { useEditor } from '../contexts/EditorContext';
 import useNodeExecution from '../hooks/useNodeExecution';
 
@@ -54,6 +54,12 @@ const LevelWalkthrough = () => {
 
     // Состояние для выбранного быстрого сохранения
     const [selectedQuickSave, setSelectedQuickSave] = useState("");
+
+    // Обработчик для предотвращения контекстного меню на логотипе
+    const preventContextMenu = (e) => {
+        e.preventDefault();
+        return false;
+    };
 
     // Функция для сброса состояния визуализатора в исходное состояние
     const resetVisualizerState = () => {
@@ -348,13 +354,36 @@ const LevelWalkthrough = () => {
                     <div className="w-full px-4 sm:px-6 lg:px-8">
                         <div className="flex justify-between h-16">
                             <div className="flex items-center space-x-4">
-                                {/* Кнопка назад */}
-                                <Link to="/" className="text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white">
-                                    <ArrowLeftIcon className="h-6 w-6" />
+                                {/* Логотип */}
+                                <Link
+                                    to="/"
+                                    className="block relative"
+                                    onContextMenu={preventContextMenu}
+                                >
+                                    <img
+                                        src="/logo.png"
+                                        alt="EduPlatform Logo"
+                                        className="h-10 sm:h-12 w-auto select-none"
+                                        style={{
+                                            pointerEvents: 'none',
+                                            userSelect: 'none',
+                                            WebkitUserSelect: 'none'
+                                        }}
+                                        draggable="false"
+                                    />
+                                    {/* Защитный слой поверх изображения */}
+                                    <div
+                                        className="absolute inset-0 z-10"
+                                        onContextMenu={preventContextMenu}
+                                        onClick={(e) => e.stopPropagation()}
+                                    ></div>
                                 </Link>
 
+                                {/* Вертикальный разделитель */}
+                                <div className="h-8 w-px bg-gray-300 dark:bg-gray-600"></div>
+
                                 {/* Заголовок */}
-                                <h1 className="text-xl font-bold text-gray-800 dark:text-white">
+                                <h1 className="text-lg font-medium text-gray-800 dark:text-white">
                                     3D Редактор уровней {projectName ? `- ${projectName}` : ''}
                                 </h1>
                             </div>

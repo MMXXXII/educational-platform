@@ -18,6 +18,7 @@ export const EditorProvider = ({ children }) => {
     // Состояние проекта
     const [projectName, setProjectName] = useState('');
     const [projectsList, setProjectsList] = useState([]);
+    const [projectVersions, setProjectVersions] = useState([]);
     const [isModified, setIsModified] = useState(false);
     const [selectedNodeId, setSelectedNodeId] = useState(null);
     const [isBrowser, setIsBrowser] = useState(false);
@@ -34,7 +35,7 @@ export const EditorProvider = ({ children }) => {
     useEffect(() => {
         setIsBrowser(true);
         // Обновляем список проектов при инициализации
-        functionRef.current.refreshProjectsList();
+        refreshProjectsList();
     }, []);
 
     /**
@@ -54,6 +55,226 @@ export const EditorProvider = ({ children }) => {
 
     // Сохраняем функцию в реф
     functionRef.current.refreshProjectsList = refreshProjectsList;
+
+    /**
+     * Обновляет список версий текущего проекта
+     */
+    const refreshVersionsList = useCallback(() => {
+        if (isBrowser && projectName) {
+            try {
+                console.log(`Получение версий для проекта "${projectName}"...`);
+                const versions = SerializationService.getProjectVersions(projectName);
+                console.log(`Найдено ${versions.length} версий:`, versions);
+                setProjectVersions(versions);
+            } catch (error) {
+                console.error('Ошибка при обновлении списка версий:', error);
+            }
+        }
+    }, [isBrowser, projectName]);
+
+    // Сохраняем функцию в реф
+    functionRef.current.refreshVersionsList = refreshVersionsList;
+
+    /**
+     * Создает новую версию проекта
+     * @param {string} versionName - Название версии
+     * @param {string} comment - Комментарий к версии
+     * @returns {boolean} - Успешно ли создана версия
+     */
+    const createProjectVersion = useCallback((versionName, comment = '') => {
+        setSaveError(null);
+
+        if (!isBrowser) {
+            const error = 'Невозможно создать версию: localStorage недоступен';
+            console.warn(error);
+            setSaveError(error);
+            return false;
+        }
+
+        if (!projectName) {
+            const error = 'Необходимо сначала сохранить проект';
+            console.warn(error);
+            setSaveError(error);
+            return false;
+        }
+
+        if (!versionName) {
+            const error = 'Необходимо указать название версии';
+            console.warn(error);
+            setSaveError(error);
+            return false;
+        }
+
+        try {
+            // Сериализуем текущее состояние графа
+            const serializedGraph = SerializationService.serializeGraph(nodes, edges);
+
+            // Сохраняем проект
+            const saveResult = SerializationService.saveToLocalStorage(projectName, serializedGraph);
+
+            if (!saveResult) {
+                const error = 'Не удалось сохранить проект перед созданием версии';
+                console.error(error);
+                setSaveError(error);
+                return false;
+            }
+
+            // Создаем новую версию
+            const result = SerializationService.createProjectVersion(projectName, versionName, comment);
+
+            if (result) {
+                console.log(`Версия "${versionName}" проекта "${projectName}" успешно создана`);
+                // Обновляем список версий
+                refreshVersionsList();
+                return true;
+            } else {
+                const error = `Не удалось создать версию "${versionName}" проекта "${projectName}"`;
+                console.error(error);
+                setSaveError(error);
+                return false;
+            }
+        } catch (error) {
+            console.error('Ошибка при создании версии проекта:', error);
+            setSaveError(`Ошибка при создании версии: ${error.message}`);
+            return false;
+        }
+    }, [projectName, nodes, edges, isBrowser, refreshVersionsList]);
+
+    // Сохраняем функцию в реф
+    functionRef.current.createProjectVersion = createProjectVersion;
+
+    /**
+     * Загружает определенную версию проекта
+     * @param {string} versionName - Название версии
+     * @returns {boolean} - Успешно ли загружена версия
+     */
+    const loadProjectVersion = useCallback((versionName) => {
+        setLoadError(null);
+
+        if (!isBrowser) {
+            const error = 'Невозможно загрузить версию: localStorage недоступен';
+            console.warn(error);
+            setLoadError(error);
+            return false;
+        }
+
+        if (!projectName) {
+            const error = 'Необходимо сначала загрузить проект';
+            console.warn(error);
+            setLoadError(error);
+            return false;
+        }
+
+        if (!versionName) {
+            const error = 'Необходимо указать название версии';
+            console.warn(error);
+            setLoadError(error);
+            return false;
+        }
+
+        try {
+            // Загружаем версию
+            const versionData = SerializationService.loadProjectVersion(projectName, versionName);
+
+            if (!versionData) {
+                const error = `Версия "${versionName}" проекта "${projectName}" не найдена`;
+                console.error(error);
+                setLoadError(error);
+                return false;
+            }
+
+            // Помечаем эту версию как последнюю загруженную в метаданных проекта
+            try {
+                const projectKey = `nodeEditor_project_${projectName.trim()}`;
+                const projectData = localStorage.getItem(projectKey);
+                if (projectData) {
+                    const project = JSON.parse(projectData);
+                    if (!project.metadata) {
+                        project.metadata = {};
+                    }
+                    project.metadata.lastLoadedVersion = versionName;
+                    project.metadata.updatedAt = new Date().toISOString();
+                    localStorage.setItem(projectKey, JSON.stringify(project));
+                }
+            } catch (err) {
+                console.warn('Не удалось обновить метаданные о текущей версии:', err);
+                // Продолжаем выполнение даже при ошибке
+            }
+
+            // Десериализуем граф
+            const { nodes: deserializedNodes, edges: deserializedEdges } =
+                SerializationService.deserializeGraph(versionData);
+
+            // Очищаем текущее состояние перед загрузкой нового
+            setNodes([]);
+            setEdges([]);
+
+            // Устанавливаем таймаут для обеспечения корректной очистки состояния
+            setTimeout(() => {
+                // Обновляем состояние графа
+                setNodes(deserializedNodes);
+                setEdges(deserializedEdges);
+                setIsModified(false);
+                setSelectedNodeId(null);
+
+                // Устанавливаем флаг для автоматического масштабирования
+                setNeedsFitView(true);
+
+                console.log(`Версия "${versionName}" проекта "${projectName}" успешно загружена`);
+            }, 100);
+
+            return true;
+        } catch (error) {
+            console.error(`Ошибка при загрузке версии "${versionName}" проекта "${projectName}":`, error);
+            setLoadError(`Ошибка при загрузке версии: ${error.message}`);
+            return false;
+        }
+    }, [projectName, isBrowser, setNodes, setEdges, setIsModified, setSelectedNodeId, setNeedsFitView, setLoadError]);
+
+    // Сохраняем функцию в реф
+    functionRef.current.loadProjectVersion = loadProjectVersion;
+
+    /**
+     * Удаляет версию проекта
+     * @param {string} versionName - Название версии
+     * @returns {boolean} - Успешно ли удалена версия
+     */
+    const deleteProjectVersion = useCallback((versionName) => {
+        if (!isBrowser) {
+            console.warn('Невозможно удалить версию: localStorage недоступен');
+            return false;
+        }
+
+        if (!projectName) {
+            console.warn('Необходимо сначала загрузить проект');
+            return false;
+        }
+
+        if (!versionName) {
+            console.warn('Необходимо указать название версии');
+            return false;
+        }
+
+        try {
+            const success = SerializationService.deleteProjectVersion(projectName, versionName);
+            
+            if (success) {
+                console.log(`Версия "${versionName}" проекта "${projectName}" успешно удалена`);
+                // Обновляем список версий
+                refreshVersionsList();
+                return true;
+            } else {
+                console.error(`Не удалось удалить версию "${versionName}" проекта "${projectName}"`);
+                return false;
+            }
+        } catch (error) {
+            console.error(`Ошибка при удалении версии "${versionName}" проекта "${projectName}":`, error);
+            return false;
+        }
+    }, [projectName, isBrowser, refreshVersionsList]);
+
+    // Сохраняем функцию в реф
+    functionRef.current.deleteProjectVersion = deleteProjectVersion;
 
     /**
      * Сохраняет текущий проект
@@ -170,10 +391,10 @@ export const EditorProvider = ({ children }) => {
     functionRef.current.createNewProject = createNewProject;
 
     /**
- * Загружает проект
- * @param {string} name - Имя проекта
- * @returns {boolean} - Успешно ли загружен проект
- */
+     * Загружает проект
+     * @param {string} name - Имя проекта
+     * @returns {boolean} - Успешно ли загружен проект
+     */
     const loadProject = useCallback((name) => {
         setLoadError(null);
 
@@ -233,6 +454,9 @@ export const EditorProvider = ({ children }) => {
                     setIsModified(false);
                     setSelectedNodeId(null);
 
+                    // Загружаем список версий
+                    refreshVersionsList();
+
                     // Устанавливаем флаг для автоматического масштабирования
                     setNeedsFitView(true);
 
@@ -253,7 +477,7 @@ export const EditorProvider = ({ children }) => {
             setLoadError(`Ошибка при загрузке: ${error.message}`);
             return false;
         }
-    }, [setNodes, setEdges, isBrowser, isModified, projectName, setNeedsFitView, setProjectName, setIsModified, setSelectedNodeId, setLoadError]);
+    }, [setNodes, setEdges, isBrowser, isModified, projectName, setNeedsFitView, setProjectName, setIsModified, setSelectedNodeId, setLoadError, refreshVersionsList]);
 
     // Сохраняем функцию в реф
     functionRef.current.loadProject = loadProject;
@@ -313,7 +537,10 @@ export const EditorProvider = ({ children }) => {
         }
 
         try {
+            // Сериализуем текущее состояние графа
             const serializedGraph = SerializationService.serializeGraph(nodes, edges);
+
+            // Экспортируем в JSON формате
             return SerializationService.exportToFile(projectName, serializedGraph);
         } catch (error) {
             console.error('Ошибка при экспорте проекта:', error);
@@ -350,8 +577,9 @@ export const EditorProvider = ({ children }) => {
 
             setNodes(deserializedNodes);
             setEdges(deserializedEdges);
+
             // Устанавливаем имя проекта из имени файла без расширения
-            const newProjectName = file.name.replace(/\.json$/, '');
+            const newProjectName = file.name.replace(/\.json$/i, '');
             setProjectName(newProjectName);
             setIsModified(true);
             setSelectedNodeId(null);
@@ -373,6 +601,7 @@ export const EditorProvider = ({ children }) => {
         edges,
         projectName,
         projectsList,
+        projectVersions,
         isModified,
         selectedNodeId,
         isBrowser,
@@ -397,7 +626,13 @@ export const EditorProvider = ({ children }) => {
         deleteProject,
         exportProject,
         importProject,
-        refreshProjectsList
+        refreshProjectsList,
+
+        // Методы работы с версиями
+        createProjectVersion,
+        loadProjectVersion,
+        refreshVersionsList,
+        deleteProjectVersion
     };
 
     return (

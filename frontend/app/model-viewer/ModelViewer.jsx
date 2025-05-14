@@ -654,7 +654,7 @@ export function ModelViewer() {
   };
 
   return (
-    <div className="flex flex-col items-center w-full no-scrollbar">
+    <div className="flex flex-col items-center h-screen">
       <div 
         className={`relative w-full h-full ${dragActive ? 'border-4 border-blue-500 bg-blue-50': null}`}
         onDragEnter={handleDrag}
@@ -694,12 +694,11 @@ export function ModelViewer() {
         )}
       </div>
       
-      <div className="w-full mt-4 flex justify-between">
         {models.length > 0 && (
           <div className="flex gap-2">
             <button 
               onClick={serializeScene}
-              className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md"
+              className="fixed bottom-16 left-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md"
             >
               Экспортировать сцену
             </button>
@@ -707,7 +706,7 @@ export function ModelViewer() {
         )}
         
         <div>
-          <label className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md cursor-pointer">
+          <label className="fixed bottom-4 left-4 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md cursor-pointer">
             Импортировать сцену
             <input 
               type="file" 
@@ -717,10 +716,9 @@ export function ModelViewer() {
             />
           </label>
         </div>
-      </div>
       
       {models.length > 0 && (
-        <div className="w-full mt-4">
+        <div className="w-full">
           <ModelsList 
             models={models}
             selectedModelId={selectedModelId}
@@ -732,7 +730,7 @@ export function ModelViewer() {
       )}
       
       {selectedModelId && (
-        <div className="w-full mt-4">
+        <div className="w-full">
           <TransformControls 
             model={models.find(m => m.id === selectedModelId)} 
             onChange={handleModelChange} 

@@ -1,3 +1,6 @@
+/**
+ * Сервис для сериализации и десериализации графа нодов
+ */
 import { nodeTypes, createNode } from '../nodes/NodeFactory';
 
 /**
@@ -29,9 +32,10 @@ const SerializationService = {
      * Сериализует граф нодов в формат JSON
      * @param {Array} nodes - Массив нодов ReactFlow
      * @param {Array} edges - Массив связей ReactFlow
+     * @param {Object} metadata - Дополнительные метаданные проекта (опционально)
      * @returns {Object} - Сериализованный граф
      */
-    serializeGraph(nodes, edges) {
+    serializeGraph(nodes, edges, metadata = {}) {
         if (!nodes || !Array.isArray(nodes) || !edges || !Array.isArray(edges)) {
             console.error('Ошибка: некорректные данные для сериализации', { nodes, edges });
             throw new Error('Некорректные данные для сериализации');
@@ -98,14 +102,19 @@ const SerializationService = {
                 style: edge.style
             }));
 
+            // Объединяем базовые метаданные с переданными пользователем
+            const combinedMetadata = {
+                version: metadata.version || '1.0.0',
+                createdAt: metadata.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                versionHistory: metadata.versionHistory || [],
+                ...metadata
+            };
+
             return {
                 nodes: serializedNodes,
                 edges: serializedEdges,
-                metadata: {
-                    version: '1.0.0',
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                }
+                metadata: combinedMetadata
             };
         } catch (error) {
             console.error('Ошибка при сериализации графа:', error);
@@ -120,14 +129,57 @@ const SerializationService = {
      */
     deserializeGraph(graph) {
         // Проверяем валидность графа
-        if (!graph || !graph.nodes || !graph.edges || !graph.metadata) {
+        if (!graph || !graph.nodes || !graph.edges) {
             console.error('Некорректный формат графа:', graph);
             throw new Error('Некорректный формат графа');
         }
 
-        // Проверяем версию формата
-        if (!graph.metadata.version) {
-            console.warn('Неизвестная версия формата файла, попытка импортировать как 1.0.0');
+        // Убедимся, что nodes и edges - массивы
+        if (!Array.isArray(graph.nodes) || !Array.isArray(graph.edges)) {
+            console.warn('Формат данных не соответствует ожидаемому, пытаемся преобразовать');
+            
+            // Попытка преобразовать в массив, если данные пришли в другом формате
+            let nodesArray = Array.isArray(graph.nodes) ? graph.nodes : [];
+            let edgesArray = Array.isArray(graph.edges) ? graph.edges : [];
+            
+            // Если nodes - объект, попробуем преобразовать его в массив
+            if (graph.nodes && typeof graph.nodes === 'object' && !Array.isArray(graph.nodes)) {
+                if (graph.nodes.node && Array.isArray(graph.nodes.node)) {
+                    nodesArray = graph.nodes.node;
+                } else if (graph.nodes.item && Array.isArray(graph.nodes.item)) {
+                    nodesArray = graph.nodes.item;
+                } else {
+                    // Попытаемся извлечь что-то похожее на узлы
+                    const possibleArrays = Object.values(graph.nodes).filter(v => Array.isArray(v));
+                    if (possibleArrays.length > 0) {
+                        nodesArray = possibleArrays[0];
+                    }
+                }
+            }
+            
+            // Если edges - объект, попробуем преобразовать его в массив
+            if (graph.edges && typeof graph.edges === 'object' && !Array.isArray(graph.edges)) {
+                if (graph.edges.edge && Array.isArray(graph.edges.edge)) {
+                    edgesArray = graph.edges.edge;
+                } else if (graph.edges.item && Array.isArray(graph.edges.item)) {
+                    edgesArray = graph.edges.item;
+                } else {
+                    // Попытаемся извлечь что-то похожее на ребра
+                    const possibleArrays = Object.values(graph.edges).filter(v => Array.isArray(v));
+                    if (possibleArrays.length > 0) {
+                        edgesArray = possibleArrays[0];
+                    }
+                }
+            }
+            
+            // Заменяем исходные данные преобразованными массивами
+            graph.nodes = nodesArray;
+            graph.edges = edgesArray;
+            
+            // Если после преобразования массивы пустые, выдаем ошибку
+            if (graph.nodes.length === 0 && graph.edges.length === 0) {
+                throw new Error('Не удалось преобразовать данные в правильный формат');
+            }
         }
 
         try {
@@ -145,7 +197,7 @@ const SerializationService = {
                         };
                         
                         // Важно: явно восстанавливаем состояние, сохраненное в data
-                        if (serializedNode.data.data) {
+                        if (serializedNode.data && serializedNode.data.data) {
                             Object.assign(nodeData, serializedNode.data.data);
                         }
                         
@@ -153,7 +205,7 @@ const SerializationService = {
                         nodeInstance = createNode(serializedNode.type, nodeData);
                         
                         // Дополнительно проверяем и восстанавливаем состояние нода
-                        if (serializedNode.data.data) {
+                        if (serializedNode.data && serializedNode.data.data) {
                             // Явно применяем каждое свойство к экземпляру нода
                             Object.entries(serializedNode.data.data).forEach(([key, value]) => {
                                 if (value !== undefined) {
@@ -267,7 +319,8 @@ const SerializationService = {
 
             return {
                 nodes: deserializedNodes,
-                edges: deserializedEdges
+                edges: deserializedEdges,
+                metadata: graph.metadata || {}
             };
         } catch (error) {
             console.error('Ошибка при десериализации графа:', error);
@@ -279,8 +332,9 @@ const SerializationService = {
      * Сохраняет граф в локальное хранилище
      * @param {string} name - Имя проекта
      * @param {Object} graph - Сериализованный граф
+     * @param {Object} metadata - Дополнительные метаданные (опционально)
      */
-    saveToLocalStorage(name, graph) {
+    saveToLocalStorage(name, graph, metadata = {}) {
         if (!isLocalStorageAvailable()) {
             console.error('localStorage недоступен');
             return false;
@@ -292,6 +346,17 @@ const SerializationService = {
         }
 
         try {
+            // Объединяем существующие метаданные с новыми
+            const existingProject = this.loadFromLocalStorage(name);
+            if (existingProject && existingProject.metadata) {
+                graph.metadata = {
+                    ...existingProject.metadata,
+                    ...graph.metadata,
+                    ...metadata,
+                    updatedAt: new Date().toISOString()
+                };
+            }
+            
             // Сохраняем сам проект
             const projectKey = `nodeEditor_project_${name.trim()}`;
             const projectData = JSON.stringify(graph);
@@ -397,6 +462,12 @@ const SerializationService = {
 
             // Удаляем данные проекта
             localStorage.removeItem(`nodeEditor_project_${name.trim()}`);
+            
+            // Удаляем все версии проекта
+            const versions = this.getProjectVersions(name);
+            versions.forEach(version => {
+                localStorage.removeItem(`nodeEditor_version_${name.trim()}_${version.name}`);
+            });
 
             console.log(`Проект "${name}" успешно удален`);
             return true;
@@ -407,7 +478,206 @@ const SerializationService = {
     },
 
     /**
-     * Экспортирует проект в файл
+     * Создает новую версию проекта
+     * @param {string} name - Имя проекта
+     * @param {string} versionName - Название версии
+     * @param {string} comment - Комментарий к версии
+     * @returns {boolean} - Успешно ли создана версия
+     */
+    createProjectVersion(name, versionName, comment = '') {
+        if (!isLocalStorageAvailable() || !name) {
+            return false;
+        }
+
+        try {
+            const trimmedName = name.trim();
+            const projectKey = `nodeEditor_project_${trimmedName}`;
+            const projectData = localStorage.getItem(projectKey);
+            
+            if (!projectData) {
+                console.error(`Не найден проект "${name}" для создания версии`);
+                return false;
+            }
+            
+            const project = JSON.parse(projectData);
+            
+            // Проверяем, существует ли уже версия с таким именем
+            const versionPrefix = `nodeEditor_version_${trimmedName}_`;
+            const versionKey = `${versionPrefix}${versionName}`;
+            
+            if (localStorage.getItem(versionKey)) {
+                console.warn(`Версия с именем "${versionName}" уже существует`);
+                // Можно вернуть false или перезаписать существующую версию
+                // В данном случае перезаписываем
+            }
+            
+            // Создаем новую запись о версии
+            const newVersion = {
+                name: versionName,
+                date: new Date().toISOString(),
+                comment: comment,
+                snapshot: project // Сохраняем полную копию проекта
+            };
+            
+            // Сохраняем версию в localStorage
+            localStorage.setItem(versionKey, JSON.stringify(newVersion));
+            console.log(`Версия "${versionName}" для проекта "${name}" сохранена в localStorage`);
+            
+            // Также обновляем метаданные в самом проекте для обратной совместимости
+            if (!project.metadata) {
+                project.metadata = {};
+            }
+            
+            if (!project.metadata.versionHistory) {
+                project.metadata.versionHistory = [];
+            }
+            
+            // Проверяем, нет ли уже такой версии в истории
+            const existingVersionIndex = project.metadata.versionHistory.findIndex(v => v.name === versionName);
+            if (existingVersionIndex >= 0) {
+                // Заменяем существующую запись
+                project.metadata.versionHistory[existingVersionIndex] = {
+                    name: versionName,
+                    date: newVersion.date,
+                    comment: comment
+                };
+            } else {
+                // Добавляем новую запись
+                project.metadata.versionHistory.push({
+                    name: versionName,
+                    date: newVersion.date,
+                    comment: comment
+                });
+            }
+            
+            project.metadata.updatedAt = new Date().toISOString();
+            localStorage.setItem(projectKey, JSON.stringify(project));
+            
+            return true;
+        } catch (error) {
+            console.error(`Ошибка при создании версии проекта "${name}":`, error);
+            return false;
+        }
+    },
+
+    /**
+     * Получает список версий проекта
+     * @param {string} name - Имя проекта
+     * @returns {Array} - Массив версий проекта
+     */
+    getProjectVersions(name) {
+        if (!isLocalStorageAvailable() || !name) {
+            return [];
+        }
+
+        try {
+            const trimmedName = name.trim();
+            const versionPrefix = `nodeEditor_version_${trimmedName}_`;
+            const versions = [];
+            
+            // Ищем все ключи в localStorage, которые соответствуют шаблону версий проекта
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith(versionPrefix)) {
+                    try {
+                        const versionData = JSON.parse(localStorage.getItem(key));
+                        if (versionData && versionData.name && versionData.date) {
+                            versions.push({
+                                name: versionData.name,
+                                date: versionData.date,
+                                comment: versionData.comment || ''
+                            });
+                        }
+                    } catch (parseError) {
+                        console.warn(`Не удалось разобрать данные версии в ключе ${key}:`, parseError);
+                    }
+                }
+            }
+            
+            // Сортируем версии по дате создания (от новых к старым)
+            versions.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            return versions;
+        } catch (error) {
+            console.error(`Ошибка при получении версий проекта "${name}":`, error);
+            return [];
+        }
+    },
+
+    /**
+     * Загружает конкретную версию проекта
+     * @param {string} name - Имя проекта
+     * @param {string} versionName - Название версии
+     * @returns {Object|null} - Проект в указанной версии или null
+     */
+    loadProjectVersion(name, versionName) {
+        if (!isLocalStorageAvailable() || !name || !versionName) {
+            return null;
+        }
+
+        try {
+            const versionKey = `nodeEditor_version_${name.trim()}_${versionName}`;
+            const versionData = localStorage.getItem(versionKey);
+            
+            if (!versionData) {
+                return null;
+            }
+            
+            const version = JSON.parse(versionData);
+            return version.snapshot;
+        } catch (error) {
+            console.error(`Ошибка при загрузке версии "${versionName}" проекта "${name}":`, error);
+            return null;
+        }
+    },
+
+    /**
+     * Удаляет версию проекта
+     * @param {string} name - Имя проекта
+     * @param {string} versionName - Название версии
+     * @returns {boolean} - Успешно ли удалена версия
+     */
+    deleteProjectVersion(name, versionName) {
+        if (!isLocalStorageAvailable() || !name || !versionName) {
+            return false;
+        }
+
+        try {
+            const trimmedName = name.trim();
+            const projectKey = `nodeEditor_project_${trimmedName}`;
+            const versionKey = `nodeEditor_version_${trimmedName}_${versionName}`;
+            
+            // Удаляем саму версию
+            localStorage.removeItem(versionKey);
+            
+            // Обновляем метаданные проекта, если он существует
+            const projectData = localStorage.getItem(projectKey);
+            if (projectData) {
+                try {
+                    const project = JSON.parse(projectData);
+                    if (project.metadata && project.metadata.versionHistory) {
+                        // Удаляем версию из истории версий
+                        project.metadata.versionHistory = project.metadata.versionHistory.filter(
+                            version => version.name !== versionName
+                        );
+                        project.metadata.updatedAt = new Date().toISOString();
+                        localStorage.setItem(projectKey, JSON.stringify(project));
+                    }
+                } catch (parseError) {
+                    console.warn(`Ошибка при обновлении метаданных проекта после удаления версии:`, parseError);
+                }
+            }
+            
+            console.log(`Версия "${versionName}" проекта "${name}" успешно удалена`);
+            return true;
+        } catch (error) {
+            console.error(`Ошибка при удалении версии "${versionName}" проекта "${name}":`, error);
+            return false;
+        }
+    },
+
+    /**
+     * Экспортирует проект в файл JSON
      * @param {string} name - Имя проекта
      * @param {Object} graph - Сериализованный граф
      */
@@ -419,10 +689,12 @@ const SerializationService = {
 
         try {
             const filename = name?.trim() || 'project';
-            const dataStr = JSON.stringify(graph, null, 2);
-            const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
+            const dataStr = encodeURIComponent(JSON.stringify(graph, null, 2));
+            const mimeType = 'application/json';
+            const extension = 'json';
 
-            const exportFileDefaultName = `${filename}_${new Date().toISOString().slice(0, 10)}.json`;
+            const exportFileDefaultName = `${filename}_${new Date().toISOString().slice(0, 10)}.${extension}`;
+            const dataUri = `data:${mimeType};charset=utf-8,${dataStr}`;
 
             const linkElement = document.createElement('a');
             linkElement.setAttribute('href', dataUri);
@@ -465,8 +737,32 @@ const SerializationService = {
                         throw new Error('Не удалось прочитать содержимое файла');
                     }
                     
-                    const graph = JSON.parse(event.target.result);
-                    console.log(`Файл ${file.name} успешно импортирован`);
+                    const content = event.target.result;
+                    let graph;
+                    
+                    // Определяем формат файла по расширению
+                    const fileExtension = file.name.split('.').pop().toLowerCase();
+                    
+                    if (fileExtension === 'json') {
+                        graph = JSON.parse(content);
+                    } else {
+                        throw new Error('Поддерживается только формат JSON');
+                    }
+                    
+                    // Обеспечиваем правильную структуру графа для десериализации
+                    if (!graph.nodes || !graph.edges) {
+                        // Попытка найти нужные данные в структуре файла
+                        if (graph.nodeEditorProject) {
+                            graph = graph.nodeEditorProject;
+                        }
+                    }
+
+                    // Проверяем, что graph содержит необходимые поля nodes и edges
+                    if (!graph.nodes || !graph.edges) {
+                        throw new Error('В импортируемом файле не найдена структура графа (узлы и связи)');
+                    }
+                    
+                    console.log(`Файл ${file.name} успешно импортирован, структура:`, graph);
                     resolve(graph);
                 } catch (error) {
                     console.error(`Ошибка при парсинге файла проекта ${file.name}:`, error);
