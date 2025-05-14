@@ -65,8 +65,10 @@ class NodeExecutor {
             const executeContext = {
                 ...this.state,
                 ...this.externalContexts,
-                // Гарантируем, что метод log взят из this.state
-                log: this.state.log?.bind(this.state)
+                // Гарантируем, что методы для управления циклами привязаны к state
+                log: this.state.log?.bind(this.state),
+                setLoopReturn: this.state.setLoopReturn?.bind(this.state),
+                clearLoopReturn: this.state.clearLoopReturn?.bind(this.state)
             };
 
             // Выполняем нод
