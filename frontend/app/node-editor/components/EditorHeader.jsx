@@ -32,6 +32,12 @@ const EditorHeader = ({
         refreshProjectsList();
     }, [refreshProjectsList]);
 
+    // Обработчик для предотвращения контекстного меню на логотипе
+    const preventContextMenu = (e) => {
+        e.preventDefault();
+        return false;
+    };
+
     return (
         <>
             <nav className="bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700">
@@ -39,8 +45,28 @@ const EditorHeader = ({
                     <div className="flex justify-between h-16">
                         <div className="flex items-center space-x-4">
                             {/* Лого и ссылка на главную */}
-                            <Link to="/" className="text-xl sm:text-2xl font-bold text-blue-600 hover:text-blue-700 flex items-center">
-                                EduPlatform
+                            <Link
+                                to="/"
+                                className="block relative"
+                                onContextMenu={preventContextMenu}
+                            >
+                                <img
+                                    src="/logo.png"
+                                    alt="EduPlatform Logo"
+                                    className="h-10 sm:h-12 w-auto select-none"
+                                    style={{
+                                        pointerEvents: 'none',
+                                        userSelect: 'none',
+                                        WebkitUserSelect: 'none'
+                                    }}
+                                    draggable="false"
+                                />
+                                {/* Защитный слой поверх изображения */}
+                                <div
+                                    className="absolute inset-0 z-10"
+                                    onContextMenu={preventContextMenu}
+                                    onClick={(e) => e.stopPropagation()}
+                                ></div>
                             </Link>
 
                             {/* Вертикальный разделитель */}
