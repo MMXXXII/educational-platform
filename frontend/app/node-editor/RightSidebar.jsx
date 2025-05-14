@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import {
     PlayIcon,
     BeakerIcon,
-    CubeIcon,
+    // CubeIcon,
     XMarkIcon,
 } from '@heroicons/react/24/solid';
 import ExecutionPanel from './panels/ExecutionPanel';
-import NodePropertiesPanel from './panels/NodePropertiesPanel';
+// import NodePropertiesPanel from './panels/NodePropertiesPanel';
 
 /**
  * Компонент правой боковой панели с переключением режимов
@@ -24,7 +24,7 @@ const RightSidebar = ({
     // Режимы панели
     const PANEL_MODES = {
         EXECUTION: 'execution',
-        NODE_PROPERTIES: 'node_properties',
+        // NODE_PROPERTIES: 'node_properties',
         HIDDEN: 'hidden' // Состояние, когда панель свернута
     };
 
@@ -59,8 +59,10 @@ const RightSidebar = ({
                         consoleOutput={consoleOutput}
                     />
                 );
+            /* Закомментировано за ненадобностью
             case PANEL_MODES.NODE_PROPERTIES:
                 return <NodePropertiesPanel node={selectedNode} />;
+            */
             case PANEL_MODES.HIDDEN:
                 return null;
             default:
@@ -84,6 +86,7 @@ const RightSidebar = ({
                     <PlayIcon className="w-5 h-5 text-gray-700 dark:text-gray-200" />
                 </button>
                 
+                {/*
                 <button
                     onClick={(e) => {
                         if (!selectedNode) return;
@@ -96,6 +99,7 @@ const RightSidebar = ({
                 >
                     <CubeIcon className="w-5 h-5 text-gray-700 dark:text-gray-200" />
                 </button>
+                */}
             </div>
         );
     }
@@ -114,12 +118,14 @@ const RightSidebar = ({
                             </span>
                         )}
 
+                        {/*
                         {currentMode === PANEL_MODES.NODE_PROPERTIES && (
                             <span className="flex items-center">
                                 <CubeIcon className="w-4 h-4 mr-1 text-green-600 dark:text-green-400" />
                                 Свойства нода
                             </span>
                         )}
+                        */}
                     </span>
                 </div>
 
@@ -136,6 +142,7 @@ const RightSidebar = ({
                         <PlayIcon className="w-4 h-4" />
                     </button>
                     
+                    {/*
                     <button
                         onClick={(e) => {
                             if (!selectedNode) return;
@@ -148,6 +155,7 @@ const RightSidebar = ({
                     >
                         <CubeIcon className="w-4 h-4" />
                     </button>
+                    */}
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
@@ -162,7 +170,7 @@ const RightSidebar = ({
             </div>
 
             {/* Содержимое текущей панели */}
-            <div className="properties-panel p-4" onMouseDown={e => e.stopPropagation()}>
+            <div className="properties-panel p-4 panel-content-wrapper" onMouseDown={e => e.stopPropagation()}>
                 {renderPanelContent()}
             </div>
         </div>

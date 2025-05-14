@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import {
     PlayIcon,
-    CubeIcon,
+    // CubeIcon, // Закомментирован, так как функционал свойств нода не нужен
 } from '@heroicons/react/24/solid';
 import BaseSidebar from './BaseSidebar';
 import ExecutionPanel from '../panels/ExecutionPanel';
-import NodePropertiesPanel from '../panels/NodePropertiesPanel';
+// import NodePropertiesPanel from '../panels/NodePropertiesPanel'; // Закомментирован, так как функционал свойств нода не нужен
 
 /**
  * Модульная правая боковая панель с переключением режимов
@@ -36,7 +36,7 @@ const ModularRightSidebar = ({
     // Режимы панели
     const PANEL_MODES = {
         EXECUTION: 'execution',
-        NODE_PROPERTIES: 'node_properties',
+        // NODE_PROPERTIES: 'node_properties',
     };
 
     // Состояние текущего режима
@@ -50,11 +50,13 @@ const ModularRightSidebar = ({
                     title: 'Выполнение',
                     icon: <PlayIcon className="h-5 w-5 text-blue-500" />
                 };
+            /*
             case PANEL_MODES.NODE_PROPERTIES:
                 return {
                     title: 'Свойства нода',
                     icon: <CubeIcon className="h-5 w-5 text-green-500" />
                 };
+            */
             default:
                 return {
                     title: 'Панель',
@@ -65,7 +67,7 @@ const ModularRightSidebar = ({
 
     // Переключение между режимами
     const toggleMode = (mode) => {
-        setCurrentMode(currentMode === mode ? PANEL_MODES.EXECUTION : mode);
+        setCurrentMode(mode);
     };
 
     // Рендерим содержимое в зависимости от текущего режима
@@ -82,8 +84,10 @@ const ModularRightSidebar = ({
                         consoleOutput={consoleOutput}
                     />
                 );
+            /*
             case PANEL_MODES.NODE_PROPERTIES:
                 return <NodePropertiesPanel node={selectedNode} />;
+            */
             default:
                 return null;
         }
@@ -99,8 +103,7 @@ const ModularRightSidebar = ({
             width="350px"
             initiallyCollapsed={false}
         >
-            {/* Переключатели режимов */}
-            <div className="flex gap-2 mb-4">
+            {/* <div className="flex gap-2 mb-4">
                 <button
                     onClick={() => setCurrentMode(PANEL_MODES.EXECUTION)}
                     className={`flex-1 p-2 rounded-md ${currentMode === PANEL_MODES.EXECUTION
@@ -122,10 +125,12 @@ const ModularRightSidebar = ({
                 >
                     <CubeIcon className="h-5 w-5 mx-auto" />
                 </button>
-            </div>
+            </div> */}
 
             {/* Содержимое активной панели */}
-            {renderContent()}
+            <div className="panel-content-wrapper" style={{ animation: 'fadeIn 0.3s ease-out' }}>
+                {renderContent()}
+            </div>
         </BaseSidebar>
     );
 };
