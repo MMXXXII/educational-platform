@@ -1,15 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ReactFlowProvider } from 'reactflow';
 import { useEditor } from '../contexts/EditorContext';
 
 // Импорт вспомогательных компонентов
 import EditorHeader from './components/EditorHeader';
-import CreateProjectModal from './components/CreateProjectModal';
-import OpenProjectModal from './components/OpenProjectModal';
 import NotificationPanel from './components/NotificationPanel';
 import NodePalette from '../node-editor/NodePalette';
 import FlowCanvas from './FlowCanvas';
 import { NODE_CATEGORIES } from '../services/nodeRegistry';
+
+// Создаем глобальный объект для передачи уведомлений между компонентами
+export const NotificationEvents = {
+    listeners: [],
+    addListener: (callback) => {
+        NotificationEvents.listeners.push(callback);
+        return () => {
+            NotificationEvents.listeners = NotificationEvents.listeners.filter(
+                (cb) => cb !== callback
+            );
+        };
+    },
+    notify: (message, type) => {
+        NotificationEvents.listeners.forEach((callback) => callback(message, type));
+    }
+};
 
 /**
  * Страница редактора логических структур
@@ -20,17 +34,10 @@ export function NodeEditor() {
         projectName,
         isModified,
         saveProject,
-        createNewProject,
-        loadProject,
-        projectsList,
         saveError,
         loadError,
         refreshProjectsList
     } = useEditor();
-
-    // Состояния для модальных окон
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [showOpenModal, setShowOpenModal] = useState(false);
 
     // Состояние для уведомлений
     const [notification, setNotification] = useState(null);
@@ -40,12 +47,11 @@ export function NodeEditor() {
         setIsMounted(true);
     }, []);
 
-    // При открытии списка проектов всегда обновляем его
+    // Подписываемся на глобальные уведомления
     useEffect(() => {
-        if (showOpenModal) {
-            refreshProjectsList();
-        }
-    }, [showOpenModal, refreshProjectsList]);
+        const removeListener = NotificationEvents.addListener(showNotification);
+        return () => removeListener();
+    }, []);
 
     // Обработка ошибок сохранения и загрузки
     useEffect(() => {
@@ -60,36 +66,11 @@ export function NodeEditor() {
         }
     }, [loadError]);
 
-    // Обработчик создания нового проекта
-    const handleCreateProject = (newProjectName) => {
-        if (!newProjectName.trim()) {
-            showNotification("Имя проекта не может быть пустым", "warning");
-            return;
-        }
-
-        // Создаем новый проект
-        const success = createNewProject(newProjectName.trim());
-
-        if (success) {
-            // Сразу же сохраняем проект в localStorage
-            const saveSuccess = saveProject(newProjectName.trim());
-
-            if (saveSuccess) {
-                setShowCreateModal(false);
-                showNotification(`Создан новый проект: ${newProjectName}`, "success");
-                // Обновляем список проектов после сохранения
-                refreshProjectsList();
-            } else {
-                showNotification(`Проект создан, но не удалось сохранить его`, "warning");
-            }
-        }
-    };
-
     // Обработчик сохранения проекта
     const handleSaveProject = () => {
-        // Если проект еще не имеет имени, показываем диалог создания проекта
+        // Если проект еще не имеет имени, показываем менеджер проектов
         if (!projectName) {
-            setShowCreateModal(true);
+            NotificationEvents.notify("Сначала создайте новый проект через менеджер проектов", "info");
             return;
         }
 
@@ -101,25 +82,10 @@ export function NodeEditor() {
         }
     };
 
-    // Обработчик загрузки проекта
-    const handleLoadProject = (name) => {
-        const success = loadProject(name);
-        if (success) {
-            setShowOpenModal(false);
-            showNotification(`Проект "${name}" успешно загружен`, "success");
-        }
-    };
-
-    // Обработчик обновления списка проектов
-    const handleRefreshProjectsList = () => {
-        refreshProjectsList();
-        showNotification("Список проектов обновлен", "success");
-    };
-
     // Функция для отображения уведомлений
-    const showNotification = (message, type = "error") => {
+    const showNotification = useCallback((message, type = "error") => {
         setNotification({ message, type });
-    };
+    }, []);
 
     // Обработчик закрытия уведомления
     const closeNotification = () => {
@@ -140,8 +106,6 @@ export function NodeEditor() {
                 projectName={projectName}
                 isModified={isModified}
                 onSave={handleSaveProject}
-                onNew={() => setShowCreateModal(true)}
-                onOpen={() => setShowOpenModal(true)}
             />
 
             {/* Уведомления */}
@@ -149,23 +113,6 @@ export function NodeEditor() {
                 notification={notification}
                 onClose={closeNotification}
                 autoHideTime={5000}
-            />
-
-            {/* Модальное окно создания проекта */}
-            <CreateProjectModal
-                isOpen={showCreateModal}
-                onClose={() => setShowCreateModal(false)}
-                onCreate={handleCreateProject}
-                existingProjects={projectsList}
-            />
-
-            {/* Модальное окно открытия проекта */}
-            <OpenProjectModal
-                isOpen={showOpenModal}
-                onClose={() => setShowOpenModal(false)}
-                onOpen={handleLoadProject}
-                onRefresh={handleRefreshProjectsList}
-                projectsList={projectsList}
             />
 
             {/* Основной контент редактора */}
