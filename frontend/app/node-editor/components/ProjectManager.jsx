@@ -324,7 +324,8 @@ const ProjectManager = ({ onClose }) => {
      * Обработчик создания нового проекта
      */
     const handleCreateNewProject = () => {
-        if (!newProjectName.trim()) {
+        // Проверяем наличие имени проекта
+        if (!newProjectName || !newProjectName.trim()) {
             showNotification('Имя проекта не может быть пустым', 'warning');
             return;
         }
@@ -335,12 +336,12 @@ const ProjectManager = ({ onClose }) => {
             return;
         }
 
-        // Создаем новый проект
-        const success = createNewProject(newProjectName.trim());
+        // Создаем новый проект с текущими нодами/ребрами на холсте
+        const success = createNewProject(newProjectName.trim(), true);
 
         if (success) {
             // Сразу же сохраняем проект в localStorage
-            const saveSuccess = saveProject();
+            const saveSuccess = saveProject(newProjectName.trim());
 
             if (saveSuccess) {
                 showNotification(`Создан новый проект: ${newProjectName}`, 'success');
@@ -424,7 +425,11 @@ const ProjectManager = ({ onClose }) => {
                                 />
                                 <button
                                     onClick={handleCreateNewProject}
-                                    className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-all duration-200 flex items-center shadow-sm hover:shadow"
+                                    className={`px-4 py-2 ${newProjectName.trim() 
+                                        ? 'bg-indigo-500 hover:bg-indigo-600 text-white cursor-pointer' 
+                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400'
+                                    } rounded-lg transition-all duration-200 flex items-center shadow-sm hover:shadow`}
+                                    disabled={!newProjectName.trim()}
                                 >
                                     <PlusCircleIcon className="h-5 w-5 mr-1.5" />
                                     Создать
