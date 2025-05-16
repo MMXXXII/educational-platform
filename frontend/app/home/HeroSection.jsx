@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -28,10 +27,10 @@ export function HeroSection() {
                     >
                         Начать обучение
                     </Link>
-                    {/* Ссылка "Создать курс" только для администраторов */}
-                    {hasRole(['admin']) && (
+                    {/* Ссылка "Создать курс" только для администраторов и учителей*/}
+                    {hasRole(['admin', 'teacher']) && (
                         <Link
-                            to="/editor"
+                            to="/create-course"
                             className="px-6 sm:px-8 py-3 border border-blue-600 text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition-colors w-full sm:w-auto flex items-center justify-center"
                         >
                             Создать курс

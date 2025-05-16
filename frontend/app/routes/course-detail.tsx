@@ -1,4 +1,4 @@
-import type { Route } from "./+types/profile";
+import type { Route } from "./+types/course-detail";
 import { useParams } from "react-router";
 import { CourseDetailPage } from "../course-detail/CourseDetailPage";
 

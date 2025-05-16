@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router';
 import { UserIcon, ArrowRightEndOnRectangleIcon, BookOpenIcon, PlayIcon, PencilSquareIcon, Bars3Icon, XMarkIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
@@ -68,8 +68,8 @@ export function Header() {
                                     <span>Курсы</span>
                                 </Link>
 
-                                {/* Ссылка "Создать курс" только для администраторов */}
-                                {hasRole(['admin']) && (
+                                {/* Ссылка "Создать курс" только для администраторов и учителей*/}
+                                {hasRole(['admin', 'teacher']) && (
                                     <Link
                                         to="/editor"
                                         className="text-gray-700 hover:text-blue-600 flex items-center"
@@ -79,8 +79,8 @@ export function Header() {
                                     </Link>
                                 )}
 
-                                {/* Ссылка "Файлы" только для администраторов */}
-                                {hasRole(['admin']) && (
+                                {/* Ссылка "Файлы" только для администраторов и учителей*/}
+                                {hasRole(['admin', 'teacher']) && (
                                     <Link
                                         to="/file-manager"
                                         className="text-gray-700 hover:text-blue-600 flex items-center"
@@ -155,9 +155,9 @@ export function Header() {
                                         <span>Курсы</span>
                                     </Link>
 
-                                    {hasRole(['admin']) && (
+                                    {hasRole(['admin', 'teacher']) && (
                                         <Link
-                                            to="/editor"
+                                            to="/create-course"
                                             className="text-gray-700 hover:text-blue-600 flex items-center"
                                             onClick={() => setMobileMenuOpen(false)}
                                         >
@@ -166,7 +166,7 @@ export function Header() {
                                         </Link>
                                     )}
 
-                                    {hasRole(['admin']) && (
+                                    {hasRole(['admin', 'teacher']) && (
                                         <Link
                                             to="/file-manager"
                                             className="text-gray-700 hover:text-blue-600 flex items-center"

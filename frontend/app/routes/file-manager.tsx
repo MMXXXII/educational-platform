@@ -1,4 +1,4 @@
-import type { Route } from "./+types/profile";
+import type { Route } from "./+types/file-manager";
 import { FileManager } from "../fileManager/FileManager";
 import { ProtectedRoute } from '../auth/ProtectedRoute';
 
@@ -11,7 +11,7 @@ export function meta({ }: Route.MetaArgs) {
 
 export default function Profile() {
     return (
-        <ProtectedRoute requiredRoles={['admin']}>
+        <ProtectedRoute requiredRoles={['admin', 'teacher']}>
             <FileManager />
         </ProtectedRoute>
     );
