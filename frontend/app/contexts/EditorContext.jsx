@@ -335,9 +335,10 @@ export const EditorProvider = ({ children }) => {
     /**
      * Создает новый проект
      * @param {string} name - Имя проекта
+     * @param {boolean} keepCurrentNodes - Сохранять ли текущие ноды вместо создания пустого проекта
      * @returns {boolean} - Успешно ли создан проект
      */
-    const createNewProject = useCallback((name) => {
+    const createNewProject = useCallback((name, keepCurrentNodes = false) => {
         setSaveError(null);
 
         // Проверка на пустое имя проекта
@@ -361,23 +362,33 @@ export const EditorProvider = ({ children }) => {
         }
 
         try {
-            // Создаем пустой проект в памяти
+            // Создаем проект в памяти
             setProjectName(name);
-            setNodes([]);
-            setEdges([]);
+            
+            // Если keepCurrentNodes=true, сохраняем текущие ноды и рёбра, иначе очищаем
+            if (!keepCurrentNodes) {
+                setNodes([]);
+                setEdges([]);
+            }
+            
             setIsModified(false);
             setSelectedNodeId(null);
             setSaveError(null);
             setLoadError(null);
 
-            // Создаем и сразу сохраняем пустой проект в localStorage
-            const emptyProject = SerializationService.serializeGraph([], []);
-            SerializationService.saveToLocalStorage(name, emptyProject);
+            // Сериализуем текущее состояние графа (пустое или существующее)
+            const serializedGraph = SerializationService.serializeGraph(
+                keepCurrentNodes ? nodes : [], 
+                keepCurrentNodes ? edges : []
+            );
+            
+            // Сохраняем проект в localStorage
+            SerializationService.saveToLocalStorage(name, serializedGraph);
 
             // Обновляем список проектов после создания нового
             refreshProjectsList();
 
-            console.log(`Создан новый проект: ${name}`);
+            console.log(`Создан новый проект: ${name}${keepCurrentNodes ? ' с существующими нодами' : ''}`);
             return true;
         } catch (error) {
             const errorMsg = `Ошибка при создании проекта: ${error.message}`;
@@ -385,7 +396,7 @@ export const EditorProvider = ({ children }) => {
             setSaveError(errorMsg);
             return false;
         }
-    }, [setNodes, setEdges, isModified, projectName, refreshProjectsList]);
+    }, [nodes, edges, setNodes, setEdges, isModified, projectName, refreshProjectsList]);
 
     // Сохраняем функцию в реф
     functionRef.current.createNewProject = createNewProject;
@@ -509,7 +520,7 @@ export const EditorProvider = ({ children }) => {
 
                 // Если удален текущий проект, создаем новый
                 if (name === projectName) {
-                    functionRef.current.createNewProject('');
+                    functionRef.current.createNewProject('', true);
                 }
 
                 return true;

@@ -11,7 +11,15 @@ import {
     ArrowsRightLeftIcon,
     CubeTransparentIcon,
     ServerIcon,
-    ClipboardDocumentIcon
+    ClipboardDocumentIcon,
+    CodeBracketIcon,
+    BoltIcon,
+    ArrowUturnRightIcon,
+    UserIcon,
+    ForwardIcon,
+    NoSymbolIcon,
+    FlagIcon,
+    RocketLaunchIcon
 } from '@heroicons/react/24/outline';
 
 /**
@@ -87,7 +95,7 @@ const nodeRegistry = {
         category: NODE_CATEGORIES.OPERATIONS,
         name: 'Сравнение',
         description: 'Выполняет логическую операцию сравнения',
-        iconComponent: ArrowsRightLeftIcon,
+        iconComponent: CodeBracketIcon,
         color: {
             bg: 'bg-blue-100 dark:bg-blue-900',
             border: 'border-blue-500',
@@ -104,7 +112,7 @@ const nodeRegistry = {
         category: NODE_CATEGORIES.OPERATIONS,
         name: 'Логика',
         description: 'Выполняет логическую операцию AND/OR',
-        iconComponent: ArrowsRightLeftIcon,
+        iconComponent: BoltIcon,
         color: {
             bg: 'bg-indigo-100 dark:bg-indigo-900',
             border: 'border-indigo-500',
@@ -138,7 +146,7 @@ const nodeRegistry = {
         category: NODE_CATEGORIES.CONTROL,
         name: 'Условие',
         description: 'Условное ветвление',
-        iconComponent: ArrowsRightLeftIcon,
+        iconComponent: ArrowUturnRightIcon,
         color: {
             bg: 'bg-indigo-100 dark:bg-indigo-900',
             border: 'border-indigo-500',
@@ -172,7 +180,7 @@ const nodeRegistry = {
         category: NODE_CATEGORIES.SCENE_3D,
         name: 'Игрок',
         description: 'Персонаж, управляемый в 3D сцене',
-        iconComponent: VariableIcon,
+        iconComponent: UserIcon,
         color: {
             bg: 'bg-blue-100 dark:bg-blue-900',
             border: 'border-blue-500',
@@ -188,7 +196,7 @@ const nodeRegistry = {
         category: NODE_CATEGORIES.SCENE_3D,
         name: 'Движение',
         description: 'Перемещает персонажа вперед',
-        iconComponent: ArrowPathIcon,
+        iconComponent: ForwardIcon,
         color: {
             bg: 'bg-green-100 dark:bg-green-900',
             border: 'border-green-500',
@@ -205,7 +213,7 @@ const nodeRegistry = {
         category: NODE_CATEGORIES.SCENE_3D,
         name: 'Поворот',
         description: 'Поворачивает персонажа',
-        iconComponent: ArrowsRightLeftIcon,
+        iconComponent: ArrowUturnRightIcon,
         color: {
             bg: 'bg-yellow-100 dark:bg-yellow-900',
             border: 'border-yellow-500',
@@ -222,7 +230,7 @@ const nodeRegistry = {
         category: NODE_CATEGORIES.SCENE_3D,
         name: 'Стена впереди',
         description: 'Проверяет наличие стены перед персонажем',
-        iconComponent: ServerIcon,
+        iconComponent: NoSymbolIcon,
         color: {
             bg: 'bg-red-100 dark:bg-red-900',
             border: 'border-red-500',
@@ -238,7 +246,7 @@ const nodeRegistry = {
         category: NODE_CATEGORIES.SCENE_3D,
         name: 'Выход достигнут',
         description: 'Проверяет, достиг ли персонаж выхода',
-        iconComponent: CubeTransparentIcon,
+        iconComponent: FlagIcon,
         color: {
             bg: 'bg-purple-100 dark:bg-purple-900',
             border: 'border-purple-500',
@@ -254,7 +262,7 @@ const nodeRegistry = {
         category: NODE_CATEGORIES.SCENE_3D,
         name: 'Прыжок',
         description: 'Заставляет персонажа прыгнуть',
-        iconComponent: HashtagIcon,
+        iconComponent: RocketLaunchIcon,
         color: {
             bg: 'bg-cyan-100 dark:bg-cyan-900',
             border: 'border-cyan-500',

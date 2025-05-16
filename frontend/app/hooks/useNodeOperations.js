@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { addEdge } from 'reactflow';
 import { v4 as uuidv4 } from 'uuid';
+import { isValidConnection } from '../utils/nodeUtils';
 
 /**
  * Хук для управления операциями с узлами в ReactFlow
@@ -20,59 +21,79 @@ const useNodeOperations = (
     setSelectedNodeId
 ) => {
     /**
-     * Проверяет валидность соединения
-     * @param {Object} params - Параметры соединения
-     * @param {Array} nodes - Массив узлов
-     * @returns {boolean} - Валидно ли соединение
-     */
-    const validateConnection = useCallback((params, nodes) => {
-        // Проверяем наличие узлов
-        const sourceNode = nodes.find(node => node.id === params.source);
-        const targetNode = nodes.find(node => node.id === params.target);
-        
-        if (!sourceNode || !targetNode) {
-            console.warn('Соединение отклонено: узел источника или цели не существует');
-            return false;
-        }
-        
-        // Проверяем наличие портов
-        const hasSourceHandle = !params.sourceHandle || 
-            sourceNode.data.outputs?.some(output => output.id === params.sourceHandle);
-        
-        const hasTargetHandle = !params.targetHandle || 
-            targetNode.data.inputs?.some(input => input.id === params.targetHandle);
-        
-        if (!hasSourceHandle || !hasTargetHandle) {
-            console.warn(`Соединение отклонено: порты не найдены - источник: ${params.sourceHandle}, цель: ${params.targetHandle}`);
-            return false;
-        }
-        
-        return true;
-    }, []);
-
-    /**
      * Обработчик добавления новой связи
      */
     const onConnect = useCallback((params) => {
         setNodes(nodes => {
-            // Проверяем валидность соединения
-            if (!validateConnection(params, nodes)) {
-                return nodes;
-            }
+            setEdges(edges => {
+                // Проверяем валидность соединения с подробной информацией об ошибке
+                const sourceNode = nodes.find(node => node.id === params.source);
+                const targetNode = nodes.find(node => node.id === params.target);
+                
+                if (!sourceNode || !targetNode) {
+                    console.warn('Соединение отклонено: узел источника или цели не существует');
+                    return edges;
+                }
+                
+                // Проверяем соединение нода с самим собой
+                if (params.source === params.target) {
+                    console.warn('Соединение отклонено: нельзя соединить порт с самим собой');
+                    return edges;
+                }
+                
+                // Проверяем наличие портов
+                const sourceOutput = sourceNode.data.outputs?.find(
+                    output => output.id === params.sourceHandle
+                );
+                const targetInput = targetNode.data.inputs?.find(
+                    input => input.id === params.targetHandle
+                );
+                
+                if (!sourceOutput || !targetInput) {
+                    console.warn(`Соединение отклонено: порты не найдены - источник: ${params.sourceHandle}, цель: ${params.targetHandle}`);
+                    return edges;
+                }
+                
+                // Проверяем совместимость типов данных с учетом ссылок на переменные
+                // Особая обработка для портов с типом 'reference' - они могут соединяться с любым типом данных
+                if (sourceOutput.dataType !== targetInput.dataType && 
+                    sourceOutput.dataType !== 'any' && 
+                    targetInput.dataType !== 'any' && 
+                    sourceOutput.dataType !== 'reference') {
+                    console.warn(`Соединение отклонено: несовместимые типы данных: ${sourceOutput.dataType} -> ${targetInput.dataType}`);
+                    return edges;
+                }
+                
+                // Проверяем, что входной порт не имеет уже существующей связи
+                // (кроме flow-типов, которые могут иметь несколько входящих связей)
+                if (targetInput.dataType !== 'flow') {
+                    const existingConnection = edges.find(edge =>
+                        edge.target === params.target &&
+                        edge.targetHandle === params.targetHandle
+                    );
+                    
+                    if (existingConnection) {
+                        console.warn(`Соединение отклонено: порт уже имеет соединение`);
+                        return edges;
+                    }
+                }
+                
+                // Если соединение валидно, добавляем его
+                const newEdges = addEdge({
+                    ...params,
+                    id: `edge-${uuidv4()}`,
+                    type: 'animatedEdge',
+                    animated: params.sourceHandle?.includes('flow') || params.targetHandle?.includes('flow'),
+                    style: { stroke: '#555', strokeWidth: 2 }
+                }, edges);
+                
+                setIsModified(true);
+                return newEdges;
+            });
             
-            // Если соединение валидно, добавляем его
-            setEdges((eds) => addEdge({
-                ...params,
-                id: `edge-${uuidv4()}`,
-                type: 'animatedEdge',
-                animated: params.sourceHandle?.includes('flow') || params.targetHandle?.includes('flow'),
-                style: { stroke: '#555', strokeWidth: 2 }
-            }, eds));
-            
-            setIsModified(true);
             return nodes;
         });
-    }, [setEdges, setIsModified, validateConnection, setNodes]);
+    }, [setEdges, setIsModified, setNodes]);
 
     /**
      * Обработчик выбора нода

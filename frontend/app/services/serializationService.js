@@ -357,8 +357,15 @@ const SerializationService = {
                 };
             }
             
+            // Убеждаемся, что имя проекта не пустое
+            const projectName = name.trim();
+            if (projectName === '') {
+                console.error('Имя проекта не может быть пустым (после обрезки пробелов)');
+                return false;
+            }
+            
             // Сохраняем сам проект
-            const projectKey = `nodeEditor_project_${name.trim()}`;
+            const projectKey = `nodeEditor_project_${projectName}`;
             const projectData = JSON.stringify(graph);
             localStorage.setItem(projectKey, projectData);
             
@@ -371,12 +378,12 @@ const SerializationService = {
 
             // Сохраняем список проектов
             const projectsList = this.getProjectsList();
-            if (!projectsList.includes(name.trim())) {
-                projectsList.push(name.trim());
+            if (!projectsList.includes(projectName)) {
+                projectsList.push(projectName);
                 localStorage.setItem('nodeEditor_projects', JSON.stringify(projectsList));
             }
 
-            console.log(`Проект "${name}" успешно сохранен, размер: ${projectData.length} байт`);
+            console.log(`Проект "${projectName}" успешно сохранен, размер: ${projectData.length} байт`);
             return true;
         } catch (error) {
             console.error('Ошибка при сохранении проекта в localStorage:', error);

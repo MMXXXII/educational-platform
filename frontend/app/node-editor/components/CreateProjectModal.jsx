@@ -22,6 +22,11 @@ const CreateProjectModal = ({ isOpen, onClose, onCreate, existingProjects = [] }
 
     // Обработчик создания проекта
     const handleCreate = () => {
+        // Проверяем, что имя проекта не пустое
+        if (!projectName || !projectName.trim()) {
+            return; // Ничего не делаем, если имя пустое
+        }
+        
         if (projectName.trim()) {
             // Проверяем, существует ли уже проект с таким именем
             if (existingProjects.includes(projectName.trim())) {

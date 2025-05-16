@@ -117,7 +117,7 @@ const VariableNode = ({ id, data, selected, nodeDefinition }) => {
                 <div className="flex items-center">
                     <label className="text-xs text-gray-600 dark:text-gray-400 w-16">Значение:</label>
                     {externalConnections.value ? (
-                        <div className="bg-gray-700 text-white p-1 text-xs rounded text-center w-full">
+                        <div className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white p-1 text-xs rounded text-center w-full">
                             (внешние данные)
                         </div>
                     ) : (

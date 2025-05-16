@@ -133,7 +133,7 @@ const ControlNode = ({ id, data, selected, nodeDefinition }) => {
                     <div className="flex items-center mb-1">
                         <label className="block text-xs mr-2 w-24">Начальный:</label>
                         {externalConnections.firstIndex ? (
-                            <div className="bg-gray-700 text-white p-1 text-xs rounded text-center w-full">
+                            <div className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white p-1 text-xs rounded text-center w-full">
                                 (внешние данные)
                             </div>
                         ) : (
@@ -150,7 +150,7 @@ const ControlNode = ({ id, data, selected, nodeDefinition }) => {
                     <div className="flex items-center mb-1">
                         <label className="block text-xs mr-2 w-24">Конечный:</label>
                         {externalConnections.lastIndex ? (
-                            <div className="bg-gray-700 text-white p-1 text-xs rounded text-center w-full">
+                            <div className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white p-1 text-xs rounded text-center w-full">
                                 (внешние данные)
                             </div>
                         ) : (
@@ -167,7 +167,7 @@ const ControlNode = ({ id, data, selected, nodeDefinition }) => {
                     <div className="flex items-center mb-1">
                         <label className="block text-xs mr-2 w-24">Шаг:</label>
                         {externalConnections.step ? (
-                            <div className="bg-gray-700 text-white p-1 text-xs rounded text-center w-full">
+                            <div className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white p-1 text-xs rounded text-center w-full">
                                 (внешние данные)
                             </div>
                         ) : (

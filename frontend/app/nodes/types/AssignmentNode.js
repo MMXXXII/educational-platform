@@ -8,22 +8,16 @@ export class AssignmentNode extends BaseNode {
     /**
      * @param {string} id - Идентификатор нода
      * @param {Object} data - Данные нода
-     * @param {any} data.leftValue - Левый операнд (имя переменной)
-     * @param {any} data.rightValue - Правый операнд (значение)
-     * @param {string} data.rightType - Тип правого операнда
      */
     constructor(id = uuidv4(), data = {}) {
         super(id, 'assignment', 'Присваивание', {
-            leftValue: data.leftValue !== undefined ? data.leftValue : '',
-            rightValue: data.rightValue !== undefined ? data.rightValue : '',
-            rightType: data.rightType || 'any',
             ...data
         });
 
         // Добавление портов
         this.addInput('flow', 'Flow', 'flow');  // Flow-вход для управления выполнением
-        this.addInput('left', 'Target', 'reference', true);  // Левый операнд (ссылка на переменную)
-        this.addInput('right', 'Value', 'any', true); // Правый операнд (значение)
+        this.addInput('left', 'left', 'reference', true);  // Левый операнд (ссылка на переменную)
+        this.addInput('right', 'right', 'any', true); // Правый операнд (значение)
         
         this.addOutput('flow', 'Flow', 'flow');  // Flow-выход для продолжения выполнения
         this.addOutput('result', 'Result', 'any');  // Результат операции (присвоенное значение)
@@ -36,23 +30,32 @@ export class AssignmentNode extends BaseNode {
      * @returns {Object} - Выходные значения
      */
     execute(inputValues, context) {
+        // Отладочный вывод
+        console.log('AssignmentNode execute. Входные значения:', JSON.stringify(inputValues));
+        
         // Получаем ссылку на переменную и значение для присваивания
         let variableRef = inputValues.left;
-        let valueToAssign = inputValues.right !== undefined ? inputValues.right : this.data.rightValue;
+        let valueToAssign = inputValues.right;
+        
+        // Проверяем формат входных данных и преобразуем их при необходимости
+        // Если variableRef - это строка, преобразуем её в объект reference
+        if (typeof variableRef === 'string') {
+            variableRef = {
+                type: 'reference',
+                name: variableRef,
+                variableType: 'any'
+            };
+            console.log('Преобразованная ссылка на переменную:', JSON.stringify(variableRef));
+        }
         
         // Проверяем, что получили корректную ссылку на переменную
         if (!variableRef || variableRef.type !== 'reference' || !variableRef.name) {
-            // Если ссылка не передана через вход, используем значение по умолчанию
-            if (this.data.leftValue) {
-                // Создаем ссылку из строкового значения
-                variableRef = {
-                    type: 'reference',
-                    name: this.data.leftValue,
-                    variableType: 'any'
-                };
-            } else {
-                throw new Error('Не указана целевая переменная для присваивания');
-            }
+            throw new Error('Не указана целевая переменная для присваивания');
+        }
+        
+        // Проверяем, что получили значение для присваивания
+        if (valueToAssign === undefined) {
+            throw new Error('Не указано значение для присваивания');
         }
         
         // Преобразуем правый операнд в соответствии с типом

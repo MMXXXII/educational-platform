@@ -82,10 +82,20 @@ export class MathNode extends BaseNode {
                 result = left * right;
                 break;
             case 'divide':
-                result = right !== 0 ? left / right : NaN;
+                if (right === 0) {
+                    context.log('error', 'Ошибка: Деление на ноль');
+                    result = NaN;
+                } else {
+                    result = left / right;
+                }
                 break;
             case 'modulo':
-                result = right !== 0 ? left % right : NaN;
+                if (right === 0) {
+                    context.log('error', 'Ошибка: Деление по модулю на ноль');
+                    result = NaN;
+                } else {
+                    result = left % right;
+                }
                 break;
             default:
                 result = 0;

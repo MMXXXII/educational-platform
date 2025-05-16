@@ -70,6 +70,11 @@ export const isValidConnection = (connection, nodes, edges) => {
         return false;
     }
 
+    // Проверяем, что нельзя соединить порт с самим собой (один и тот же нод)
+    if (connection.source === connection.target) {
+        return false;
+    }
+
     // Находим порты источника и назначения
     const sourceOutput = sourceNode.data.outputs?.find(
         output => output.id === connection.sourceHandle
@@ -84,9 +89,11 @@ export const isValidConnection = (connection, nodes, edges) => {
     }
 
     // Проверяем совместимость типов данных
+    // Добавляем особую обработку для портов с типом 'reference'
     if (sourceOutput.dataType !== targetInput.dataType &&
         sourceOutput.dataType !== 'any' &&
-        targetInput.dataType !== 'any') {
+        targetInput.dataType !== 'any' &&
+        sourceOutput.dataType !== 'reference') {
         return false;
     }
 
