@@ -11,7 +11,7 @@ const apiClient = axios.create({
 
 // Функция для добавления токена авторизации к запросам
 const setAuthHeader = (config) => {
-  const token = localStorage.getItem('accessToken');
+  const token = localStorage.getItem('access_token');
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }
@@ -27,6 +27,50 @@ export const coursesApi = {
   getCourses: async (params = {}) => {
     try {
       const response = await apiClient.get('/courses', { params });
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
+  // Создание нового курса
+  createCourse: async (courseData, options = {}) => {
+    try {
+      // Создаем объект FormData для отправки файлов
+      const formData = new FormData();
+
+      // Добавляем текстовые поля
+      formData.append('title', courseData.title);
+      formData.append('description', courseData.description);
+      formData.append('longdescription', courseData.longDescription);
+      formData.append('level', courseData.level);
+      formData.append('category_id', courseData.category_id);
+
+      // Добавляем изображение, если оно есть
+      if (courseData.image) {
+        formData.append('image', courseData.image);
+      }
+
+      // Добавляем уроки, если они есть
+      if (courseData.lessons && courseData.lessons.length > 0) {
+        formData.append('lessons', JSON.stringify(courseData.lessons));
+      }
+
+      // Конфигурация для запроса
+      const requestConfig = {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      };
+
+      // Если передан токен в options, используем его напрямую
+      if (options.token) {
+        requestConfig.headers['Authorization'] = `Bearer ${options.token}`;
+      }
+
+      // Отправляем запрос на endpoint, который принимает FormData
+      const response = await apiClient.post('/courses/form', formData, requestConfig);
+
       return response.data;
     } catch (error) {
       handleError(error);
@@ -164,10 +208,32 @@ const handleError = (error) => {
   if (error.response) {
     // Ответ от сервера был получен с кодом ошибки
     const { status, data } = error.response;
-    errorMessage = data.detail || `Ошибка сервера: ${status}`;
+
+    // Обработка ошибок валидации
+    if (status === 422 && data.detail) {
+      if (Array.isArray(data.detail)) {
+        // Форматируем ошибки валидации в читаемый вид
+        errorMessage = data.detail.map(err =>
+          `${err.loc.join('.')}: ${err.msg}`
+        ).join('; ');
+      } else {
+        errorMessage = data.detail;
+      }
+    } else {
+      errorMessage = data.detail || `Ошибка сервера: ${status}`;
+    }
+
+    // Специфичные сообщения по кодам ошибок
+    if (status === 401) {
+      errorMessage = 'Требуется авторизация. Пожалуйста, войдите в систему.';
+    } else if (status === 403) {
+      errorMessage = 'Недостаточно прав для выполнения этой операции.';
+    }
+
+    console.error('API Error Response:', status, data);
   } else if (error.request) {
     // Запрос был сделан, но ответ не получен
-    errorMessage = 'Нет ответа от сервера';
+    errorMessage = 'Нет ответа от сервера. Проверьте подключение к интернету.';
   }
 
   // Создаем и выбрасываем ошибку с деталями
