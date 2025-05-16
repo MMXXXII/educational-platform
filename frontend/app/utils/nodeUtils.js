@@ -70,6 +70,11 @@ export const isValidConnection = (connection, nodes, edges) => {
         return false;
     }
 
+    // Проверяем, что нельзя соединить порт с самим собой (один и тот же нод)
+    if (connection.source === connection.target) {
+        return false;
+    }
+
     // Находим порты источника и назначения
     const sourceOutput = sourceNode.data.outputs?.find(
         output => output.id === connection.sourceHandle

@@ -35,6 +35,12 @@ const useNodeOperations = (
             return false;
         }
         
+        // Запрещаем соединения нода с самим собой
+        if (params.source === params.target) {
+            console.warn('Соединение отклонено: нельзя соединить порт с самим собой');
+            return false;
+        }
+        
         // Проверяем наличие портов
         const hasSourceHandle = !params.sourceHandle || 
             sourceNode.data.outputs?.some(output => output.id === params.sourceHandle);
