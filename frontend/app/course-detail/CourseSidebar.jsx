@@ -1,6 +1,3 @@
-import React from 'react';
-import { CourseAuthorInfo } from './CourseAuthorInfo';
-
 export function CourseSidebar({ course }) {
     return (
         <div className="lg:w-1/3">
@@ -11,10 +8,10 @@ export function CourseSidebar({ course }) {
                 </div>
 
                 <button className="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors mb-4">
-                    Записаться на курс
+                    Начать прохождение
                 </button>
 
-                <div className="space-y-4 mb-6">
+                <div className="space-y-4 mb-2">
                     <div className="flex items-center">
                         <svg className="h-5 w-5 text-blue-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path
@@ -37,33 +34,6 @@ export function CourseSidebar({ course }) {
                         </svg>
                         <span className="text-gray-700">{course.lessons} уроков</span>
                     </div>
-                    <div className="flex items-center">
-                        <svg className="h-5 w-5 text-blue-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"
-                            />
-                        </svg>
-                        <span className="text-gray-700">Доступ навсегда</span>
-                    </div>
-                    <div className="flex items-center">
-                        <svg className="h-5 w-5 text-blue-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M5 13l4 4L19 7"
-                            />
-                        </svg>
-                        <span className="text-gray-700">Сертификат по окончании</span>
-                    </div>
-                </div>
-
-                {/* Информация об авторе */}
-                <div className="border-t border-gray-200 pt-6">
-                    <CourseAuthorInfo author={course.author} authorBio={course.authorBio} />
                 </div>
             </div>
         </div>

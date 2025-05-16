@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router';
 import { Link } from 'react-router';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
@@ -9,8 +9,6 @@ import { CourseImage } from './CourseImage';
 import { CourseInfo } from './CourseInfo';
 import { CourseDescription } from './CourseDescription';
 import { SyllabusAccordion } from './SyllabusAccordion';
-import { CourseRequirements } from './CourseRequirements';
-import { CourseTargetAudience } from './CourseTargetAudience';
 import { CourseSidebar } from './CourseSidebar';
 
 // Заглушка данных для курса (в итоговом приложении будет приходить с API)
@@ -81,10 +79,6 @@ export function CourseDetailPage() {
                                 <SyllabusAccordion syllabus={course.syllabus} />
                             </div>
 
-                            <div className="grid sm:grid-cols-2 gap-6 mb-6">
-                                <CourseRequirements requirements={course.requirements} />
-                                <CourseTargetAudience targetAudience={course.targetAudience} />
-                            </div>
                         </div>
                     </div>
                 </div>
