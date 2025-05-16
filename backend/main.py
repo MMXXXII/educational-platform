@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.core.config import CORS_ORIGINS, THUMBNAIL_DIR
 from app.core.create_tables import create_tables
-from app.api import auth, files, users, courses  # Добавляем импорт модуля courses
+from app.api import auth, files, users, courses
 
 
 async def lifespan(app: FastAPI):

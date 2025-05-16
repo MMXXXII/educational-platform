@@ -6,8 +6,9 @@ from datetime import datetime
 from sqlalchemy import func, desc, asc, and_, or_
 from sqlalchemy.orm import Session, joinedload, contains_eager
 from sqlalchemy.exc import SQLAlchemyError
+from fastapi import HTTPException, status
 
-from app.core.models import Course, Category, CourseEnrollment, User, course_categories
+from app.core.models import Course, Category, CourseEnrollment, User, course_categories, Lesson
 
 
 def get_filtered_courses_query(
@@ -404,28 +405,42 @@ def get_user_enrolled_courses(db: Session, user_id: int,
         return [], 0, 0
 
 
-def get_course_by_id(db: Session, course_id: int) -> Optional[Course]:
+def get_course_by_id(db: Session, course_id: int) -> Course:
     """
-    Получает детальную информацию о курсе по его ID
+    Получает детальную информацию о курсе по его ID или выдает ошибку 404
 
     Args:
         db: Сессия базы данных
         course_id: ID курса
 
     Returns:
-        Объект курса или None, если курс не найден
+        Объект курса
+
+    Raises:
+        HTTPException: если курс не найден
     """
     try:
-        return db.query(Course).options(
+        course = db.query(Course).options(
             joinedload(Course.categories)
         ).filter(
             Course.id == course_id
         ).first()
 
+        if not course:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Курс с ID {course_id} не найден"
+            )
+
+        return course
+
     except SQLAlchemyError as e:
         # Логирование ошибки
         print(f"Database error in get_course_by_id: {str(e)}")
-        return None
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при получении курса: {str(e)}"
+        )
 
 
 def enroll_user_to_course(db: Session, user_id: int, course_id: int) -> Optional[CourseEnrollment]:
@@ -533,3 +548,57 @@ def get_recommended_courses(db: Session, user_id: int, limit: int = 5) -> List[C
         # Логирование ошибки
         print(f"Database error in get_recommended_courses: {str(e)}")
         return []
+
+
+def check_course_owner(course: Course, user) -> bool:
+    """
+    Проверяет, является ли пользователь владельцем курса или администратором
+
+    Args:
+        course: Объект курса
+        user: Объект пользователя
+
+    Returns:
+        True, если пользователь является владельцем или администратором
+
+    Raises:
+        HTTPException: если пользователь не имеет прав для редактирования курса
+    """
+    # В текущей версии автор хранится как строка (имя пользователя)
+    # В будущем, когда поле author заменится на username, эту функцию нужно будет обновить
+    if course.author != user.username and user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Недостаточно прав для изменения этого курса"
+        )
+    return True
+
+
+def reorder_lessons(db: Session, course_id: int) -> bool:
+    """
+    Переупорядочивает уроки курса после удаления или изменения порядка
+
+    Args:
+        db: Сессия базы данных
+        course_id: ID курса
+
+    Returns:
+        True, если операция выполнена успешно
+    """
+    try:
+        lessons = db.query(Lesson).filter(
+            Lesson.course_id == course_id
+        ).order_by(Lesson.order).all()
+
+        # Обновляем порядок уроков, чтобы он был последовательным
+        for idx, lesson in enumerate(lessons):
+            lesson.order = idx + 1
+
+        db.commit()
+        return True
+
+    except SQLAlchemyError as e:
+        # Логирование ошибки и откат транзакции
+        print(f"Database error in reorder_lessons: {str(e)}")
+        db.rollback()
+        return False
