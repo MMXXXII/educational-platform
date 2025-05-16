@@ -100,7 +100,7 @@ const PrintNode = ({ id, data, selected, nodeDefinition }) => {
                 {/* Поле ввода сообщения или метка "внешние данные" */}
                 <div className="w-full">
                     {externalConnections.value ? (
-                        <div className="bg-gray-700 text-white p-1 text-xs rounded text-center w-full">
+                        <div className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white p-1 text-xs rounded text-center w-full">
                             (внешние данные)
                         </div>
                     ) : (

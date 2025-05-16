@@ -142,7 +142,7 @@ const OperationNode = ({ id, data, selected, nodeDefinition }) => {
                 {/* Левый операнд */}
                 <div className="flex items-center" title="Левый операнд">
                     {externalConnections.left ? (
-                        <div className="bg-gray-700 text-white p-1 text-xs rounded text-center w-full">
+                        <div className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white p-1 text-xs rounded text-center w-full">
                             (внешние данные)
                         </div>
                     ) : (
@@ -175,7 +175,7 @@ const OperationNode = ({ id, data, selected, nodeDefinition }) => {
                             <select
                                 value={localState.leftType || 'number'}
                                 onChange={(e) => handleChange('leftType', e.target.value)}
-                                className="flex-1 p-1 text-xs bg-gray-600 text-white rounded nodrag"
+                                className="flex-1 p-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded nodrag"
                             >
                                 <option value="number">Число</option>
                                 <option value="string">Текст</option>
@@ -188,7 +188,7 @@ const OperationNode = ({ id, data, selected, nodeDefinition }) => {
                 {/* Правый операнд */}
                 <div className="flex items-center" title="Правый операнд">
                     {externalConnections.right ? (
-                        <div className="bg-gray-700 text-white p-1 text-xs rounded text-center w-full">
+                        <div className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white p-1 text-xs rounded text-center w-full">
                             (внешние данные)
                         </div>
                     ) : (
@@ -221,7 +221,7 @@ const OperationNode = ({ id, data, selected, nodeDefinition }) => {
                             <select
                                 value={localState.rightType || 'number'}
                                 onChange={(e) => handleChange('rightType', e.target.value)}
-                                className="flex-1 p-1 text-xs bg-gray-600 text-white rounded nodrag"
+                                className="flex-1 p-1 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded nodrag"
                             >
                                 <option value="number">Число</option>
                                 <option value="string">Текст</option>
