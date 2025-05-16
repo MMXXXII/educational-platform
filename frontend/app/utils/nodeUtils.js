@@ -89,9 +89,11 @@ export const isValidConnection = (connection, nodes, edges) => {
     }
 
     // Проверяем совместимость типов данных
+    // Добавляем особую обработку для портов с типом 'reference'
     if (sourceOutput.dataType !== targetInput.dataType &&
         sourceOutput.dataType !== 'any' &&
-        targetInput.dataType !== 'any') {
+        targetInput.dataType !== 'any' &&
+        sourceOutput.dataType !== 'reference') {
         return false;
     }
 

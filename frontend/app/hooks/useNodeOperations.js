@@ -27,33 +27,55 @@ const useNodeOperations = (
         setNodes(nodes => {
             setEdges(edges => {
                 // Проверяем валидность соединения с подробной информацией об ошибке
-                if (!isValidConnection(params, nodes, edges)) {
-                    const sourceNode = nodes.find(node => node.id === params.source);
-                    const targetNode = nodes.find(node => node.id === params.target);
+                const sourceNode = nodes.find(node => node.id === params.source);
+                const targetNode = nodes.find(node => node.id === params.target);
+                
+                if (!sourceNode || !targetNode) {
+                    console.warn('Соединение отклонено: узел источника или цели не существует');
+                    return edges;
+                }
+                
+                // Проверяем соединение нода с самим собой
+                if (params.source === params.target) {
+                    console.warn('Соединение отклонено: нельзя соединить порт с самим собой');
+                    return edges;
+                }
+                
+                // Проверяем наличие портов
+                const sourceOutput = sourceNode.data.outputs?.find(
+                    output => output.id === params.sourceHandle
+                );
+                const targetInput = targetNode.data.inputs?.find(
+                    input => input.id === params.targetHandle
+                );
+                
+                if (!sourceOutput || !targetInput) {
+                    console.warn(`Соединение отклонено: порты не найдены - источник: ${params.sourceHandle}, цель: ${params.targetHandle}`);
+                    return edges;
+                }
+                
+                // Проверяем совместимость типов данных с учетом ссылок на переменные
+                // Особая обработка для портов с типом 'reference' - они могут соединяться с любым типом данных
+                if (sourceOutput.dataType !== targetInput.dataType && 
+                    sourceOutput.dataType !== 'any' && 
+                    targetInput.dataType !== 'any' && 
+                    sourceOutput.dataType !== 'reference') {
+                    console.warn(`Соединение отклонено: несовместимые типы данных: ${sourceOutput.dataType} -> ${targetInput.dataType}`);
+                    return edges;
+                }
+                
+                // Проверяем, что входной порт не имеет уже существующей связи
+                // (кроме flow-типов, которые могут иметь несколько входящих связей)
+                if (targetInput.dataType !== 'flow') {
+                    const existingConnection = edges.find(edge =>
+                        edge.target === params.target &&
+                        edge.targetHandle === params.targetHandle
+                    );
                     
-                    if (!sourceNode || !targetNode) {
-                        console.warn('Соединение отклонено: узел источника или цели не существует');
+                    if (existingConnection) {
+                        console.warn(`Соединение отклонено: порт уже имеет соединение`);
                         return edges;
                     }
-                    
-                    // Проверяем наличие портов и их типы для более информативного сообщения
-                    const sourceOutput = sourceNode.data.outputs?.find(
-                        output => output.id === params.sourceHandle
-                    );
-                    const targetInput = targetNode.data.inputs?.find(
-                        input => input.id === params.targetHandle
-                    );
-
-                    if (sourceOutput && targetInput && 
-                        sourceOutput.dataType !== targetInput.dataType && 
-                        sourceOutput.dataType !== 'any' && 
-                        targetInput.dataType !== 'any') {
-                        console.warn(`Соединение отклонено: несовместимые типы данных: ${sourceOutput.dataType} -> ${targetInput.dataType}`);
-                    } else {
-                        console.warn('Соединение отклонено: не соответствует правилам валидации');
-                    }
-                    
-                    return edges;
                 }
                 
                 // Если соединение валидно, добавляем его
