@@ -1,6 +1,6 @@
-// frontend/courses/CourseCard.jsx
-import React from 'react';
 import { Link } from 'react-router';
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 export function CourseCard({ course }) {
     const getInitialsPlaceholder = (title) => {
@@ -36,11 +36,17 @@ export function CourseCard({ course }) {
     const categoryName = course.categories?.[0]?.name || '';
 
     const renderImage = () => {
-        // Основное изменение: проверяем наличие валидного URL изображения
-        const isValidImage = course.image_url && (
-            course.image_url.startsWith('http://') ||
-            course.image_url.startsWith('https://') ||
-            course.image_url.startsWith('data:image')
+        // Обработка image_url - преобразование относительного URL в абсолютный
+        let imageUrl = course.image_url;
+        if (imageUrl && imageUrl.startsWith('/static/')) {
+            imageUrl = `${API_URL}/api${imageUrl}`;
+        }
+
+        // Проверяем, является ли URL изображения валидным
+        const isValidImage = imageUrl && (
+            imageUrl.startsWith('http://') ||
+            imageUrl.startsWith('https://') ||
+            imageUrl.startsWith('data:image')
         );
 
         if (!isValidImage) {
@@ -56,7 +62,7 @@ export function CourseCard({ course }) {
 
         return (
             <img
-                src={course.image_url}
+                src={imageUrl}
                 alt={course.title}
                 className="w-full h-full object-cover"
                 onError={(e) => {
