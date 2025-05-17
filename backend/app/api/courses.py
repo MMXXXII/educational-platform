@@ -14,7 +14,7 @@ from app.core.schemas import (
     EnrollmentWithCourse, CoursesResponse, CategoriesResponse,
     LessonCreate, LessonOut, LessonUpdate, CourseWithLessons
 )
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user, get_optional_current_user
 from app.utils.courses import (
     get_filtered_courses_query, get_paginated_courses, is_enrolled,
     get_user_course_progress, update_course_access_time,
@@ -202,7 +202,7 @@ async def list_recommended_courses(
 async def get_course(
     course_id: int = Path(..., title="ID курса"),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_current_user)
 ):
     """Получение подробной информации о конкретном курсе"""
     try:
@@ -230,7 +230,7 @@ async def get_course(
 async def get_course_with_lessons(
     course_id: int = Path(..., title="ID курса"),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_current_user)
 ):
     """Получение подробной информации о курсе со всеми уроками"""
     try:
