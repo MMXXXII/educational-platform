@@ -1,3 +1,5 @@
+const API_URL = import.meta.env.VITE_API_URL;
+
 export function CourseImage({ course }) {
     // Функция для получения инициалов курса
     const getInitialsPlaceholder = (title) => {
@@ -37,16 +39,22 @@ export function CourseImage({ course }) {
     };
 
     // Определяем категорию курса (в API это может быть массив)
-    const categoryName = course.category || 
+    const categoryName = course.category ||
         (course.categories && course.categories.length > 0 ? course.categories[0].name : 'default');
 
     // Определяем URL изображения (в API это image_url)
-    const imageUrl = course.imageUrl || course.image_url;
+    let imageUrl = course.imageUrl || course.image_url;
 
-    // Нужно ли использовать заглушку
-    const shouldUsePlaceholder = !imageUrl || 
-        imageUrl.startsWith('/images/') || 
-        imageUrl === 'placeholder';
+    // Преобразование относительного URL в абсолютный
+    if (imageUrl && imageUrl.startsWith('/static/')) {
+        imageUrl = `${API_URL}/api${imageUrl}`;
+    }
+
+    // Проверяем, является ли URL изображения валидным
+    const shouldUsePlaceholder = !imageUrl ||
+        !(imageUrl.startsWith('http://') ||
+            imageUrl.startsWith('https://') ||
+            imageUrl.startsWith('data:image'));
 
     // Получение цвета на основе категории курса
     const colors = getCategoryColor(categoryName);
@@ -77,9 +85,6 @@ export function CourseImage({ course }) {
                     }}
                 />
             )}
-            <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full">
-                {course.level}
-            </div>
         </div>
     );
 }
