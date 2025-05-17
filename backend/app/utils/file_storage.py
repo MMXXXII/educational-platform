@@ -8,6 +8,8 @@ import shutil
 from pathlib import Path
 from fastapi import UploadFile, HTTPException
 
+from app.core.config import BASE_URL
+
 # Директория для сохранения файлов
 UPLOAD_DIR = os.path.join(os.getcwd(), "static", "uploads")
 COURSE_IMAGES_DIR = os.path.join(UPLOAD_DIR, "course_images")
@@ -52,8 +54,8 @@ def save_course_image(image: UploadFile, user_id: int) -> str:
             # Копируем содержимое загруженного файла
             shutil.copyfileobj(image.file, buffer)
 
-        # Возвращаем относительный URL для фронтенда
-        return f"/static/uploads/course_images/{unique_filename}"
+        # Возвращаем абсолютный URL с базовым URL сервера
+        return f"{BASE_URL}/api/static/uploads/course_images/{unique_filename}"
 
     except Exception as e:
         # В случае ошибки удаляем файл, если он был создан

@@ -4,6 +4,7 @@ FastAPI application entry point
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+import os
 
 from app.core.config import CORS_ORIGINS, THUMBNAIL_DIR
 from app.core.create_tables import create_tables
@@ -29,8 +30,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Define uploads directory path
+UPLOADS_DIR = os.path.join(os.getcwd(), "static", "uploads")
+COURSE_IMAGES_DIR = os.path.join(UPLOADS_DIR, "course_images")
+
 # Static files for thumbnails
 app.mount("/thumbnails", StaticFiles(directory=THUMBNAIL_DIR), name="thumbnails")
+
+# Static files for course images
+app.mount("/static", StaticFiles(directory=os.path.join(os.getcwd(),
+          "static")), name="static")
 
 # Include routers
 app.include_router(auth.router, tags=["auth"])
