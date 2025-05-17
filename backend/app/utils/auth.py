@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 
@@ -26,7 +26,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 # Token handling
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
 
 def create_token(data: dict, expires_delta: Optional[timedelta] = None, is_refresh: bool = False):
@@ -85,6 +85,29 @@ async def get_current_user(
     user = db.query(User).filter(User.username == username).first()
     if user is None:
         raise credentials_exception
+    return user
+
+
+async def get_optional_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+):
+    """
+    Attempts to get the current user from the token but returns None
+    if authentication fails instead of raising an exception.
+    """
+    if not token:
+        return None
+        
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            return None
+    except jwt.PyJWTError:
+        return None
+
+    user = db.query(User).filter(User.username == username).first()
     return user
 
 

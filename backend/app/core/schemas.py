@@ -91,6 +91,7 @@ class CourseBase(BaseModel):
     """Базовая схема для курса"""
     title: str
     description: str
+    longdescription: str
     level: str
     author: str
     lessons_count: int = Field(default=0, ge=0)
@@ -106,6 +107,7 @@ class CourseUpdate(BaseModel):
     """Схема для обновления курса"""
     title: Optional[str] = None
     description: Optional[str] = None
+    longdescription: Optional[str] = None
     level: Optional[str] = None
     author: Optional[str] = None
     lessons_count: Optional[int] = Field(default=None, ge=0)
@@ -181,3 +183,43 @@ class CategoriesResponse(BaseModel):
     """Схема для вывода списка категорий"""
     items: List[CategoryOut]
     total: int
+
+
+class LessonBase(BaseModel):
+    """Базовая схема для урока"""
+    title: str
+    content: Optional[str] = None
+    order: int
+    scene_data: Optional[str] = None
+
+
+class LessonCreate(LessonBase):
+    """Схема для создания урока"""
+    course_id: int
+
+
+class LessonUpdate(BaseModel):
+    """Схема для обновления урока"""
+    title: Optional[str] = None
+    content: Optional[str] = None
+    order: Optional[int] = None
+    scene_data: Optional[str] = None
+
+
+class LessonOut(LessonBase):
+    """Схема для вывода урока"""
+    id: int
+    course_id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class CourseWithLessons(CourseOut):
+    """Схема для вывода курса с уроками"""
+    lessons: List[LessonOut] = []
+
+    class Config:
+        from_attributes = True

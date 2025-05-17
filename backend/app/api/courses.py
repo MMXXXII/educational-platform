@@ -2,24 +2,27 @@
 API endpoints for courses management
 """
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status, Path
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Path, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.database import get_db
-from app.core.models import Course, Category, CourseEnrollment, User
+from app.core.models import Course, Category, CourseEnrollment, User, Lesson
 from app.core.schemas import (
     CategoryCreate, CategoryOut, CourseCreate, CourseOut, CourseUpdate,
     EnrollmentCreate, EnrollmentOut, EnrollmentUpdate,
-    EnrollmentWithCourse, CoursesResponse, CategoriesResponse
+    EnrollmentWithCourse, CoursesResponse, CategoriesResponse,
+    LessonCreate, LessonOut, LessonUpdate, CourseWithLessons
 )
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user, get_optional_current_user
 from app.utils.courses import (
     get_filtered_courses_query, get_paginated_courses, is_enrolled,
     get_user_course_progress, update_course_access_time,
     get_popular_courses, get_recent_courses, enroll_user_to_course,
-    get_user_enrolled_courses, get_recommended_courses
+    get_user_enrolled_courses, get_recommended_courses,
+    get_course_by_id, check_course_owner, reorder_lessons
 )
+from app.utils.file_storage import save_course_image
 
 router = APIRouter(prefix="/courses")
 
@@ -199,7 +202,7 @@ async def list_recommended_courses(
 async def get_course(
     course_id: int = Path(..., title="ID курса"),
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_current_user)
 ):
     """Получение подробной информации о конкретном курсе"""
     try:
@@ -216,6 +219,42 @@ async def get_course(
                 update_course_access_time(db, current_user.id, course_id)
 
         return course
+    except SQLAlchemyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при получении информации о курсе: {str(e)}"
+        )
+
+
+@router.get("/{course_id}/with-lessons", response_model=CourseWithLessons)
+async def get_course_with_lessons(
+    course_id: int = Path(..., title="ID курса"),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+):
+    """Получение подробной информации о курсе со всеми уроками"""
+    try:
+        course = db.query(Course).filter(Course.id == course_id).first()
+        if not course:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Курс с ID {course_id} не найден"
+            )
+
+        # Получаем уроки
+        lessons = db.query(Lesson).filter(
+            Lesson.course_id == course_id).order_by(Lesson.order).all()
+
+        # Если пользователь авторизован, обновляем время доступа
+        if current_user:
+            if is_enrolled(db, current_user.id, course_id):
+                update_course_access_time(db, current_user.id, course_id)
+
+        # Создаем объект CourseWithLessons
+        course_with_lessons = CourseWithLessons.from_orm(course)
+        course_with_lessons.lessons = lessons
+
+        return course_with_lessons
     except SQLAlchemyError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -261,9 +300,9 @@ async def create_course(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Создание нового курса (только для администраторов)"""
+    """Создание нового курса (только для администраторов и учителей)"""
     try:
-        if current_user.role != "admin":
+        if current_user.role not in ["admin", "teacher"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Недостаточно прав для выполнения операции"
@@ -307,6 +346,98 @@ async def create_course(
         )
 
 
+@router.post("/form", response_model=CourseOut, status_code=status.HTTP_201_CREATED)
+async def create_course_form(
+    title: str = Form(...),
+    description: str = Form(...),
+    longdescription: str = Form(...),
+    level: str = Form(...),
+    author: str = Form(None),
+    category_id: int = Form(...),
+    image: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Создание нового курса через форму с возможностью загрузки изображения"""
+    try:
+        if current_user.role not in ["admin", "teacher"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Недостаточно прав для выполнения операции"
+            )
+
+        # Сохраняем изображение, если оно предоставлено
+        image_url = None
+        if image:
+            image_url = save_course_image(image, current_user.id)
+
+        # Проверяем существование категории
+        category = db.query(Category).filter(
+            Category.id == category_id).first()
+        if not category:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Категория с ID {category_id} не найдена"
+            )
+
+        # Если автор не указан, используем имя текущего пользователя
+        if not author:
+            author = current_user.username
+
+        # Создаем курс
+        db_course = Course(
+            title=title,
+            description=description,
+            longdescription=longdescription,
+            level=level,
+            author=author,
+            image_url=image_url
+        )
+
+        # Добавляем категорию
+        db_course.categories.append(category)
+
+        db.add(db_course)
+        db.commit()
+        db.refresh(db_course)
+        return db_course
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при создании курса: {str(e)}"
+        )
+
+
+@router.post("/{course_id}/upload-image", response_model=dict)
+async def upload_course_image(
+    course_id: int,
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Загрузка или обновление изображения курса"""
+    try:
+        # Проверяем существование курса и права пользователя
+        course = get_course_by_id(db, course_id)
+        check_course_owner(course, current_user)
+
+        # Сохраняем изображение
+        image_url = save_course_image(image, current_user.id)
+
+        # Обновляем курс
+        course.image_url = image_url
+        db.commit()
+
+        return {"image_url": image_url}
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при загрузке изображения: {str(e)}"
+        )
+
+
 @router.put("/{course_id}", response_model=CourseOut)
 async def update_course(
     course_update: CourseUpdate,
@@ -314,9 +445,9 @@ async def update_course(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Обновление информации о курсе (только для администраторов)"""
+    """Обновление информации о курсе (только для администраторов и учителей)"""
     try:
-        if current_user.role != "admin":
+        if current_user.role not in ["admin", "teacher"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Недостаточно прав для выполнения операции"
@@ -518,6 +649,7 @@ async def update_enrollment(
                 update_data["completed"] = True
 
         # Обновляем время последнего доступа
+        from datetime import datetime
         update_data["last_accessed_at"] = datetime.utcnow()
 
         for key, value in update_data.items():
@@ -563,4 +695,135 @@ async def unenroll_from_course(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Ошибка при отмене записи на курс: {str(e)}"
+        )
+
+
+# Уроки
+@router.post("/{course_id}/lessons", response_model=LessonOut, status_code=status.HTTP_201_CREATED)
+async def create_lesson(
+    lesson: LessonCreate,
+    course_id: int = Path(..., title="ID курса"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Создание нового урока для курса"""
+    try:
+        # Проверяем существование курса и права пользователя
+        course = get_course_by_id(db, course_id)
+        check_course_owner(course, current_user)
+
+        # Создаем урок
+        db_lesson = Lesson(
+            course_id=course_id,
+            title=lesson.title,
+            content=lesson.content,
+            order=lesson.order,
+            scene_data=lesson.scene_data
+        )
+
+        db.add(db_lesson)
+
+        # Обновляем количество уроков в курсе
+        course.lessons_count += 1
+
+        db.commit()
+        db.refresh(db_lesson)
+        return db_lesson
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при создании урока: {str(e)}"
+        )
+
+
+@router.put("/{course_id}/lessons/{lesson_id}", response_model=LessonOut)
+async def update_lesson(
+    lesson_update: LessonUpdate,
+    course_id: int = Path(..., title="ID курса"),
+    lesson_id: int = Path(..., title="ID урока"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Обновление урока"""
+    try:
+        # Проверяем существование курса и права пользователя
+        course = get_course_by_id(db, course_id)
+        check_course_owner(course, current_user)
+
+        # Проверяем существование урока
+        db_lesson = db.query(Lesson).filter(
+            Lesson.id == lesson_id,
+            Lesson.course_id == course_id
+        ).first()
+
+        if not db_lesson:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Урок с ID {lesson_id} не найден"
+            )
+
+        # Обновляем поля урока
+        update_data = lesson_update.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(db_lesson, key, value)
+
+        db.commit()
+        db.refresh(db_lesson)
+
+        # Если изменили порядок уроков, пересортируем их
+        if "order" in update_data:
+            reorder_lessons(db, course_id)
+
+        return db_lesson
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при обновлении урока: {str(e)}"
+        )
+
+
+@router.delete("/{course_id}/lessons/{lesson_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_lesson(
+    course_id: int = Path(..., title="ID курса"),
+    lesson_id: int = Path(..., title="ID урока"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Удаление урока"""
+    try:
+        # Проверяем существование курса и права пользователя
+        course = get_course_by_id(db, course_id)
+        check_course_owner(course, current_user)
+
+        # Проверяем существование урока
+        db_lesson = db.query(Lesson).filter(
+            Lesson.id == lesson_id,
+            Lesson.course_id == course_id
+        ).first()
+
+        if not db_lesson:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Урок с ID {lesson_id} не найден"
+            )
+
+        # Удаляем урок
+        db.delete(db_lesson)
+
+        # Обновляем количество уроков в курсе
+        course.lessons_count -= 1
+
+        db.commit()
+
+        # Пересортируем оставшиеся уроки
+        reorder_lessons(db, course_id)
+
+        return None
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при удалении урока: {str(e)}"
         )
