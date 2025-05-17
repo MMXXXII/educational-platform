@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router';
-import { Link } from 'react-router';
+import { useParams, Link } from 'react-router';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 // Импорт компонентов
@@ -11,22 +10,58 @@ import { CourseDescription } from './CourseDescription';
 import { SyllabusAccordion } from './SyllabusAccordion';
 import { CourseSidebar } from './CourseSidebar';
 
-// Заглушка данных для курса (в итоговом приложении будет приходить с API)
-import { MOCK_COURSE } from './constants';
+// Импорт API сервиса
+import { coursesApi } from '../api/coursesService';
 
-export function CourseDetailPage() {
+export function CourseDetailPage({ courseId }) {
     const { id } = useParams();
     const [course, setCourse] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Здесь будет запрос к API
+    // Используем ID из пропсов или из параметров URL
+    const currentCourseId = courseId || id;
+
+    // Запрос к API для получения данных о курсе
     useEffect(() => {
-        // Имитация загрузки данных о курсе
-        setTimeout(() => {
-            setCourse(MOCK_COURSE);
-            setLoading(false);
-        }, 700);
-    }, [id]);
+        const fetchCourseData = async () => {
+            try {
+                setLoading(true);
+                
+                // Получение основной информации о курсе
+                const courseData = await coursesApi.getCourseById(currentCourseId);
+                
+                // Получение курса с уроками если они есть
+                try {
+                    const courseWithLessons = await coursesApi.getCourseWithLessons(currentCourseId);
+                    // Если успешно получили детальную информацию с уроками, используем её
+                    setCourse({
+                        ...courseWithLessons,
+                        // Сохраняем уроки для отображения в SyllabusAccordion
+                        lessons: courseWithLessons.lessons || []
+                    });
+                } catch (lessonsError) {
+                    // Если не удалось получить уроки, используем базовую информацию о курсе
+                    console.warn('Failed to load lessons for the course:', lessonsError);
+                    setCourse({
+                        ...courseData,
+                        lessons: [] // Пустой массив уроков
+                    });
+                }
+                
+                setError(null);
+            } catch (err) {
+                console.error('Error fetching course data:', err);
+                setError('Не удалось загрузить информацию о курсе');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (currentCourseId) {
+            fetchCourseData();
+        }
+    }, [currentCourseId]);
 
     if (loading) {
         return (
@@ -36,11 +71,11 @@ export function CourseDetailPage() {
         );
     }
 
-    if (!course) {
+    if (error || !course) {
         return (
             <div className="container mx-auto px-4 sm:px-6 py-16 text-center">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Курс не найден</h2>
-                <p className="text-gray-600 mb-6">К сожалению, запрашиваемый курс не существует или был удален</p>
+                <p className="text-gray-600 mb-6">{error || "К сожалению, запрашиваемый курс не существует или был удален"}</p>
                 <Link
                     to="/courses"
                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -74,11 +109,12 @@ export function CourseDetailPage() {
 
                             <CourseDescription course={course} />
 
-                            <div className="mb-6">
-                                <h2 className="text-xl font-semibold text-gray-800 mb-3">Учебный план</h2>
-                                <SyllabusAccordion syllabus={course.syllabus} />
-                            </div>
-
+                            {course.lessons && (
+                                <div className="mb-6">
+                                    <h2 className="text-xl font-semibold text-gray-800 mb-3">Учебный план</h2>
+                                    <SyllabusAccordion lessons={course.lessons} />
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

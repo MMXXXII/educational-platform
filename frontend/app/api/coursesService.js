@@ -87,6 +87,16 @@ export const coursesApi = {
     }
   },
 
+  // Получение данных о курсе вместе с уроками
+  getCourseWithLessons: async (courseId) => {
+    try {
+      const response = await apiClient.get(`/courses/${courseId}/with-lessons`);
+      return response.data;
+    } catch (error) {
+      handleError(error);
+    }
+  },
+
   // Получение популярных курсов
   getPopularCourses: async (limit = 5) => {
     try {

@@ -1,5 +1,3 @@
-import React from 'react';
-
 export function CourseImage({ course }) {
     // Функция для получения инициалов курса
     const getInitialsPlaceholder = (title) => {
@@ -7,7 +5,7 @@ export function CourseImage({ course }) {
     };
 
     // Универсальная система цветов на основе строки категории
-    const getCategoryColor = (category) => {
+    const getCategoryColor = (categoryName) => {
         const colorOptions = [
             { bg: 'bg-blue-100', text: 'text-blue-600' },
             { bg: 'bg-green-100', text: 'text-green-600' },
@@ -20,6 +18,9 @@ export function CourseImage({ course }) {
             { bg: 'bg-orange-100', text: 'text-orange-600' },
             { bg: 'bg-teal-100', text: 'text-teal-600' }
         ];
+
+        // Если категория не строка, используем значение по умолчанию
+        const category = typeof categoryName === 'string' ? categoryName : 'default';
 
         // Генерация числового хеша из строки категории
         let hash = 0;
@@ -35,11 +36,20 @@ export function CourseImage({ course }) {
         return { bg: colors.bg, text: colors.text };
     };
 
+    // Определяем категорию курса (в API это может быть массив)
+    const categoryName = course.category || 
+        (course.categories && course.categories.length > 0 ? course.categories[0].name : 'default');
+
+    // Определяем URL изображения (в API это image_url)
+    const imageUrl = course.imageUrl || course.image_url;
+
     // Нужно ли использовать заглушку
-    const shouldUsePlaceholder = !course.imageUrl || course.imageUrl.startsWith('/images/');
+    const shouldUsePlaceholder = !imageUrl || 
+        imageUrl.startsWith('/images/') || 
+        imageUrl === 'placeholder';
 
     // Получение цвета на основе категории курса
-    const colors = getCategoryColor(course.category);
+    const colors = getCategoryColor(categoryName);
 
     return (
         <div className="h-48 sm:h-64 bg-gray-200 relative">
@@ -51,7 +61,7 @@ export function CourseImage({ course }) {
                 </div>
             ) : (
                 <img
-                    src={course.imageUrl}
+                    src={imageUrl}
                     alt={course.title}
                     className="w-full h-full object-cover"
                     onError={(e) => {
