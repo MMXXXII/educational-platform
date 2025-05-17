@@ -311,8 +311,7 @@ export function CreateCoursePage() {
                                 onChange={handleCourseChange}
                                 rows="2"
                                 placeholder="Краткое описание будет отображаться в каталоге курсов"
-                                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.description ? 'border-red-500' : 'border-gray-300'
-                                    }`}
+                                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.description ? 'border-red-500' : 'border-gray-300'} placeholder-gray-400`}
                             />
                             {errors.description && (
                                 <p className="mt-1 text-sm text-red-500">{errors.description}</p>
@@ -331,8 +330,7 @@ export function CreateCoursePage() {
                                 onChange={handleCourseChange}
                                 rows="6"
                                 placeholder="Подробно опишите ваш курс, чему научатся студенты, какие навыки приобретут"
-                                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.longDescription ? 'border-red-500' : 'border-gray-300'
-                                    }`}
+                                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.longDescription ? 'border-red-500' : 'border-gray-300'} placeholder-gray-400`}
                             />
                             {errors.longDescription && (
                                 <p className="mt-1 text-sm text-red-500">{errors.longDescription}</p>
@@ -349,13 +347,16 @@ export function CreateCoursePage() {
                                 name="level"
                                 value={course.level}
                                 onChange={handleCourseChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category_id ? 'border-red-500' : 'border-gray-300'} text-gray-900 bg-white`}
                             >
-                                <option value="">Выберите уровень сложности</option>
-                                <option value="начинающий">Начинающий</option>
-                                <option value="средний">Средний</option>
-                                <option value="продвинутый">Продвинутый</option>
+                                <option value="" className="text-gray-900">Выберите уровень сложности</option>
+                                <option value="начинающий" className="text-gray-900">Начинающий</option>
+                                <option value="средний" className="text-gray-900">Средний</option>
+                                <option value="продвинутый" className="text-gray-900">Продвинутый</option>
                             </select>
+                            {errors.level && (
+                                <p className="mt-1 text-sm text-red-500">{errors.level}</p>
+                            )}
                         </div>
 
                         {/* Категория */}
@@ -368,12 +369,11 @@ export function CreateCoursePage() {
                                 name="category_id"
                                 value={course.category_id}
                                 onChange={handleCourseChange}
-                                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category_id ? 'border-red-500' : 'border-gray-300'
-                                    }`}
+                                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category_id ? 'border-red-500' : 'border-gray-300'} text-gray-900 bg-white`}
                             >
-                                <option value="">Выберите категорию</option>
+                                <option value="" className="text-gray-900">Выберите категорию</option>
                                 {categories.map(category => (
-                                    <option key={category.id} value={category.id}>
+                                    <option key={category.id} value={category.id} className="text-gray-900">
                                         {category.name}
                                     </option>
                                 ))}
