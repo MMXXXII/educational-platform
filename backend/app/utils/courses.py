@@ -14,7 +14,7 @@ from app.core.models import Course, Category, CourseEnrollment, User, course_cat
 def get_filtered_courses_query(
     db: Session,
     category_id: Optional[int] = None,
-    level: Optional[str] = None,
+    difficulty: Optional[str] = None,
     search: Optional[str] = None,
     category_names: Optional[List[str]] = None,
     author: Optional[str] = None,
@@ -27,7 +27,7 @@ def get_filtered_courses_query(
     Args:
         db: Сессия базы данных
         category_id: ID категории для фильтрации
-        level: Уровень сложности курса
+        difficulty: Уровень сложности курса
         search: Строка поиска только для заголовка и описания
         category_names: Список имен категорий для фильтрации
         author: Имя автора для фильтрации
@@ -50,8 +50,8 @@ def get_filtered_courses_query(
             query = query.filter(subquery)
 
         # Фильтрация по уровню
-        if level:
-            query = query.filter(Course.level == level)
+        if difficulty:
+            query = query.filter(Course.difficulty == difficulty)
 
         # Фильтрация по автору
         if author:

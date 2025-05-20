@@ -88,7 +88,7 @@ def seed_data():
             Course(
                 title="Основы программирования в Python",
                 description="Научитесь основам программирования с помощью Python - простого и мощного языка для начинающих.",
-                level="начинающий",
+                difficulty="начинающий",
                 author="Александр Иванов",
                 lessons_count=12,
                 image_url="/images/python-basics.jpg",
@@ -97,7 +97,7 @@ def seed_data():
             Course(
                 title="Создание веб-сайтов с HTML и CSS",
                 description="Изучите основы веб-разработки и научитесь создавать свои первые веб-страницы.",
-                level="начинающий",
+                difficulty="начинающий",
                 author="Мария Петрова",
                 lessons_count=10,
                 image_url="/images/html-css.jpg",
@@ -107,7 +107,7 @@ def seed_data():
             Course(
                 title="JavaScript для детей",
                 description="Интерактивный курс по JavaScript с играми и анимациями для юных программистов.",
-                level="начинающий",
+                difficulty="начинающий",
                 author="Павел Смирнов",
                 lessons_count=15,
                 image_url="/images/js-kids.jpg",
@@ -117,7 +117,7 @@ def seed_data():
             Course(
                 title="Алгоритмы и структуры данных",
                 description="Изучите основные алгоритмы и структуры данных на примерах и интерактивных заданиях.",
-                level="средний",
+                difficulty="средний",
                 author="Анна Козлова",
                 lessons_count=20,
                 image_url="/images/algorithms.jpg",
@@ -126,7 +126,7 @@ def seed_data():
             Course(
                 title="Разработка игр в Scratch",
                 description="Создавайте свои первые игры с помощью визуального языка программирования Scratch.",
-                level="начинающий",
+                difficulty="начинающий",
                 author="Дмитрий Соколов",
                 lessons_count=8,
                 image_url="/images/scratch.jpg",
@@ -135,7 +135,7 @@ def seed_data():
             Course(
                 title="Робототехника с Arduino",
                 description="Научитесь программировать микроконтроллеры Arduino и создавать свои электронные устройства.",
-                level="средний",
+                difficulty="средний",
                 author="Екатерина Новикова",
                 lessons_count=14,
                 image_url="/images/arduino.jpg",
@@ -144,7 +144,7 @@ def seed_data():
             Course(
                 title="Python для анализа данных",
                 description="Освойте инструменты Python для обработки и анализа данных: Pandas, NumPy, Matplotlib.",
-                level="средний",
+                difficulty="средний",
                 author="Андрей Сидоров",
                 lessons_count=18,
                 image_url="/images/python-data.jpg",
@@ -154,7 +154,7 @@ def seed_data():
             Course(
                 title="Разработка на React",
                 description="Научитесь создавать современные интерактивные пользовательские интерфейсы с помощью React.",
-                level="продвинутый",
+                difficulty="продвинутый",
                 author="Елена Власова",
                 lessons_count=22,
                 image_url="/images/react-dev.jpg",
@@ -164,7 +164,7 @@ def seed_data():
             Course(
                 title="Продвинутая робототехника",
                 description="Курс для тех, кто хочет углубить свои знания в робототехнике и компьютерном зрении.",
-                level="продвинутый",
+                difficulty="продвинутый",
                 author="Сергей Кузнецов",
                 lessons_count=16,
                 image_url="/images/advanced-robotics.jpg",

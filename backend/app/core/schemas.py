@@ -92,7 +92,7 @@ class CourseBase(BaseModel):
     title: str
     description: str
     longdescription: str
-    level: str
+    difficulty: str
     author: str
     lessons_count: int = Field(default=0, ge=0)
     image_url: Optional[str] = None
@@ -108,7 +108,7 @@ class CourseUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     longdescription: Optional[str] = None
-    level: Optional[str] = None
+    difficulty: Optional[str] = None
     author: Optional[str] = None
     lessons_count: Optional[int] = Field(default=None, ge=0)
     image_url: Optional[str] = None

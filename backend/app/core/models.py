@@ -89,7 +89,7 @@ class Course(Base):
     title = Column(String, index=True)
     description = Column(Text)
     longdescription = Column(Text)
-    level = Column(String)  # начинающий, средний, продвинутый
+    difficulty = Column(String)  # начинающий, средний, продвинутый
 
     # Метаданные курса
     author = Column(String)
