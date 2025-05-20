@@ -83,8 +83,8 @@ export function CourseCard({ course }) {
         );
     };
 
-    const formatLevel = (level) => {
-        return level ? level.charAt(0).toUpperCase() + level.slice(1) : '';
+    const formatDifficulty = (difficulty) => {
+        return difficulty ? difficulty.charAt(0).toUpperCase() + difficulty.slice(1) : '';
     };
 
     return (
@@ -92,7 +92,7 @@ export function CourseCard({ course }) {
             <div className="h-40 bg-gray-200 relative">
                 {renderImage()}
                 <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
-                    {formatLevel(course.level)}
+                    {formatDifficulty(course.difficulty)}
                 </div>
             </div>
 

@@ -1,4 +1,4 @@
-import { UserIcon, ClockIcon, ChartBarIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
+import { UserIcon, ChartBarIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
 
 export function CourseInfo({ course }) {
     // Получаем количество студентов (в API оно может быть в разных свойствах)
@@ -27,7 +27,7 @@ export function CourseInfo({ course }) {
                 </div>
                 <div className="flex items-center text-gray-500">
                     <ChartBarIcon className="h-4 w-4 mr-1" />
-                    <span>Уровень: {course.level}</span>
+                    <span>Уровень: {course.difficulty}</span>
                 </div>
             </div>
         </>

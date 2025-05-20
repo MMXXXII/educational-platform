@@ -25,11 +25,11 @@ export function CourseSidebar({ course }) {
         // Средняя длительность урока в зависимости от уровня сложности
         let lessonDuration = 30; // в минутах по умолчанию
 
-        if (course.level) {
-            const level = course.level.toLowerCase();
-            if (level.includes('начинающий')) lessonDuration = 20;
-            else if (level.includes('средний')) lessonDuration = 30;
-            else if (level.includes('продвинутый')) lessonDuration = 45;
+        if (course.difficulty) {
+            const difficulty = course.difficulty.toLowerCase();
+            if (difficulty.includes('начинающий')) lessonDuration = 20;
+            else if (difficulty.includes('средний')) lessonDuration = 30;
+            else if (difficulty.includes('продвинутый')) lessonDuration = 45;
         }
 
         const totalMinutes = lessonsCount * lessonDuration;

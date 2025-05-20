@@ -43,7 +43,7 @@ export const coursesApi = {
       formData.append('title', courseData.title);
       formData.append('description', courseData.description);
       formData.append('longdescription', courseData.longDescription);
-      formData.append('level', courseData.level);
+      formData.append('difficulty', courseData.difficulty);
       formData.append('category_id', courseData.category_id);
 
       // Добавляем изображение, если оно есть
