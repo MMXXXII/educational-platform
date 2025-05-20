@@ -5,19 +5,46 @@ Pydantic models for request/response validation
 from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional, List, Union
 from datetime import datetime
+from enum import Enum
+
+
+class UserRole(str, Enum):
+    admin = "admin"
+    teacher = "teacher"
+    user = "user"
+
+
+class CourseDifficulty(str, Enum):
+    начинающий = "начинающий"
+    средний = "средний"
+    продвинутый = "продвинутый"
 
 
 class UserBase(BaseModel):
     username: str
     email: EmailStr
-    role: str = "user"
+    role: Optional[UserRole] = UserRole.user
+
+    @validator('role')
+    def validate_role(cls, v):
+        if isinstance(v, str) and v not in [role.value for role in UserRole]:
+            raise ValueError(
+                f"Role must be one of: {', '.join([role.value for role in UserRole])}")
+        return v
 
 
 class UserCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
-    role: str = "user"
+    role: Optional[UserRole] = UserRole.user
+
+    @validator('role')
+    def validate_role(cls, v):
+        if isinstance(v, str) and v not in [role.value for role in UserRole]:
+            raise ValueError(
+                f"Role must be one of: {', '.join([role.value for role in UserRole])}")
+        return v
 
 
 class UserOut(UserBase):
@@ -65,8 +92,6 @@ class FileSchema(BaseModel):
         from_attributes = True
 
 
-# Новые схемы для работы с курсами
-
 class CategoryBase(BaseModel):
     """Базовая схема для категории курсов"""
     name: str
@@ -91,11 +116,18 @@ class CourseBase(BaseModel):
     """Базовая схема для курса"""
     title: str
     description: str
-    longdescription: str
-    difficulty: str
+    longdescription: Optional[str] = None
+    difficulty: CourseDifficulty = CourseDifficulty.начинающий
     author: str
     lessons_count: int = Field(default=0, ge=0)
     image_url: Optional[str] = None
+
+    @validator('difficulty')
+    def validate_difficulty(cls, v):
+        if isinstance(v, str) and v not in [d.value for d in CourseDifficulty]:
+            raise ValueError(
+                f"Difficulty must be one of: {', '.join([d.value for d in CourseDifficulty])}")
+        return v
 
 
 class CourseCreate(CourseBase):
@@ -108,11 +140,18 @@ class CourseUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     longdescription: Optional[str] = None
-    difficulty: Optional[str] = None
+    difficulty: Optional[CourseDifficulty] = None
     author: Optional[str] = None
     lessons_count: Optional[int] = Field(default=None, ge=0)
     image_url: Optional[str] = None
     category_ids: Optional[List[int]] = None
+
+    @validator('difficulty')
+    def validate_difficulty(cls, v):
+        if v is not None and isinstance(v, str) and v not in [d.value for d in CourseDifficulty]:
+            raise ValueError(
+                f"Difficulty must be one of: {', '.join([d.value for d in CourseDifficulty])}")
+        return v
 
 
 class CategoryForCourse(CategoryOut):
@@ -188,7 +227,7 @@ class CategoriesResponse(BaseModel):
 class LessonBase(BaseModel):
     """Базовая схема для урока"""
     title: str
-    content: Optional[str] = None
+    content: str
     order: int
     scene_data: Optional[str] = None
 

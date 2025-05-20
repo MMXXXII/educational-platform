@@ -2,7 +2,7 @@
 Вспомогательные функции для работы с курсами
 """
 from typing import Dict, List, Optional, Any, Tuple
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import func, desc, asc, and_, or_
 from sqlalchemy.orm import Session, joinedload, contains_eager
 from sqlalchemy.exc import SQLAlchemyError
@@ -232,7 +232,7 @@ def update_course_access_time(db: Session, user_id: int, course_id: int) -> bool
         if not enrollment:
             return False
 
-        enrollment.last_accessed_at = datetime.utcnow()
+        enrollment.last_accessed_at = datetime.now(timezone.utc)
         db.commit()
         return True
 
@@ -278,7 +278,7 @@ def update_course_progress(db: Session, user_id: int, course_id: int, progress: 
         elif progress >= 100:
             enrollment.completed = True
 
-        enrollment.last_accessed_at = datetime.utcnow()
+        enrollment.last_accessed_at = datetime.now(timezone.utc)
         db.commit()
         return True
 
@@ -464,7 +464,7 @@ def enroll_user_to_course(db: Session, user_id: int, course_id: int) -> Optional
 
         if existing_enrollment:
             # Обновляем время последнего доступа
-            existing_enrollment.last_accessed_at = datetime.utcnow()
+            existing_enrollment.last_accessed_at = datetime.now(timezone.utc)
             db.commit()
             return existing_enrollment
 
@@ -474,8 +474,8 @@ def enroll_user_to_course(db: Session, user_id: int, course_id: int) -> Optional
             course_id=course_id,
             progress=0.0,
             completed=False,
-            enrolled_at=datetime.utcnow(),
-            last_accessed_at=datetime.utcnow()
+            enrolled_at=datetime.now(timezone.utc),
+            last_accessed_at=datetime.now(timezone.utc)
         )
 
         db.add(new_enrollment)

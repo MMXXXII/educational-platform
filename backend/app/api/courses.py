@@ -649,8 +649,8 @@ async def update_enrollment(
                 update_data["completed"] = True
 
         # Обновляем время последнего доступа
-        from datetime import datetime
-        update_data["last_accessed_at"] = datetime.utcnow()
+        from datetime import datetime, timezone
+        update_data["last_accessed_at"] = datetime.now(timezone.utc)
 
         for key, value in update_data.items():
             setattr(db_enrollment, key, value)
