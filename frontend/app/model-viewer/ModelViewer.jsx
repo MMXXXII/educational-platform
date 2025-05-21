@@ -42,6 +42,8 @@ export function ModelViewer() {
         new BABYLON.Vector3(0, 0, 0), 
         scene
       )
+      camera.lowerRadiusLimit = 1;
+      camera.upperRadiusLimit = 300;
       camera.attachControl(canvasRef.current, true)
       camera.wheelDeltaPercentage = 0.01
       
@@ -70,10 +72,22 @@ export function ModelViewer() {
       groundMaterial.majorUnitFrequency = 5
       groundMaterial.minorUnitVisibility = 0.45
       groundMaterial.gridRatio = 1
-      groundMaterial.mainColor = new BABYLON.Color3(0.4, 0.4, 0.4)
+      groundMaterial.mainColor = new BABYLON.Color3(0.6, 0.6, 0.6)
       groundMaterial.lineColor = new BABYLON.Color3(0.8, 0.8, 0.8)
       groundMaterial.opacity = 0.98
       ground.material = groundMaterial
+
+
+
+      const skybox = BABYLON.MeshBuilder.CreateBox("skybox", { size: 5000 }, scene);
+      const skyboxMaterial = new BABYLON.StandardMaterial("skyboxMaterial", scene);
+      skyboxMaterial.backFaceCulling = false;
+    
+      skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+      skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+      skyboxMaterial.emissiveColor = new BABYLON.Color3(0.2, 0.5, 0.8);
+    
+      skybox.material = skyboxMaterial;
       
       // Создаем слой подсветки для выделения выбранных моделей
       const highlightLayer = new BABYLON.HighlightLayer("highlightLayer", scene)
