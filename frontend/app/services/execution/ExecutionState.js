@@ -62,19 +62,15 @@ class ExecutionState {
         this.activeNodeId = null;
         this.previousNodeId = null;
         this.visitedNodes = new Set();
-        
-        // Очень важно сбросить состояние цикла!
-        if (this.loopReturn) {
-            console.log(`Сброс состояния возврата цикла с ID: ${this.loopReturn}`);
-        }
         this.loopReturn = null;
         
         this.globalVariables = globalVariables;
         this.setGlobalVariable = setGlobalVariable;
         this.debug = debug;
         
-        // Добавляем отладочное сообщение для подтверждения сброса
-        this.debugLog("Состояние ExecutionState сброшено");
+        if (this.debug) {
+            this.debugLog("Состояние ExecutionState сброшено");
+        }
     }
 
     /**
@@ -107,10 +103,8 @@ class ExecutionState {
     debugLog(message, data = null) {
         if (this.debug) {
             if (data) {
-                console.log(`[ExecutionEngine] ${message}`, data);
                 this.log('debug', `[DEBUG] ${message}: ${JSON.stringify(data).substring(0, 100)}`);
             } else {
-                console.log(`[ExecutionEngine] ${message}`);
                 this.log('debug', `[DEBUG] ${message}`);
             }
         }
@@ -131,14 +125,12 @@ class ExecutionState {
      */
     setLoopReturn(nodeId) {
         this.loopReturn = nodeId;
-        console.log(`Установлен возврат в цикл: ${nodeId}`);
     }
 
     /**
      * Очищает нод возврата для цикла
      */
     clearLoopReturn() {
-        console.log(`Очищен возврат в цикл: ${this.loopReturn}`);
         this.loopReturn = null;
     }
 

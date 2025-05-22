@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ReactFlowProvider } from 'reactflow';
 import { useEditor } from '../contexts/EditorContext';
 
@@ -36,15 +36,35 @@ export function NodeEditor() {
         saveProject,
         saveError,
         loadError,
-        refreshProjectsList
+        refreshProjectsList,
+        setNodes
     } = useEditor();
+
+    // Ref на компонент FlowCanvas для вызова его методов
+    const flowCanvasRef = useRef(null);
 
     // Состояние для уведомлений
     const [notification, setNotification] = useState(null);
+    // Состояние для определения мобильного отображения
+    const [isMobile, setIsMobile] = useState(false);
 
     // Устанавливаем флаг монтирования компонента
     useEffect(() => {
         setIsMounted(true);
+    }, []);
+    
+    // Проверка размера экрана при монтировании и изменении размера окна
+    useEffect(() => {
+        const checkMobileView = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        
+        checkMobileView();
+        window.addEventListener('resize', checkMobileView);
+        
+        return () => {
+            window.removeEventListener('resize', checkMobileView);
+        };
     }, []);
 
     // Подписываемся на глобальные уведомления
@@ -92,9 +112,20 @@ export function NodeEditor() {
         setNotification(null);
     };
 
+    // Обработчик для добавления нода (для мобильной версии)
+    const handleNodeSelect = useCallback((nodeType, nodeData) => {        
+        // Для мобильной версии - пытаемся добавить нод напрямую через addNode у FlowCanvas
+        if (isMobile) {
+            setTimeout(() => {
+                if (flowCanvasRef.current) {
+                    const success = flowCanvasRef.current.addNode(nodeType, nodeData);
+                }
+            }, 50);
+        }
+    }, [isMobile]);
+
     // Список разрешенных типов нодов (пока все разрешены)
-    const allowedNodeTypes = [
-    ];
+    const allowedNodeTypes = [];
     const allowedCategories = [
         NODE_CATEGORIES.VARIABLES, NODE_CATEGORIES.CONTROL, NODE_CATEGORIES.OPERATIONS,
     ];
@@ -106,6 +137,7 @@ export function NodeEditor() {
                 projectName={projectName}
                 isModified={isModified}
                 onSave={handleSaveProject}
+                isMobile={isMobile}
             />
 
             {/* Уведомления */}
@@ -122,10 +154,14 @@ export function NodeEditor() {
                         {/* Палитра с фильтрацией */}
                         <NodePalette
                             allowedCategories={allowedCategories}
+                            onNodeSelect={handleNodeSelect}
                         />
 
                         {/* Область редактирования */}
-                        <FlowCanvas />
+                        <FlowCanvas 
+                            ref={flowCanvasRef}
+                            onNodeSelect={handleNodeSelect}
+                        />
                     </ReactFlowProvider>
                 )}
             </div>

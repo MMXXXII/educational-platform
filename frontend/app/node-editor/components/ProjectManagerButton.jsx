@@ -6,8 +6,23 @@ import { FolderIcon } from '@heroicons/react/24/outline';
  * 
  * @param {Object} props - Свойства компонента
  * @param {Function} props.onClick - Обработчик нажатия на кнопку
+ * @param {boolean} props.isMobile - Флаг мобильного отображения
  */
-const ProjectManagerButton = ({ onClick }) => {
+const ProjectManagerButton = ({ onClick, isMobile = false }) => {
+    // Компактная мобильная версия кнопки
+    if (isMobile) {
+        return (
+            <button
+                onClick={onClick}
+                className="p-2 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                title="Управление проектами"
+            >
+                <FolderIcon className="w-5 h-5" />
+            </button>
+        );
+    }
+    
+    // Полная десктопная версия
     return (
         <button
             onClick={onClick}

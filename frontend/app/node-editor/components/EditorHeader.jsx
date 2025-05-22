@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { Link } from 'react-router';
 import {
-    CheckIcon
+    CheckIcon,
+    Bars3Icon
 } from '@heroicons/react/24/outline';
 import { useEditor } from '../../contexts/EditorContext';
 import ProjectManagerButton from './ProjectManagerButton';
@@ -14,107 +15,141 @@ import ProjectManagerModal from './ProjectManagerModal';
  * @param {string} props.projectName - Название текущего проекта
  * @param {boolean} props.isModified - Флаг изменения проекта
  * @param {Function} props.onSave - Обработчик сохранения проекта
+ * @param {boolean} props.isMobile - Флаг мобильного отображения
  */
 const EditorHeader = ({
     projectName,
     isModified,
-    onSave
+    onSave,
+    isMobile = false
 }) => {
     const { refreshProjectsList } = useEditor();
     
     // Состояние для модального окна менеджера проектов
     const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false);
     
-    // Обработчик закрытия менеджера проектов
+    // Состояние для мобильного меню
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    
+    /**
+     * Обработчик открытия/закрытия модального окна менеджера проектов
+     */
+    const handleProjectManagerToggle = () => {
+        setIsProjectManagerOpen(!isProjectManagerOpen);
+    };
+    
+    /**
+     * Обработчик закрытия модального окна менеджера проектов
+     */
     const handleProjectManagerClose = useCallback(() => {
         setIsProjectManagerOpen(false);
-        // Обновляем список проектов после закрытия менеджера
         refreshProjectsList();
     }, [refreshProjectsList]);
+    
+    /**
+     * Обработчик переключения мобильного меню
+     */
+    const toggleMobileMenu = () => {
+        setIsMobileMenuOpen(!isMobileMenuOpen);
+    };
 
-    // Обработчик для предотвращения контекстного меню на логотипе
-    const preventContextMenu = (e) => {
-        e.preventDefault();
-        return false;
+    /**
+     * Обработчик сохранения и закрытия мобильного меню
+     */
+    const handleSaveAndClose = () => {
+        onSave();
+        setIsMobileMenuOpen(false);
     };
 
     return (
         <>
-            <nav className="bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700">
-                <div className="w-full px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16">
-                        <div className="flex items-center space-x-4">
-                            {/* Лого и ссылка на главную */}
-                            <Link
-                                to="/"
-                                className="block relative"
-                                onContextMenu={preventContextMenu}
-                            >
-                                <img
-                                    src="/logo.png"
-                                    alt="EduPlatform Logo"
-                                    className="h-10 sm:h-12 w-auto select-none"
-                                    style={{
-                                        pointerEvents: 'none',
-                                        userSelect: 'none',
-                                        WebkitUserSelect: 'none'
-                                    }}
-                                    draggable="false"
-                                />
-                                {/* Защитный слой поверх изображения */}
-                                <div
-                                    className="absolute inset-0 z-10"
-                                    onContextMenu={preventContextMenu}
-                                    onClick={(e) => e.stopPropagation()}
-                                ></div>
+            <nav className="bg-white dark:bg-gray-800 shadow-md h-16">
+                <div className="w-full px-2 sm:px-6 lg:px-8 h-full">
+                    <div className="flex items-center justify-between h-full">
+                        {/* Логотип и название проекта */}
+                        <div className="flex items-center">
+                            <Link to="/" className="flex-shrink-0">
+                                <img src="/logo.png" alt="Logo" className="h-10 w-auto" />
                             </Link>
+                            
+                            {!isMobile && (
+                                <div className="ml-4">
+                                    <div className="text-lg font-medium text-gray-800 dark:text-gray-200">
+                                        Редактор нодов
+                                        {projectName && (
+                                            <span className="ml-2 text-gray-600 dark:text-gray-400">
+                                                - {projectName}
+                                                {isModified && <span className="ml-1 text-amber-500">*</span>}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
-                            {/* Вертикальный разделитель */}
-                            <div className="h-8 w-px bg-gray-300 dark:bg-gray-600"></div>
-
-                            {/* Название проекта и статус */}
+                        {/* Мобильное меню */}
+                        {isMobile ? (
                             <div className="flex items-center">
-                                <h1 className="text-lg font-medium text-gray-800 dark:text-white flex items-center">
-                                    {projectName ? (
-                                        <>
-                                            <span>{projectName}</span>
-                                            {isModified && (
-                                                <span className="ml-2 px-2 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-800 dark:text-amber-100 text-xs font-medium rounded-full">
-                                                    Не сохранено
-                                                </span>
-                                            )}
-                                        </>
-                                    ) : (
-                                        <span className="text-gray-500 dark:text-gray-400 italic">Новый проект</span>
-                                    )}
-                                </h1>
+                                {projectName && (
+                                    <div className="mr-4 text-sm font-medium text-gray-600 dark:text-gray-400 truncate max-w-[120px]">
+                                        {projectName}
+                                        {isModified && <span className="ml-1 text-amber-500">*</span>}
+                                    </div>
+                                )}
+                                
+                                <button
+                                    className="p-2 rounded-md text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white focus:outline-none"
+                                    onClick={toggleMobileMenu}
+                                >
+                                    <Bars3Icon className="h-6 w-6" />
+                                </button>
+                                
+                                {isMobileMenuOpen && (
+                                    <div className="absolute top-16 right-0 left-0 bg-white dark:bg-gray-800 shadow-lg z-50 border-t border-gray-200 dark:border-gray-700">
+                                        <div className="px-4 py-2 space-y-2">
+                                            <button
+                                                onClick={handleSaveAndClose}
+                                                className="w-full flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none"
+                                            >
+                                                <CheckIcon className="h-5 w-5 mr-2" />
+                                                Сохранить
+                                            </button>
+                                            
+                                            <button
+                                                onClick={() => {
+                                                    handleProjectManagerToggle();
+                                                    setIsMobileMenuOpen(false);
+                                                }}
+                                                className="w-full flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none"
+                                            >
+                                                Проекты
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        </div>
-
-                        <div className="flex items-center space-x-3">
-                            {/* Кнопка сохранения (всегда видна) */}
-                            <button
-                                className={`px-4 py-2 rounded-lg transition-all duration-200 flex items-center ${isModified
-                                        ? 'bg-green-500 hover:bg-green-600 text-white'
-                                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                                    } shadow-sm hover:shadow`}
-                                onClick={onSave}
-                            >
-                                <CheckIcon className="h-5 w-5 mr-1.5" />
-                                Сохранить
-                            </button>
-
-                            {/* Кнопка менеджера проектов */}
-                            <ProjectManagerButton onClick={() => setIsProjectManagerOpen(true)} />
-                        </div>
+                        ) : (
+                            <div className="flex items-center space-x-4">
+                                <button
+                                    onClick={onSave}
+                                    className="px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none flex items-center"
+                                >
+                                    <CheckIcon className="h-5 w-5 mr-1.5" />
+                                    <span>Сохранить</span>
+                                </button>
+                                
+                                <ProjectManagerButton onClick={handleProjectManagerToggle} />
+                            </div>
+                        )}
                     </div>
                 </div>
             </nav>
-
+            
             {/* Модальное окно менеджера проектов */}
             <ProjectManagerModal 
                 isOpen={isProjectManagerOpen} 
-                onClose={handleProjectManagerClose} 
+                onClose={handleProjectManagerClose}
+                isMobile={isMobile}
             />
         </>
     );

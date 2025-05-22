@@ -17,6 +17,9 @@ import WallAheadNode from './components/WallAheadNode';
 import ExitReachedNode from './components/ExitReachedNode';
 import JumpNode from './components/JumpNode';
 
+// Импортируем общий компонент заголовка
+import NodeHeader from './components/NodeHeader';
+
 /**
  * Главный компонент NodeRenderer, маршрутизирующий рендеринг нодов разных типов
  * @param {Object} props - Свойства компонента
@@ -161,9 +164,9 @@ const NodeRenderer = ({ data, selected, id }) => {
             // Возвращаем стандартный компонент для неизвестных типов нодов
             return (
                 <div className="bg-gray-100 dark:bg-gray-800 border-2 border-gray-500 p-3 rounded-md shadow w-48 min-h-[100px]">
-                    <div className="font-bold text-center mb-2 border-b border-gray-300 dark:border-gray-700">
+                    <NodeHeader>
                         {data?.label || 'Неизвестный нод'}
-                    </div>
+                    </NodeHeader>
                     <div className="text-center text-sm">
                         Тип: {nodeType || 'не определен'}
                     </div>

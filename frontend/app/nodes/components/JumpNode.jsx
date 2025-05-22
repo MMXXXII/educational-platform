@@ -1,6 +1,7 @@
 import React from 'react';
 import { getNodeClassName } from '../../utils/nodeUtils';
 import { InputHandles, OutputHandles, NodeStateIndicator } from './NodeHandles';
+import NodeHeader from './NodeHeader';
 
 /**
  * Компонент для отображения нода прыжка
@@ -38,9 +39,9 @@ const JumpNode = ({ id, data, selected, nodeDefinition }) => {
             <NodeStateIndicator nodeRef={data.nodeRef} nodeType="jump" />
 
             {/* Заголовок нода */}
-            <div className="font-bold text-center mb-2 pb-1 border-b border-gray-300 dark:border-gray-600">
+            <NodeHeader>
                 {data.label}
-            </div>
+            </NodeHeader>
 
             {/* Упрощенное содержимое нода */}
             <div className="flex flex-col items-center justify-center p-2">

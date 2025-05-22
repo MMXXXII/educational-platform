@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useStore } from 'reactflow';
 import { checkNodeConnections } from '../../utils/nodeUtils';
 import { InputHandles, OutputHandles, NodeStateIndicator } from './NodeHandles';
+import NodeHeader from './NodeHeader';
 
 /**
  * Компонент для отображения нода операции (математической или логической)
@@ -255,6 +256,11 @@ const OperationNode = ({ id, data, selected, nodeDefinition }) => {
         >
             {/* Индикатор активного состояния */}
             <NodeStateIndicator nodeRef={data.nodeRef} nodeType={nodeType} />
+
+            {/* Заголовок нода */}
+            <NodeHeader>
+                {data.label}
+            </NodeHeader>
 
             {/* Содержимое нода */}
             <div className="w-full">

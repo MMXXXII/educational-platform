@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useStore } from 'reactflow';
 import { checkNodeConnections } from '../../utils/nodeUtils';
 import { InputHandles, OutputHandles, NodeStateIndicator } from './NodeHandles';
+import NodeHeader from './NodeHeader';
 
 /**
  * Компонент для отображения нода вывода (print)
@@ -91,9 +92,9 @@ const PrintNode = ({ id, data, selected, nodeDefinition }) => {
             <NodeStateIndicator nodeRef={data.nodeRef} nodeType="print" />
 
             {/* Заголовок нода */}
-            <div className="font-bold text-center mb-2 pb-1 border-b border-gray-300 dark:border-gray-600">
+            <NodeHeader>
                 {data.label}
-            </div>
+            </NodeHeader>
 
             {/* Содержимое нода */}
             <div className="flex flex-col w-full">

@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useStore } from 'reactflow';
+import { checkNodeConnections } from '../../utils/nodeUtils';
 import { InputHandles, OutputHandles, NodeStateIndicator } from './NodeHandles';
+import NodeHeader from './NodeHeader';
 
 /**
  * Компонент для отображения нода булевой логики
@@ -52,6 +55,11 @@ const BooleanLogicNode = ({ id, data, selected, nodeDefinition }) => {
         >
             {/* Индикатор активного состояния */}
             <NodeStateIndicator nodeRef={data.nodeRef} nodeType="booleanLogic" />
+
+            {/* Заголовок нода */}
+            <NodeHeader>
+                {data.label}
+            </NodeHeader>
 
             {/* Содержимое нода */}
             <div className="flex flex-grow items-center justify-center">
