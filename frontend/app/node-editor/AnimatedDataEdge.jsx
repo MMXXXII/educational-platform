@@ -3,6 +3,7 @@ import { BaseEdge, EdgeLabelRenderer, useReactFlow, getBezierPath } from 'reactf
 
 /**
  * Анимированное ребро с визуализацией потока данных
+ * Улучшенная версия с использованием animateMotion
  */
 const AnimatedDataEdge = ({
     id,
@@ -31,24 +32,30 @@ const AnimatedDataEdge = ({
 
     const [active, setActive] = useState(false);
     const [dataValue, setDataValue] = useState(null);
-    const [animation, setAnimation] = useState(null);
+    const [animationKey, setAnimationKey] = useState(null);
 
     // Отслеживаем изменения в данных ребра для анимации
     useEffect(() => {
         if (data?.dataTransfer) {
-            // Активируем анимацию
-            setActive(true);
-            setDataValue(data.dataTransfer.value);
-
-            // Создаем уникальный ключ для анимации
-            setAnimation(`animate-${Date.now()}`);
-
-            // Через 2 секунды скрываем анимацию
-            const timer = setTimeout(() => {
-                setActive(false);
-            }, 2000);
-
-            return () => clearTimeout(timer);
+            // Сначала принудительно сбрасываем предыдущее состояние
+            setActive(false);
+            setAnimationKey(null);
+            
+            // Микротаска для переключения состояния
+            setTimeout(() => {
+                // Активируем новую анимацию с новым ключом
+                setActive(true);
+                setDataValue(data.dataTransfer.value);
+                setAnimationKey(`animate-${Date.now()}`);
+                
+                // Через 2 секунды скрываем анимацию
+                const timer = setTimeout(() => {
+                    setActive(false);
+                    setAnimationKey(null);
+                }, 2000);
+                
+                return () => clearTimeout(timer);
+            }, 0);
         }
     }, [data?.dataTransfer]);
 
@@ -76,46 +83,54 @@ const AnimatedDataEdge = ({
 
     return (
         <>
+            {/* Определяем фильтр для свечения (вне условия) */}
+            <defs>
+                <filter id={`glow-${id}`} x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                    <feMerge>
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+            </defs>
+
+            {/* Базовый путь ребра */}
             <BaseEdge path={edgePath} markerEnd={markerEnd} style={edgeStyle} />
 
-            {/* Анимированная частица для потока данных */}
-            {active && (
-                <svg width="0" height="0">
-                    <defs>
-                        <marker
-                            id={`data-flow-${id}`}
-                            viewBox="0 0 10 10"
-                            refX="5"
-                            refY="5"
-                            markerWidth="5"
-                            markerHeight="5"
-                            orient="auto-start-reverse"
-                        >
-                            <circle cx="5" cy="5" r="4" fill="#3b82f6" />
-                        </marker>
-                    </defs>
-                </svg>
-            )}
-
-            {active && !data?.dataTransfer?.isFlow && (
-                <path
-                    d={edgePath}
-                    className="react-flow__edge-path"
-                    strokeDasharray="5,5"
-                    strokeWidth={1.5}
-                    stroke="#3b82f6"
-                    fill="none"
-                    markerEnd={`url(#data-flow-${id})`}
+            {/* Анимированная частица для потока данных с использованием animateMotion */}
+            {active && animationKey && (
+                <svg
+                    key={animationKey}
                     style={{
-                        animation: 'flowAnimation 1.5s infinite linear',
+                        overflow: 'visible',
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        width: '100%',
+                        height: '100%',
+                        pointerEvents: 'none'
                     }}
-                />
+                >
+                    <circle 
+                        r="4" 
+                        fill="#3b82f6" 
+                        filter={`url(#glow-${id})`}
+                    >
+                        <animateMotion
+                            dur="1.5s"
+                            repeatCount="2"
+                            path={edgePath}
+                            rotate="auto"
+                        />
+                    </circle>
+                </svg>
             )}
 
             {/* Отображение значения данных на ребре */}
             {active && dataValue !== null && dataValue !== 'flow' && (
                 <EdgeLabelRenderer>
                     <div
+                        key={`label-${animationKey}`}
                         style={{
                             position: 'absolute',
                             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
