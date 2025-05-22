@@ -1,5 +1,7 @@
-import React, { useState, useEffect, memo } from 'react';
+import React, { useState, useEffect, memo, useCallback } from 'react';
 import { BaseEdge, EdgeLabelRenderer, useReactFlow, getBezierPath } from 'reactflow';
+import { TrashIcon } from '@heroicons/react/24/solid';
+import EdgeToolbar from '../nodes/components/EdgeToolbar';
 
 /**
  * Анимированное ребро с визуализацией потока данных
@@ -22,6 +24,15 @@ const AnimatedDataEdge = ({
     markerEnd,
     selected,
 }) => {
+    const reactFlowInstance = useReactFlow();
+    
+    // Обработчик удаления ребра
+    const handleDeleteEdge = useCallback(() => {
+        if (id) {
+            reactFlowInstance.deleteElements({ edges: [{ id }] });
+        }
+    }, [id, reactFlowInstance]);
+
     const [edgePath, labelX, labelY] = getBezierPath({
         sourceX,
         sourceY,
@@ -81,6 +92,14 @@ const AnimatedDataEdge = ({
         }
 
         return String(value);
+    };
+
+    // Создаём объект edge с координатами для передачи в EdgeToolbar
+    const edgeInfo = {
+        sourceX,
+        sourceY,
+        targetX,
+        targetY
     };
 
     return (
@@ -152,6 +171,16 @@ const AnimatedDataEdge = ({
                     </div>
                 </EdgeLabelRenderer>
             )}
+            
+            {/* Тулбар для ребра - теперь используем компонент EdgeToolbar */}
+            <EdgeLabelRenderer>
+                <EdgeToolbar
+                    selected={selected}
+                    edgeId={id}
+                    edge={edgeInfo}
+                    onDelete={handleDeleteEdge}
+                />
+            </EdgeLabelRenderer>
         </>
     );
 };

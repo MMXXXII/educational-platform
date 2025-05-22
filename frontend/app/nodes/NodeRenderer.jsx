@@ -1,5 +1,6 @@
-import React, { memo } from 'react';
+import React, { memo, useCallback } from 'react';
 import { getNodeDefinition } from '../services/nodeRegistry';
+import { useStore, useReactFlow } from 'reactflow';
 
 // Импорт компонентов разных типов нодов
 import VariableNode from './components/VariableNode';
@@ -17,8 +18,9 @@ import WallAheadNode from './components/WallAheadNode';
 import ExitReachedNode from './components/ExitReachedNode';
 import JumpNode from './components/JumpNode';
 
-// Импортируем общий компонент заголовка
+// Импортируем общий компонент заголовка и тулбар
 import NodeHeader from './components/NodeHeader';
+import NodeToolbar from './components/NodeToolbar';
 
 /**
  * Главный компонент NodeRenderer, маршрутизирующий рендеринг нодов разных типов
@@ -30,15 +32,25 @@ import NodeHeader from './components/NodeHeader';
  */
 const NodeRenderer = ({ data, selected, id }) => {
     const nodeType = data?.type;
+    const reactFlowInstance = useReactFlow();
+
+    // Обработчик удаления нода
+    const handleDeleteNode = useCallback(() => {
+        if (id) {
+            reactFlowInstance.deleteElements({ nodes: [{ id }] });
+        }
+    }, [id, reactFlowInstance]);
 
     // Получаем определение типа нода из реестра
     const nodeDefinition = getNodeDefinition(nodeType);
+
+    let nodeComponent;
 
     // Выбираем компонент в зависимости от типа нода
     switch (nodeType) {
         // Стандартные ноды
         case 'variable':
-            return (
+            nodeComponent = (
                 <VariableNode
                     id={id}
                     data={data}
@@ -46,9 +58,10 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
+            break;
 
         case 'assignment':
-            return (
+            nodeComponent = (
                 <AssignmentNode
                     id={id}
                     data={data}
@@ -56,10 +69,11 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
+            break;
 
         case 'math':    
         case 'logical':
-            return (
+            nodeComponent = (
                 <OperationNode
                     id={id}
                     data={data}
@@ -67,9 +81,10 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
+            break;
 
         case 'booleanLogic':
-            return (
+            nodeComponent = (
                 <BooleanLogicNode
                     id={id}
                     data={data}
@@ -77,10 +92,11 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
+            break;
 
         case 'if':
         case 'loop':
-            return (
+            nodeComponent = (
                 <ControlNode
                     id={id}
                     data={data}
@@ -88,9 +104,10 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
+            break;
 
         case 'print':
-            return (
+            nodeComponent = (
                 <PrintNode
                     id={id}
                     data={data}
@@ -98,10 +115,11 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
+            break;
 
         // 3D-сцена ноды
         case 'player':
-            return (
+            nodeComponent = (
                 <PlayerNode
                     id={id}
                     data={data}
@@ -109,9 +127,10 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
+            break;
 
         case 'move':
-            return (
+            nodeComponent = (
                 <MoveNode
                     id={id}
                     data={data}
@@ -119,9 +138,10 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
+            break;
 
         case 'turn':
-            return (
+            nodeComponent = (
                 <TurnNode
                     id={id}
                     data={data}
@@ -129,9 +149,10 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
+            break;
 
         case 'wallAhead':
-            return (
+            nodeComponent = (
                 <WallAheadNode
                     id={id}
                     data={data}
@@ -139,9 +160,10 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
+            break;
 
         case 'exitReached':
-            return (
+            nodeComponent = (
                 <ExitReachedNode
                     id={id}
                     data={data}
@@ -149,9 +171,10 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
+            break;
 
         case 'jump':
-            return (
+            nodeComponent = (
                 <JumpNode
                     id={id}
                     data={data}
@@ -159,10 +182,11 @@ const NodeRenderer = ({ data, selected, id }) => {
                     nodeDefinition={nodeDefinition}
                 />
             );
+            break;
 
         default:
             // Возвращаем стандартный компонент для неизвестных типов нодов
-            return (
+            nodeComponent = (
                 <div className="bg-gray-100 dark:bg-gray-800 border-2 border-gray-500 p-3 rounded-md shadow w-48 min-h-[100px]">
                     <NodeHeader>
                         {data?.label || 'Неизвестный нод'}
@@ -173,6 +197,17 @@ const NodeRenderer = ({ data, selected, id }) => {
                 </div>
             );
     }
+
+    return (
+        <>
+            <NodeToolbar
+                selected={selected}
+                nodeId={id}
+                onDelete={handleDeleteNode}
+            />
+            {nodeComponent}
+        </>
+    );
 };
 
 export default memo(NodeRenderer);
