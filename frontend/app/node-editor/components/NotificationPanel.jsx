@@ -10,14 +10,13 @@ import { XMarkIcon, InformationCircleIcon, ExclamationTriangleIcon, CheckCircleI
  * @param {number} props.autoHideTime - Время в мс, через которое уведомление скроется автоматически (0 - не скрывать)
  */
 const NotificationPanel = ({ notification, onClose, autoHideTime = 0 }) => {
-    // Если нет уведомления, не рендерим компонент
-    if (!notification) return null;
-    
     const [hideTime, setHideTime] = useState(0);
     const [animationDuration, setAnimationDuration] = useState(0);
-
+    
     // Используем эффект для автоматического скрытия уведомления через указанное время
     useEffect(() => {
+        if (!notification) return;
+        
         // Определяем время автоскрытия в зависимости от типа уведомления
         let time = autoHideTime;
         
@@ -51,6 +50,9 @@ const NotificationPanel = ({ notification, onClose, autoHideTime = 0 }) => {
             return () => clearTimeout(timer);
         }
     }, [notification, autoHideTime, onClose]);
+    
+    // Если нет уведомления, не рендерим компонент
+    if (!notification) return null;
 
     // Определяем иконку и стили в зависимости от типа уведомления
     const getNotificationStyle = () => {
@@ -114,7 +116,7 @@ const NotificationPanel = ({ notification, onClose, autoHideTime = 0 }) => {
                 </div>
             )}
             
-            <style jsx>{`
+            <style id="notification-animation">{`
                 @keyframes shrink {
                     from { width: 100%; }
                     to { width: 0%; }
