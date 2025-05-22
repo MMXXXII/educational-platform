@@ -112,7 +112,7 @@ async def list_courses(
                       description="Количество элементов на странице"),
     category_id: Optional[int] = Query(
         None, description="Фильтр по ID категории"),
-    level: Optional[str] = Query(
+    difficulty: Optional[str] = Query(
         None, description="Фильтр по уровню сложности"),
     search: Optional[str] = Query(
         None, description="Поиск только по названию и описанию"),
@@ -132,7 +132,7 @@ async def list_courses(
             sort_by=sort_by,
             sort_order=sort_order,
             category_id=category_id,
-            level=level,
+            difficulty=difficulty,
             search=search,
             category_names=category_names,
             author=author
@@ -351,7 +351,7 @@ async def create_course_form(
     title: str = Form(...),
     description: str = Form(...),
     longdescription: str = Form(...),
-    level: str = Form(...),
+    difficulty: str = Form(...),
     author: str = Form(None),
     category_id: int = Form(...),
     image: Optional[UploadFile] = File(None),
@@ -389,7 +389,7 @@ async def create_course_form(
             title=title,
             description=description,
             longdescription=longdescription,
-            level=level,
+            difficulty=difficulty,
             author=author,
             image_url=image_url
         )
@@ -649,8 +649,8 @@ async def update_enrollment(
                 update_data["completed"] = True
 
         # Обновляем время последнего доступа
-        from datetime import datetime
-        update_data["last_accessed_at"] = datetime.utcnow()
+        from datetime import datetime, timezone
+        update_data["last_accessed_at"] = datetime.now(timezone.utc)
 
         for key, value in update_data.items():
             setattr(db_enrollment, key, value)

@@ -3,7 +3,7 @@ File and folder operations
 """
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import shutil
 from PIL import Image
@@ -68,8 +68,8 @@ def create_folder(db: Session, user: User, folder_name: str, parent_id: Optional
         relative_path=relative_path,
         is_folder=True,
         parent_id=parent_id,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
     )
 
     db.add(new_folder)
@@ -159,8 +159,8 @@ def upload_file(db: Session, user: User, file: UploadFile, folder_id: Optional[i
         relative_path=relative_path,
         is_folder=False,
         parent_id=folder_id,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
     )
 
     db.add(new_file)
