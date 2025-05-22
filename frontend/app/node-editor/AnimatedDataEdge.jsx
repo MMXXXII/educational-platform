@@ -20,6 +20,7 @@ const AnimatedDataEdge = ({
     style = {},
     data,
     markerEnd,
+    selected,
 }) => {
     const [edgePath, labelX, labelY] = getBezierPath({
         sourceX,
@@ -61,8 +62,9 @@ const AnimatedDataEdge = ({
 
     const edgeStyle = {
         ...style,
-        strokeWidth: active ? 2.5 : 1.5,
-        stroke: active ? '#3b82f6' : style.stroke || '#b1b1b7',
+        strokeWidth: selected ? 3 : (active ? 2.5 : 1.5),
+        stroke: selected ? '#3b82f6' : (active ? '#3b82f6' : style.stroke || '#b1b1b7'),
+        filter: selected ? `url(#glow-${id})` : undefined,
     };
 
     const formatValue = (value) => {
