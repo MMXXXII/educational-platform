@@ -19,7 +19,8 @@ const RightSidebar = ({
     onRunFull,
     consoleOutput,
     selectedNodeId,
-    nodes
+    nodes,
+    isMobile = false
 }) => {
     // Режимы панели
     const PANEL_MODES = {
@@ -57,6 +58,7 @@ const RightSidebar = ({
                         onStep={onStep}
                         onRunFull={onRunFull}
                         consoleOutput={consoleOutput}
+                        isMobile={isMobile}
                     />
                 );
             /* Закомментировано за ненадобностью
@@ -105,15 +107,15 @@ const RightSidebar = ({
     }
 
     return (
-        <div className="right-sidebar absolute top-4 right-4 w-96 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-50 nodrag nopan">
+        <div className={`right-sidebar absolute top-4 right-4 ${isMobile ? 'w-full max-w-[220px] mx-4' : 'w-96'} bg-white dark:bg-gray-800 rounded-lg shadow-lg z-50 nodrag nopan`}>
             {/* Заголовок панели с кнопками переключения режимов */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+            <div className={`flex items-center justify-between ${isMobile ? 'px-2 py-1' : 'px-4 py-2'} border-b border-gray-200 dark:border-gray-700`}>
                 <div className="flex items-center">
                     {/* Текущий режим */}
-                    <span className="font-bold text-gray-800 dark:text-gray-200 mr-3">
+                    <span className={`font-bold text-gray-800 dark:text-gray-200 mr-3 ${isMobile ? 'text-xs' : ''}`}>
                         {currentMode === PANEL_MODES.EXECUTION && (
                             <span className="flex items-center">
-                                <PlayIcon className="w-4 h-4 mr-1 text-blue-600 dark:text-blue-400" />
+                                <PlayIcon className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} mr-1 text-blue-600 dark:text-blue-400`} />
                                 Выполнение
                             </span>
                         )}
@@ -136,10 +138,10 @@ const RightSidebar = ({
                             e.stopPropagation();
                             handleModeSwitch(PANEL_MODES.EXECUTION);
                         }}
-                        className={`mode-button ${currentMode === PANEL_MODES.EXECUTION ? 'active' : ''} p-1.5 rounded ${currentMode === PANEL_MODES.EXECUTION ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                        className={`mode-button ${currentMode === PANEL_MODES.EXECUTION ? 'active' : ''} ${isMobile ? 'p-1' : 'p-1.5'} rounded ${currentMode === PANEL_MODES.EXECUTION ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}
                         title="Выполнение"
                     >
-                        <PlayIcon className="w-4 h-4" />
+                        <PlayIcon className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                     </button>
                     
                     {/*
@@ -161,16 +163,16 @@ const RightSidebar = ({
                             e.stopPropagation();
                             handleModeSwitch(currentMode);
                         }}
-                        className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded"
+                        className={`${isMobile ? 'p-1' : 'p-1.5'} hover:bg-gray-200 dark:hover:bg-gray-700 rounded`}
                         title="Скрыть панель"
                     >
-                        <XMarkIcon className="w-4 h-4 text-gray-500" />
+                        <XMarkIcon className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} text-gray-500`} />
                     </button>
                 </div>
             </div>
 
             {/* Содержимое текущей панели */}
-            <div className="properties-panel p-4 panel-content-wrapper" onMouseDown={e => e.stopPropagation()}>
+            <div className={`properties-panel ${isMobile ? 'p-1' : 'p-4'} panel-content-wrapper`} onMouseDown={e => e.stopPropagation()}>
                 {renderPanelContent()}
             </div>
         </div>

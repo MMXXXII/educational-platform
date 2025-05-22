@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getNodeClassName } from '../../utils/nodeUtils';
 import { InputHandles, OutputHandles, NodeStateIndicator } from './NodeHandles';
+import NodeHeader from './NodeHeader';
 
 /**
  * Компонент для отображения нода движения
@@ -57,9 +58,9 @@ const MoveNode = ({ id, data, selected, nodeDefinition }) => {
             <NodeStateIndicator nodeRef={data.nodeRef} nodeType="move" />
 
             {/* Заголовок нода */}
-            <div className="font-bold text-center mb-2 pb-1 border-b border-gray-300 dark:border-gray-600">
+            <NodeHeader>
                 {data.label}
-            </div>
+            </NodeHeader>
 
             {/* Упрощенное содержимое нода - только поле ввода шагов */}
             <div className="flex flex-col items-center justify-center p-2">

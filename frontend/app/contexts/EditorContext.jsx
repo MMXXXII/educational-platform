@@ -520,7 +520,14 @@ export const EditorProvider = ({ children }) => {
 
                 // Если удален текущий проект, создаем новый
                 if (name === projectName) {
-                    functionRef.current.createNewProject('', true);
+                    // Вместо создания нового проекта с пустым именем, просто сбрасываем состояние редактора
+                    setProjectName("Новый проект");
+                    setNodes([]);
+                    setEdges([]);
+                    setIsModified(false);
+                    setSelectedNodeId(null);
+                    setSaveError(null);
+                    setLoadError(null);
                 }
 
                 return true;

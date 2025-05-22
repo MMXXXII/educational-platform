@@ -13,14 +13,14 @@ export function CoursesPage() {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState([]);
-    const [levelOptions, setLevelOptions] = useState([
+    const [difficultyOptions, setDifficultyOptions] = useState([
         { value: 'начинающий', label: 'Начинающий' },
         { value: 'средний', label: 'Средний' },
         { value: 'продвинутый', label: 'Продвинутый' }
     ]);
     const [activeFilters, setActiveFilters] = useState({
         categories: [],
-        levels: []
+        difficulties: []
     });
     // Состояние для дебаунса поиска
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -86,10 +86,10 @@ export function CoursesPage() {
                 params.category_id = activeFilters.categories[0];
             }
 
-            // Добавляем фильтры уровней, если они выбраны
-            if (activeFilters.levels.length > 0) {
-                // Бэкенд ожидает один level параметр, а не массив
-                params.level = activeFilters.levels[0];
+            // Добавляем фильтры уровней сложности, если они выбраны
+            if (activeFilters.difficulties.length > 0) {
+                // Бэкенд ожидает один difficulty параметр, а не массив
+                params.difficulty = activeFilters.difficulties[0];
             }
 
             const data = await coursesApi.getCourses(params);
@@ -114,7 +114,7 @@ export function CoursesPage() {
 
     // Функция сброса фильтров и поиска
     const resetFilters = () => {
-        setActiveFilters({ categories: [], levels: [] });
+        setActiveFilters({ categories: [], difficulties: [] });
         setSearchQuery(''); // Также сбрасываем поиск
         setCurrentPage(1); // Возвращаемся на первую страницу при сбросе фильтров
     };
@@ -154,7 +154,7 @@ export function CoursesPage() {
                 <div className="w-full md:w-64 hidden md:block">
                     <Filters
                         categories={categories}
-                        levels={levelOptions}
+                        difficulties={difficultyOptions}
                         setActiveFilters={setActiveFilters}
                         activeFilters={activeFilters}
                     />
@@ -182,7 +182,7 @@ export function CoursesPage() {
                         <div className="mt-4 md:hidden">
                             <Filters
                                 categories={categories}
-                                levels={levelOptions}
+                                difficulties={difficultyOptions}
                                 setActiveFilters={setActiveFilters}
                                 activeFilters={activeFilters}
                             />

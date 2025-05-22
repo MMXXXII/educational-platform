@@ -17,7 +17,7 @@ export function CreateCoursePage() {
         title: '',
         description: '', // краткое описание
         longDescription: '', // подробное описание
-        level: '',
+        difficulty: '',
         category_id: '', // храним только один id для совместимости с бэкендом
         image: null
     });
@@ -96,8 +96,8 @@ export function CreateCoursePage() {
             newErrors.longDescription = 'Подробное описание обязательно';
         }
 
-        if (!course.level) {
-            newErrors.level = 'Выберите уровень сложности';
+        if (!course.difficulty) {
+            newErrors.difficulty = 'Выберите уровень сложности';
         }
 
         if (!course.category_id) {
@@ -184,7 +184,7 @@ export function CreateCoursePage() {
                     title: courseData.title || '',
                     description: courseData.description || '',
                     longDescription: courseData.longDescription || '',
-                    level: courseData.level || 'начинающий',
+                    difficulty: courseData.difficulty || 'начинающий',
                     category_id: courseData.category_id || '',
                     image: null // Изображение нельзя сохранить в localStorage
                 });
@@ -235,7 +235,7 @@ export function CreateCoursePage() {
                 title: course.title,
                 description: course.description,
                 longDescription: course.longDescription,
-                level: course.level,
+                difficulty: course.difficulty,
                 category_id: course.category_id,
                 image: course.image,
                 lessons: lessons
@@ -339,13 +339,13 @@ export function CreateCoursePage() {
 
                         {/* Уровень сложности */}
                         <div>
-                            <label htmlFor="level" className="block text-sm font-medium text-gray-700 mb-1">
+                            <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700 mb-1">
                                 Уровень сложности*
                             </label>
                             <select
-                                id="level"
-                                name="level"
-                                value={course.level}
+                                id="difficulty"
+                                name="difficulty"
+                                value={course.difficulty}
                                 onChange={handleCourseChange}
                                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category_id ? 'border-red-500' : 'border-gray-300'} text-gray-900 bg-white`}
                             >
@@ -354,8 +354,8 @@ export function CreateCoursePage() {
                                 <option value="средний" className="text-gray-900">Средний</option>
                                 <option value="продвинутый" className="text-gray-900">Продвинутый</option>
                             </select>
-                            {errors.level && (
-                                <p className="mt-1 text-sm text-red-500">{errors.level}</p>
+                            {errors.difficulty && (
+                                <p className="mt-1 text-sm text-red-500">{errors.difficulty}</p>
                             )}
                         </div>
 

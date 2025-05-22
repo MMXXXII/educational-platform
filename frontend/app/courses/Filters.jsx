@@ -1,5 +1,5 @@
 // Компонент фильтрации
-export function Filters({ categories, levels, setActiveFilters, activeFilters }) {
+export function Filters({ categories, difficulties, setActiveFilters, activeFilters }) {
     // Обработчик изменения категории
     const handleCategoryChange = (categoryId) => {
         // Проверяем, выбрана ли уже эта категория
@@ -20,20 +20,20 @@ export function Filters({ categories, levels, setActiveFilters, activeFilters })
     };
 
     // Обработчик изменения уровня сложности
-    const handleLevelChange = (levelValue) => {
-        // Проверяем, выбран ли уже этот уровень
-        if (activeFilters.levels.includes(levelValue)) {
+    const handleDifficultyChange = (difficultyValue) => {
+        // Проверяем, выбран ли уже этот уровень сложности
+        if (activeFilters.difficulties.includes(difficultyValue)) {
             // Если выбран - убираем из выбранных
             setActiveFilters({
                 ...activeFilters,
-                levels: []
+                difficulties: []
             });
         } else {
-            // Если не выбран - делаем активным один уровень
+            // Если не выбран - делаем активным один уровень сложности
             // Из-за особенностей API мы можем фильтровать только по одному уровню
             setActiveFilters({
                 ...activeFilters,
-                levels: [levelValue]
+                difficulties: [difficultyValue]
             });
         }
     };
@@ -49,8 +49,8 @@ export function Filters({ categories, levels, setActiveFilters, activeFilters })
                                 key={category.value}
                                 onClick={() => handleCategoryChange(category.value)}
                                 className={`px-3 py-1 text-sm rounded-full ${activeFilters.categories.includes(category.value)
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                     }`}
                             >
                                 {category.label}
@@ -65,16 +65,16 @@ export function Filters({ categories, levels, setActiveFilters, activeFilters })
             <div>
                 <h3 className="font-semibold text-gray-800 mb-2">Уровень сложности</h3>
                 <div className="flex flex-wrap gap-2">
-                    {levels.map((level) => (
+                    {difficulties.map((difficulty) => (
                         <button
-                            key={level.value}
-                            onClick={() => handleLevelChange(level.value)}
-                            className={`px-3 py-1 text-sm rounded-full ${activeFilters.levels.includes(level.value)
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            key={difficulty.value}
+                            onClick={() => handleDifficultyChange(difficulty.value)}
+                            className={`px-3 py-1 text-sm rounded-full ${activeFilters.difficulties.includes(difficulty.value)
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 }`}
                         >
-                            {level.label}
+                            {difficulty.label}
                         </button>
                     ))}
                 </div>

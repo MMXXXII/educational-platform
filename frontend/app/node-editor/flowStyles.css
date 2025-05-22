@@ -125,3 +125,37 @@
 .execution-panel {
     animation: slideIn 0.3s ease-out;
 }
+
+/* Стили для тулбара нодов */
+.node-toolbar {
+  background-color: transparent !important;
+}
+
+.node-toolbar__button {
+  transition: transform 0.2s;
+}
+
+.node-toolbar__button:hover {
+  transform: scale(1.1);
+}
+
+/* Дополнительные стили для границы выбранного соединения */
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke-width: 2.5;
+}
+
+/* Стили для тулбара над соединениями */
+.edge-toolbar {
+  z-index: 5;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: all;
+}
+
+.edge-toolbar__button {
+  transition: transform 0.2s;
+}
+
+.edge-toolbar__button:hover {
+  transform: scale(1.1);
+}

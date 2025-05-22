@@ -27,7 +27,7 @@ const showGlobalNotification = (message, type = 'info') => {
 /**
  * Компонент менеджера проектов, предоставляющий расширенные функции по управлению проектами
  */
-const ProjectManager = ({ onClose }) => {
+const ProjectManager = ({ onClose, isMobile = false }) => {
     const {
         projectName,
         projectsList,
@@ -414,21 +414,21 @@ const ProjectManager = ({ onClose }) => {
                             <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-3">
                                 Создать новый проект
                             </h3>
-                            <div className="flex gap-2">
+                            <div className={`flex ${isMobile ? 'flex-col' : ''} gap-2`}>
                                 <input
                                     type="text"
                                     placeholder="Введите имя нового проекта..."
                                     value={newProjectName}
                                     onChange={(e) => setNewProjectName(e.target.value)}
-                                    className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                                    className={`${isMobile ? 'w-full mb-2' : 'flex-1'} p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200`}
                                     onKeyDown={(e) => e.key === 'Enter' && handleCreateNewProject()}
                                 />
                                 <button
                                     onClick={handleCreateNewProject}
-                                    className={`px-4 py-2 ${newProjectName.trim() 
+                                    className={`${isMobile ? 'w-full' : 'px-4'} py-2 ${newProjectName.trim() 
                                         ? 'bg-indigo-500 hover:bg-indigo-600 text-white cursor-pointer' 
                                         : 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400'
-                                    } rounded-lg transition-all duration-200 flex items-center shadow-sm hover:shadow`}
+                                    } rounded-lg transition-all duration-200 flex items-center ${isMobile ? 'justify-center' : ''} shadow-sm hover:shadow`}
                                     disabled={!newProjectName.trim()}
                                 >
                                     <PlusCircleIcon className="h-5 w-5 mr-1.5" />
@@ -438,8 +438,8 @@ const ProjectManager = ({ onClose }) => {
                         </div>
                         
                         {/* Фильтры и поиск */}
-                        <div className="flex flex-wrap gap-2 mb-4">
-                            <div className="flex-1">
+                        <div className={`${isMobile ? 'flex flex-col' : 'flex flex-wrap'} gap-2 mb-4`}>
+                            <div className={`${isMobile ? 'w-full mb-2' : 'flex-1'}`}>
                                 <input
                                     type="text"
                                     placeholder="Поиск проектов..."
@@ -448,31 +448,33 @@ const ProjectManager = ({ onClose }) => {
                                     className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
                                 />
                             </div>
-                            <select
-                                value={sortBy}
-                                onChange={(e) => setSortBy(e.target.value)}
-                                className="p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                            >
-                                <option value="name">Сортировать по имени</option>
-                                <option value="date">Сортировать по дате</option>
-                            </select>
-                            <button
-                                onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
-                                className="p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                                title={sortDirection === 'asc' ? 'По возрастанию' : 'По убыванию'}
-                            >
-                                {sortDirection === 'asc' ? '↑' : '↓'}
-                            </button>
-                            <button
-                                onClick={() => {
-                                    refreshProjectsList();
-                                    showNotification('Список проектов обновлен', 'info');
-                                }}
-                                className="p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                                title="Обновить список"
-                            >
-                                <ArrowPathIcon className="w-5 h-5" />
-                            </button>
+                            <div className={`${isMobile ? 'flex w-full' : ''} gap-2`}>
+                                <select
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                    className={`p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 ${isMobile ? 'flex-1' : ''}`}
+                                >
+                                    <option value="name">Сортировать по имени</option>
+                                    <option value="date">Сортировать по дате</option>
+                                </select>
+                                <button
+                                    onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                                    className={`p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 ${isMobile ? 'flex-1' : ''}`}
+                                    title={sortDirection === 'asc' ? 'По возрастанию' : 'По убыванию'}
+                                >
+                                    {sortDirection === 'asc' ? '↑' : '↓'}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        refreshProjectsList();
+                                        showNotification('Список проектов обновлен', 'info');
+                                    }}
+                                    className={`p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 ${isMobile ? 'flex-1' : ''}`}
+                                    title="Обновить список"
+                                >
+                                    <ArrowPathIcon className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Список проектов */}
@@ -553,13 +555,13 @@ const ProjectManager = ({ onClose }) => {
                         </div>
 
                         {/* Кнопки для работы с выбранными проектами */}
-                        <div className="flex justify-between mt-4">
-                            <div>
+                        <div className={`${isMobile ? 'flex flex-col' : 'flex justify-between'} mt-4`}>
+                            <div className={`${isMobile ? 'mb-2' : ''}`}>
                                 <span className="text-sm text-gray-600 dark:text-gray-400">
                                     Выбрано: {selectedProjects.length} из {filteredProjects.length}
                                 </span>
                             </div>
-                            <div className="flex space-x-2">
+                            <div className={`${isMobile ? 'w-full' : 'flex space-x-2'}`}>
                                 <button
                                     disabled={selectedProjects.length === 0}
                                     onClick={() => {
@@ -573,7 +575,7 @@ const ProjectManager = ({ onClose }) => {
                                             setSelectedProjects([]);
                                         }
                                     }}
-                                    className={`px-4 py-2 rounded ${selectedProjects.length === 0
+                                    className={`${isMobile ? 'w-full' : 'px-4'} py-2 rounded ${selectedProjects.length === 0
                                             ? 'bg-gray-300 text-gray-500 dark:bg-gray-700 dark:text-gray-400 cursor-not-allowed'
                                             : 'bg-red-600 text-white hover:bg-red-700 dark:hover:bg-red-700'
                                         }`}
@@ -606,7 +608,7 @@ const ProjectManager = ({ onClose }) => {
                                             type="text"
                                             value={newVersionName}
                                             onChange={(e) => setNewVersionName(e.target.value)}
-                                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                                            className={`w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 ${isMobile ? 'text-sm' : ''}`}
                                             placeholder="например: v1.0.0"
                                         />
                                     </div>
@@ -618,7 +620,7 @@ const ProjectManager = ({ onClose }) => {
                                         <textarea
                                             value={versionComment}
                                             onChange={(e) => setVersionComment(e.target.value)}
-                                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                                            className={`w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 ${isMobile ? 'text-sm' : ''}`}
                                             rows="2"
                                             placeholder="Описание изменений в этой версии..."
                                         />
@@ -626,9 +628,9 @@ const ProjectManager = ({ onClose }) => {
 
                                     <button
                                         onClick={handleCreateVersion}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                        className={`${isMobile ? 'w-full' : 'px-4'} py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center ${isMobile ? 'justify-center text-sm' : ''}`}
                                     >
-                                        <PlusCircleIcon className="w-5 h-5 inline mr-1" />
+                                        <PlusCircleIcon className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} mr-1`} />
                                         Создать версию
                                     </button>
                                 </div>
@@ -741,9 +743,9 @@ const ProjectManager = ({ onClose }) => {
                                 <div className="flex flex-col space-y-2">
                                     <button
                                         onClick={handleExport}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                        className={`${isMobile ? 'w-full text-sm' : 'px-4'} py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center ${isMobile ? 'justify-center' : ''}`}
                                     >
-                                        <ArrowDownTrayIcon className="w-5 h-5 inline mr-1" />
+                                        <ArrowDownTrayIcon className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} mr-1`} />
                                         Экспортировать проект в JSON
                                     </button>
                                 </div>
@@ -764,9 +766,9 @@ const ProjectManager = ({ onClose }) => {
                                 
                                 <button
                                     onClick={handleImportButtonClick}
-                                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 w-full"
+                                    className={`${isMobile ? 'text-sm' : 'px-4'} py-2 bg-purple-600 text-white rounded hover:bg-purple-700 w-full flex items-center ${isMobile ? 'justify-center' : ''}`}
                                 >
-                                    <ArrowUpTrayIcon className="w-5 h-5 inline mr-1" />
+                                    <ArrowUpTrayIcon className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} mr-1`} />
                                     Выбрать JSON файл для импорта
                                 </button>
                             </div>

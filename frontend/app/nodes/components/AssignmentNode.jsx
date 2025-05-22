@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useStore } from 'reactflow';
 import { checkNodeConnections } from '../../utils/nodeUtils';
 import { InputHandles, OutputHandles, NodeStateIndicator } from './NodeHandles';
+import NodeHeader from './NodeHeader';
 
 /**
  * Компонент для отображения нода присваивания
@@ -68,9 +69,9 @@ const AssignmentNode = ({ id, data, selected, nodeDefinition }) => {
             <NodeStateIndicator nodeRef={data.nodeRef} nodeType="assignment" />
 
             {/* Заголовок нода */}
-            <div className="font-bold text-center mb-3 w-full pb-1 border-b border-gray-300 dark:border-gray-600">
+            <NodeHeader>
                 {data.label}
-            </div>
+            </NodeHeader>
 
             {/* Визуальное представление операции присваивания */}
             <div className="text-center text-xl font-bold my-2">=</div>

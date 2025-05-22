@@ -21,6 +21,7 @@ import ExecutionPanel from '../panels/ExecutionPanel';
  * @param {string} props.selectedNodeId - ID выбранного нода
  * @param {Object} props.selectedNode - Выбранный нод
  * @param {Array} props.nodes - Массив всех нодов
+ * @param {boolean} props.isMobile - Флаг мобильного отображения
  */
 const ModularRightSidebar = ({
     isExecuting,
@@ -31,7 +32,8 @@ const ModularRightSidebar = ({
     consoleOutput,
     selectedNodeId,
     selectedNode,
-    nodes
+    nodes,
+    isMobile = false
 }) => {
     // Режимы панели
     const PANEL_MODES = {
@@ -82,6 +84,7 @@ const ModularRightSidebar = ({
                         onStep={onStep}
                         onRunFull={onRunFull}
                         consoleOutput={consoleOutput}
+                        isMobile={isMobile}
                     />
                 );
             /*
@@ -100,7 +103,7 @@ const ModularRightSidebar = ({
             title={title}
             icon={icon}
             position="right"
-            width="350px"
+            width={isMobile ? "220px" : "350px"}
             initiallyCollapsed={false}
         >
             {/* <div className="flex gap-2 mb-4">

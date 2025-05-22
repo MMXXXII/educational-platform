@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useStore } from 'reactflow';
 import { checkNodeConnections } from '../../utils/nodeUtils';
 import { InputHandles, OutputHandles, NodeStateIndicator } from './NodeHandles';
+import NodeHeader from './NodeHeader';
 
 /**
  * Компонент для отображения нода переменной
@@ -95,9 +96,9 @@ const VariableNode = ({ id, data, selected, nodeDefinition }) => {
             <NodeStateIndicator nodeRef={data.nodeRef} nodeType="variable" />
 
             {/* Заголовок нода */}
-            <div className="font-bold text-center mb-2 pb-1 border-b border-gray-300 dark:border-gray-600">
+            <NodeHeader>
                 {data.label}
-            </div>
+            </NodeHeader>
 
             {/* Содержимое нода */}
             <div className="flex flex-col space-y-2 w-full">

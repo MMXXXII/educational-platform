@@ -16,6 +16,7 @@ import Console from '../components/Console';
  * @param {Function} props.onStep - Обработчик шага выполнения
  * @param {Function} props.onRunFull - Обработчик запуска полного выполнения алгоритма
  * @param {Array} props.consoleOutput - Массив сообщений консоли
+ * @param {boolean} props.isMobile - Флаг мобильного отображения
  */
 const ExecutionPanel = ({
     isExecuting,
@@ -23,20 +24,21 @@ const ExecutionPanel = ({
     onStop,
     onStep,
     onRunFull,
-    consoleOutput = []
+    consoleOutput = [],
+    isMobile = false
 }) => {
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg w-full nodrag nopan">
+        <div className={`bg-white dark:bg-gray-800 rounded-lg ${isMobile ? 'max-w-[200px] mx-auto px-2 py-1.5' : 'w-full'} nodrag nopan`}>
             {/* Панель управления */}
-            <div className="flex flex-col mb-4">
-                <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
+            <div className={`flex flex-col ${isMobile ? 'mb-2' : 'mb-4'}`}>
+                <div className="flex items-center justify-between mb-1">
+                    <div className={`${isMobile ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-400`}>
                         Шаг: {executionStep}
                     </div>
                 </div>
 
                 {/* Кнопки управления */}
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-col gap-1.5">
                     {!isExecuting ? (
                         <>
                             <button
@@ -44,9 +46,9 @@ const ExecutionPanel = ({
                                     e.stopPropagation();
                                     onStep();
                                 }}
-                                className="flex-1 flex items-center justify-center py-2 px-4 bg-green-500 hover:bg-green-600 text-white rounded transition-colors"
+                                className={`w-full flex items-center justify-center ${isMobile ? 'py-1 px-2 text-xs' : 'py-2 px-4 text-sm'} bg-green-500 hover:bg-green-600 text-white rounded transition-colors`}
                             >
-                                <ForwardIcon className="w-5 h-5 mr-1" />
+                                <ForwardIcon className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} mr-1`} />
                                 Один шаг
                             </button>
                             <button
@@ -54,9 +56,9 @@ const ExecutionPanel = ({
                                     e.stopPropagation();
                                     onRunFull();
                                 }}
-                                className="flex-1 flex items-center justify-center py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                                className={`w-full flex items-center justify-center ${isMobile ? 'py-1 px-2 text-xs' : 'py-2 px-4 text-sm'} bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors`}
                             >
-                                <BoltIcon className="w-5 h-5 mr-1" />
+                                <BoltIcon className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} mr-1`} />
                                 Всё сразу
                             </button>
                         </>
@@ -67,9 +69,9 @@ const ExecutionPanel = ({
                                     e.stopPropagation();
                                     onStep();
                                 }}
-                                className="flex-1 flex items-center justify-center py-2 px-4 bg-green-500 hover:bg-green-600 text-white rounded transition-colors"
+                                className={`w-full flex items-center justify-center ${isMobile ? 'py-1 px-2 text-xs' : 'py-2 px-4 text-sm'} bg-green-500 hover:bg-green-600 text-white rounded transition-colors`}
                             >
-                                <ForwardIcon className="w-5 h-5 mr-1" />
+                                <ForwardIcon className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} mr-1`} />
                                 Один шаг
                             </button>
                             <button
@@ -77,9 +79,9 @@ const ExecutionPanel = ({
                                     e.stopPropagation();
                                     onStop();
                                 }}
-                                className="flex-1 flex items-center justify-center py-2 px-4 bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
+                                className={`w-full flex items-center justify-center ${isMobile ? 'py-1 px-2 text-xs' : 'py-2 px-4 text-sm'} bg-red-500 hover:bg-red-600 text-white rounded transition-colors`}
                             >
-                                <StopIcon className="w-5 h-5 mr-1" />
+                                <StopIcon className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} mr-1`} />
                                 Стоп
                             </button>
                         </>
@@ -88,7 +90,12 @@ const ExecutionPanel = ({
             </div>
 
             {/* Консоль вывода */}
-            <Console consoleOutput={consoleOutput} />
+            <Console 
+                consoleOutput={consoleOutput} 
+                isMobile={isMobile} 
+                compactMode={isMobile}
+                maxWidth={isMobile ? 180 : undefined}
+            />
         </div>
     );
 };

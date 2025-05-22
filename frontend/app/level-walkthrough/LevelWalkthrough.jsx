@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import { ReactFlowProvider } from 'reactflow';
 import { Link } from 'react-router';
-import { InformationCircleIcon } from '@heroicons/react/24/outline';
+import { InformationCircleIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import { useEditor } from '../contexts/EditorContext';
 import useNodeExecution from '../hooks/useNodeExecution';
 
@@ -27,6 +27,8 @@ import { resetPlayerState } from '../utils/signalVisualizerConnector';
  */
 const LevelWalkthrough = () => {
     const [isMounted, setIsMounted] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    const [rightPanelOpen, setRightPanelOpen] = useState(false);
     const {
         nodes,
         setNodes,
@@ -39,6 +41,8 @@ const LevelWalkthrough = () => {
 
     // Создаем ссылку на компонент SignalVisualizer
     const signalVisualizerRef = useRef(null);
+    // Ссылка на FlowCanvas для прямого добавления нодов
+    const flowCanvasRef = useRef(null);
 
     // Безопасное получение контекста 3D сцены (если доступен)
     // Используем безопасный подход
@@ -67,19 +71,16 @@ const LevelWalkthrough = () => {
         if (!isBrowser) return;
 
         // Используем импортированную функцию для сброса позиции игрока
-        const resetResult = resetPlayerState();
-        console.log("Результат сброса через resetPlayerState:", resetResult);
+        resetPlayerState();
         
         // Прямое обращение к компоненту через ref для сброса локального состояния
         if (signalVisualizerRef.current && typeof signalVisualizerRef.current.resetState === 'function') {
             signalVisualizerRef.current.resetState();
-            console.log("Локальное состояние SignalVisualizer сброшено через ref");
         }
         
         // Сброс состояния в Scene3DContext
         if (scene3dContext && typeof scene3dContext.resetScene === 'function') {
             scene3dContext.resetScene();
-            console.log("Состояние Scene3DContext сброшено");
         }
     };
 
@@ -345,6 +346,34 @@ const LevelWalkthrough = () => {
         NODE_CATEGORIES.VARIABLES, NODE_CATEGORIES.CONTROL, NODE_CATEGORIES.OPERATIONS, NODE_CATEGORIES.SCENE_3D
     ];
 
+    // Проверка размера экрана при монтировании и изменении размера окна
+    useEffect(() => {
+        const checkMobileView = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        
+        checkMobileView();
+        window.addEventListener('resize', checkMobileView);
+        
+        return () => {
+            window.removeEventListener('resize', checkMobileView);
+        };
+    }, []);
+
+    // Обработчик для добавления нода (для мобильной версии)
+    const handleNodeSelect = useCallback((nodeType, nodeData) => {
+        // Если это мобильная версия, вызываем метод addNode у FlowCanvas
+        if (isMobile) {
+            setTimeout(() => {
+                if (flowCanvasRef.current) {
+                    flowCanvasRef.current.addNode(nodeType, nodeData);
+                    // Скрываем правую панель
+                    setRightPanelOpen(false);
+                }
+            }, 50);
+        }
+    }, [isMobile]);
+
     return (
         // Оборачиваем весь компонент в Scene3DProvider для доступа к 3D контексту
         <Scene3DProvider key="level-walkthrough-scene3d">
@@ -383,14 +412,21 @@ const LevelWalkthrough = () => {
                                 <div className="h-8 w-px bg-gray-300 dark:bg-gray-600"></div>
 
                                 {/* Заголовок */}
-                                <h1 className="text-lg font-medium text-gray-800 dark:text-white">
+                                <h1 className={`${isMobile ? 'text-base' : 'text-lg'} font-medium text-gray-800 dark:text-white truncate`}>
                                     3D Редактор уровней {projectName ? `- ${projectName}` : ''}
                                 </h1>
                             </div>
 
-                            <div className="flex items-center space-x-2">
-                                {/* Место для кнопок, если необходимо */}
-                            </div>
+                            {isMobile && (
+                                <div className="flex items-center">
+                                    <button
+                                        className="p-2 rounded-md text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white focus:outline-none"
+                                        onClick={() => setRightPanelOpen(!rightPanelOpen)}
+                                    >
+                                        <Bars3Icon className="h-6 w-6" />
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </nav>
@@ -409,112 +445,135 @@ const LevelWalkthrough = () => {
                             {/* Палитра нодов (левая панель) */}
                             <NodePalette
                                 allowedCategories={allowedCategories}
+                                onNodeSelect={handleNodeSelect}
+                                defaultExpanded={true}
                             />
 
                             {/* Центральная часть - нодовый редактор */}
                             <div className="flex-1 relative">
                                 <FlowCanvas
                                     hideSidebar={true}
+                                    onNodeSelect={handleNodeSelect}
+                                    ref={flowCanvasRef}
                                 />
                             </div>
 
-                            {/* Правая часть - 3D превью и консоль */}
-                            <div className="w-96 border-l border-gray-200 dark:border-gray-700 flex flex-col">
-                                {/* Используем скроллируемый контейнер для содержимого правой панели */}
-                                <div className="flex-1 p-4 overflow-y-auto">
-                                    {/* Заголовок боковой панели */}
-                                    <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-4">3D Превью</h3>
-
-                                    {/* Уменьшаем высоту визуализатора, чтобы он не занимал все пространство */}
-                                    <div className="w-full rounded bg-gray-800 flex items-center justify-center mb-4" style={{ height: '280px' }}>
-                                        <SignalVisualizer ref={signalVisualizerRef} />
-                                    </div>
-
-                                    {/* Консоль */}
-                                    <div className="mb-4">
-                                        <Console
-                                            consoleOutput={consoleOutput}
-                                            onClear={handleClearConsole}
-                                            title="Консоль симуляции"
-                                            initiallyExpanded={true}
-                                        />
-                                    </div>
-
-                                    {/* Информация о симуляции */}
-                                    {isSimulationRunning && (
-                                        <div className="mt-2 mb-4 p-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
-                                            <p className="text-sm">Выполняется симуляция: шаг {simulationStep}</p>
-                                        </div>
-                                    )}
-
-                                    {/* Отладочные кнопки */}
-                                    <div className="mt-2 mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                                        <div className="flex items-center mb-2">
-                                            <InformationCircleIcon className="h-4 w-4 text-yellow-600 dark:text-yellow-500 mr-2" />
-                                            <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-400">Отладочные функции</h4>
-                                        </div>
-                                        
-                                        {/* Быстрое сохранение */}
-                                        <button 
-                                            className="w-full mb-2 p-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm"
-                                            onClick={handleQuickSave}
-                                        >
-                                            Быстрое сохранение
-                                        </button>
-                                        
-                                        {/* Выбор и загрузка сохранения */}
-                                        <div className="flex mb-2">
-                                            <select
-                                                className="flex-grow p-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-l"
-                                                value={selectedQuickSave}
-                                                onChange={(e) => setSelectedQuickSave(e.target.value)}
-                                            >
-                                                <option value="">Выберите сохранение...</option>
-                                                {quickSaves.map(save => (
-                                                    <option key={save} value={save}>{save}</option>
-                                                ))}
-                                            </select>
+                            {/* Правая часть - 3D превью и консоль - скрываемая на мобильном */}
+                            {(!isMobile || (isMobile && rightPanelOpen)) && (
+                                <div className={`${isMobile ? 'fixed inset-0 z-50 bg-white dark:bg-gray-900' : 'w-96 border-l border-gray-200 dark:border-gray-700'} flex flex-col`}>
+                                    {/* Добавляем кнопку закрытия для мобильной версии */}
+                                    {isMobile && (
+                                        <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+                                            <h3 className="font-bold text-gray-800 dark:text-gray-200">3D Просмотр</h3>
                                             <button 
-                                                className="p-1.5 bg-green-500 hover:bg-green-600 text-white rounded-r text-sm"
-                                                onClick={handleQuickLoad}
-                                                disabled={!selectedQuickSave}
+                                                className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
+                                                onClick={() => setRightPanelOpen(false)}
                                             >
-                                                Загрузить
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
                                             </button>
                                         </div>
-                                        
-                                        {/* Кнопка сброса визуализатора */}
-                                        <button 
-                                            className="w-full p-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded text-sm"
-                                            onClick={() => {
-                                                resetVisualizerState();
-                                                showNotification("Позиция игрока сброшена в исходное состояние", "info");
-                                            }}
-                                        >
-                                            Сбросить позицию игрока
-                                        </button>
+                                    )}
+                                    
+                                    {/* Используем скроллируемый контейнер для содержимого правой панели */}
+                                    <div className="flex-1 p-4 overflow-y-auto">
+                                        {!isMobile && (
+                                            <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-4">3D Превью</h3>
+                                        )}
+
+                                        {/* Уменьшаем высоту визуализатора, чтобы он не занимал все пространство */}
+                                        <div className="w-full rounded bg-gray-800 flex items-center justify-center mb-4" style={{ height: isMobile ? '220px' : '280px' }}>
+                                            <SignalVisualizer ref={signalVisualizerRef} />
+                                        </div>
+
+                                        {/* Консоль */}
+                                        <div className="mb-4">
+                                            <Console
+                                                consoleOutput={consoleOutput}
+                                                onClear={handleClearConsole}
+                                                title="Консоль симуляции"
+                                                initiallyExpanded={true}
+                                                isMobile={isMobile}
+                                            />
+                                        </div>
+
+                                        {/* Информация о симуляции */}
+                                        {isSimulationRunning && (
+                                            <div className="mt-2 mb-4 p-2 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
+                                                <p className={`${isMobile ? 'text-xs' : 'text-sm'}`}>Выполняется симуляция: шаг {simulationStep}</p>
+                                            </div>
+                                        )}
+
+                                        {/* Отладочные кнопки */}
+                                        <div className="mt-2 mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                                            <div className="flex items-center mb-2">
+                                                <InformationCircleIcon className="h-4 w-4 text-yellow-600 dark:text-yellow-500 mr-2" />
+                                                <h4 className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-yellow-800 dark:text-yellow-400`}>Отладочные функции</h4>
+                                            </div>
+                                            
+                                            {/* Быстрое сохранение */}
+                                            <button 
+                                                className={`w-full mb-2 p-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded ${isMobile ? 'text-xs' : 'text-sm'}`}
+                                                onClick={handleQuickSave}
+                                            >
+                                                Быстрое сохранение
+                                            </button>
+                                            
+                                            {/* Выбор и загрузка сохранения */}
+                                            <div className="flex mb-2">
+                                                <select
+                                                    className={`flex-grow p-1.5 ${isMobile ? 'text-xs' : 'text-sm'} bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-l`}
+                                                    value={selectedQuickSave}
+                                                    onChange={(e) => setSelectedQuickSave(e.target.value)}
+                                                >
+                                                    <option value="">Выберите сохранение...</option>
+                                                    {quickSaves.map(save => (
+                                                        <option key={save} value={save}>{save}</option>
+                                                    ))}
+                                                </select>
+                                                <button 
+                                                    className={`p-1.5 bg-green-500 hover:bg-green-600 text-white rounded-r ${isMobile ? 'text-xs' : 'text-sm'}`}
+                                                    onClick={handleQuickLoad}
+                                                    disabled={!selectedQuickSave}
+                                                >
+                                                    Загрузить
+                                                </button>
+                                            </div>
+                                            
+                                            {/* Кнопка сброса визуализатора */}
+                                            <button 
+                                                className={`w-full p-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded ${isMobile ? 'text-xs' : 'text-sm'}`}
+                                                onClick={() => {
+                                                    resetVisualizerState();
+                                                    showNotification("Позиция игрока сброшена в исходное состояние", "info");
+                                                }}
+                                            >
+                                                Сбросить позицию игрока
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Фиксированная нижняя часть без прокрутки */}
+                                    <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+                                        {!isSimulationRunning ? (
+                                            <button
+                                                className={`w-full p-2 bg-green-500 hover:bg-green-600 text-white rounded ${isMobile ? 'text-xs' : 'text-sm'}`}
+                                                onClick={handleRunSimulation}
+                                            >
+                                                Запустить симуляцию
+                                            </button>
+                                        ) : (
+                                            <button
+                                                className={`w-full p-2 bg-red-500 hover:bg-red-600 text-white rounded ${isMobile ? 'text-xs' : 'text-sm'}`}
+                                                onClick={handleStopSimulation}
+                                            >
+                                                Остановить симуляцию
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
-
-                                {/* Фиксированная нижняя часть без прокрутки */}
-                                <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-                                    {!isSimulationRunning ? (
-                                        <button
-                                            className="w-full p-2 bg-green-500 hover:bg-green-600 text-white rounded"
-                                            onClick={handleRunSimulation}
-                                        >
-                                            Запустить симуляцию
-                                        </button>
-                                    ) : (
-                                        <button
-                                            className="w-full p-2 bg-red-500 hover:bg-red-600 text-white rounded"
-                                            onClick={handleStopSimulation}
-                                        >
-                                            Остановить симуляцию
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
+                            )}
                         </ReactFlowProvider>
                     )}
                 </div>
