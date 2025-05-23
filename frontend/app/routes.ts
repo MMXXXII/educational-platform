@@ -19,6 +19,7 @@ export default [
         route("node-editor", "routes/node-editor.tsx"),
         route("tile-editor", "./routes/tile-editor.tsx"),
         route("tile-editor-old", "./routes/tile-editor-old.tsx"),
+        route("tile-editor-scene", "./routes/tile-editor-scene.tsx"),
         route("sign-in", "./routes/sign-in.tsx"),
         route("sign-up", "./routes/sign-up.tsx"),
         route("viewer", "./routes/model-viewer.tsx"),

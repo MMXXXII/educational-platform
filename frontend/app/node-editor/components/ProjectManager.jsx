@@ -448,7 +448,7 @@ const ProjectManager = ({ onClose, isMobile = false }) => {
                                     className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
                                 />
                             </div>
-                            <div className={`${isMobile ? 'flex w-full' : ''} gap-2`}>
+                            <div className={`${isMobile ? 'flex w-full' : 'flex'} gap-2`}>
                                 <select
                                     value={sortBy}
                                     onChange={(e) => setSortBy(e.target.value)}
