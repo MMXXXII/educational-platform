@@ -23,7 +23,12 @@ const GRID_SIZE = 20; // Размер сетки
 const CELL_SIZE = 1; // Размер клетки сетки
 const SAVE_PREFIX = 'level_editor_'; // Префикс для сохранения сцен в localStorage
 
-export function EditorPanel (){
+// ==== ADDED FOR TILE EDITOR INTEGRATION ==== 
+// Singleton для хранения текущей сцены и её доступа из внешних компонентов
+let currentSceneInstance = null;
+// ===========================================
+
+export function EditorPanel ({ initialSceneData = null }) { // old: export function EditorPanel (){
   // Состояния
   const [selectedAsset, setSelectedAsset] = useState('cube'); // Куб по умолчанию
   const selectedAssetRef = useRef('cube'); // Ref для доступа к текущему значению в обработчиках событий
@@ -69,6 +74,20 @@ export function EditorPanel (){
     
     const scene = new Scene(engine);
     sceneRef.current = scene;
+    
+    // ==== ADDED FOR TILE EDITOR INTEGRATION ====
+    // Сохраняем текущую сцену для статичного доступа
+    currentSceneInstance = {
+      scene,
+      serializeScene,
+      clearScene
+    };
+    
+    // Сделать сцену доступной глобально для TileEditorPage
+    if (typeof window !== 'undefined') {
+      window.currentSceneInstance = currentSceneInstance;
+    }
+    // ===========================================
     
     // Настройка камеры
     const camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3, 20, new Vector3(GRID_SIZE / 2, 0, GRID_SIZE / 2), scene);
@@ -128,6 +147,17 @@ export function EditorPanel (){
     // Загрузка сохраненных уровней
     loadSavedLevelList();
     
+    // ==== ADDED FOR TILE EDITOR INTEGRATION ====
+    // Если есть начальные данные сцены, загружаем их
+    if (initialSceneData) {
+      try {
+        deserializeScene(initialSceneData);
+      } catch (e) {
+        console.error("Error loading initial scene data:", e);
+      }
+    }
+    // ===========================================
+    
     // Цикл рендеринга
     engine.runRenderLoop(() => {
       scene.render();
@@ -142,9 +172,13 @@ export function EditorPanel (){
       window.removeEventListener('resize', () => {
         engine.resize();
       });
+      // ==== ADDED FOR TILE EDITOR INTEGRATION ====
+      currentSceneInstance = null; // При размонтировании очищаем singleton
+      // ===========================================
       engine.dispose();
     };
-  }, []);
+  // ADDED FOR TILE EDITOR INTEGRATION, old:   }, []);
+  }, [initialSceneData]);
 
   useEffect(() => {
     editModeRef.current = editMode;
@@ -1011,15 +1045,45 @@ export function EditorPanel (){
     );
   };
 
+// Old
+//   return (
+//     <div className="flex flex-col h-screen">
+//       {/* Верхняя панель инструментов */}
+//       {renderToolbar()}
+      
+//       {/* Основная область */}
+//       <div className="flex flex-col md:flex-row flex-1 gap-4">
+//         {/* Панель выбора ассетов */}
+//         <div className="md:flex md:flex-col gap-4">
+//           {renderAssetPanel()}
+//           {renderSaveLoadPanel()}
+//         </div>
+        
+//         {/* Область 3D-отображения */}
+//         <div className="flex-1 bg-gray-900 rounded overflow-hidden relative">
+//           <canvas ref={canvasRef} className="w-full h-full" />
+//         </div>
+//       </div>
+      
+//       {/* Инструкции по размещению */}
+//       {renderPlacementInstructions()}
+      
+//       {/* Уведомления */}
+//       {renderNotification()}
+//     </div>
+//   );
+// };
+
+  // ==== ADDED FOR TILE EDITOR INTEGRATION ====
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col w-full h-full overflow-hidden">
       {/* Верхняя панель инструментов */}
       {renderToolbar()}
       
       {/* Основная область */}
-      <div className="flex flex-col md:flex-row flex-1 gap-4">
+      <div className="flex flex-col md:flex-row flex-1 gap-2 overflow-hidden p-2">
         {/* Панель выбора ассетов */}
-        <div className="md:flex md:flex-col gap-4">
+        <div className="md:flex md:flex-col md:w-64 gap-2 overflow-y-auto">
           {renderAssetPanel()}
           {renderSaveLoadPanel()}
         </div>
@@ -1030,11 +1094,28 @@ export function EditorPanel (){
         </div>
       </div>
       
-      {/* Инструкции по размещению */}
+      {/* Инструкции по размещению и уведомления должны быть вне основного потока страницы */}
       {renderPlacementInstructions()}
-      
-      {/* Уведомления */}
       {renderNotification()}
     </div>
   );
 };
+
+// Статический метод для экспорта текущей сцены
+EditorPanel.exportScene = () => {
+  if (currentSceneInstance && currentSceneInstance.scene) {
+    // Вызываем serializeScene через наш singleton
+    return currentSceneInstance.serializeScene();
+  }
+  return null;
+};
+
+// Статический метод для очистки сцены
+EditorPanel.clearScene = () => {
+  if (currentSceneInstance && currentSceneInstance.clearScene) {
+    currentSceneInstance.clearScene();
+  }
+};
+
+export default EditorPanel;
+// ===========================================

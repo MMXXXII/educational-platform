@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router';
-import { ArrowLeftIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, PlusIcon, XMarkIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 // Импортируем API для работы с курсами
 import { categoriesApi, coursesApi } from '../api/coursesService';
+import LessonsManager from './LessonsManager';
 
 export function CreateCoursePage() {
     const navigate = useNavigate();
@@ -38,6 +39,29 @@ export function CreateCoursePage() {
         };
 
         fetchCategories();
+    }, []);
+
+    // Восстановление данных курса при возврате из редактора сцен
+    useEffect(() => {
+        const savedCourseData = localStorage.getItem('courseFormBackup');
+        if (savedCourseData) {
+            try {
+                const parsedCourseData = JSON.parse(savedCourseData);
+                setCourse(parsedCourseData.course);
+
+                // Восстанавливаем изображение только если есть превью URL
+                if (parsedCourseData.imagePreview) {
+                    setImagePreview(parsedCourseData.imagePreview);
+                }
+
+                console.log('Данные курса восстановлены из localStorage');
+                // Очищаем сохраненные данные после восстановления
+                localStorage.removeItem('courseFormBackup');
+            } catch (error) {
+                console.error('Ошибка при восстановлении данных курса:', error);
+                localStorage.removeItem('courseFormBackup');
+            }
+        }
     }, []);
 
     // Обработчик изменения полей курса
@@ -104,10 +128,19 @@ export function CreateCoursePage() {
             newErrors.category_id = 'Выберите категорию';
         }
 
-        // Форма для уроков появится позже
-        // if (lessons.length === 0) {
-        //     newErrors.lessons = 'Добавьте хотя бы один урок';
-        // }
+        if (lessons.length === 0) {
+            newErrors.lessons = 'Добавьте хотя бы один урок';
+        } else {
+            // Проверяем, что все уроки имеют заголовок и содержание 
+            const invalidLessons = lessons.filter(lesson =>
+                !lesson.title || !lesson.title.trim() ||
+                !lesson.content || !lesson.content.trim()
+            );
+
+            if (invalidLessons.length > 0) {
+                newErrors.lessons = 'Все уроки должны иметь заголовок и содержание ';
+            }
+        }
 
         setErrors(newErrors);
 
@@ -115,105 +148,27 @@ export function CreateCoursePage() {
         return Object.keys(newErrors).length === 0;
     };
 
-    // Обработчик добавления нового урока
-    const handleAddLesson = () => {
-        // Временно сохраняем данные курса в localStorage
-        localStorage.setItem('temp_course_data', JSON.stringify({
-            ...course,
-            lessons: lessons
-        }));
+    // Обработчик обновления уроков
+    const handleLessonsUpdate = (updatedLessons) => {
+        setLessons(updatedLessons);
 
-        // Переходим на страницу создания урока
-        navigate('/courses/create/lesson', {
-            state: {
-                courseData: course,
-                lessonOrder: lessons.length + 1
-            }
-        });
+        // Если была ошибка с уроками, проверяем, можно ли её снять
+        if (errors.lessons && updatedLessons.length > 0) {
+            setErrors({
+                ...errors,
+                lessons: null
+            });
+        }
     };
 
-    // Обработчик для добавления/обновления урока (будет вызываться при возврате со страницы создания урока)
-    useEffect(() => {
-        // Проверяем, есть ли данные урока в localStorage
-        const savedLessonData = localStorage.getItem('temp_lesson_data');
-        if (savedLessonData) {
-            try {
-                const lessonData = JSON.parse(savedLessonData);
-
-                // Проверяем, новый это урок или редактирование существующего
-                if (lessonData.index !== undefined) {
-                    // Обновляем существующий урок
-                    setLessons(prevLessons => {
-                        const updatedLessons = [...prevLessons];
-                        updatedLessons[lessonData.index] = {
-                            title: lessonData.title,
-                            description: lessonData.description,
-                            content: lessonData.content,
-                            order: lessonData.index + 1
-                        };
-                        return updatedLessons;
-                    });
-                } else {
-                    // Добавляем новый урок
-                    setLessons(prevLessons => [
-                        ...prevLessons,
-                        {
-                            title: lessonData.title,
-                            description: lessonData.description,
-                            content: lessonData.content,
-                            order: prevLessons.length + 1
-                        }
-                    ]);
-                }
-
-                // Очищаем сохраненные данные
-                localStorage.removeItem('temp_lesson_data');
-            } catch (error) {
-                console.error('Ошибка при чтении данных урока:', error);
-            }
-        }
-
-        // Восстанавливаем данные курса, если они есть
-        const savedCourseData = localStorage.getItem('temp_course_data');
-        if (savedCourseData) {
-            try {
-                const courseData = JSON.parse(savedCourseData);
-
-                // Обновляем состояние курса, но не уроки (они уже обновлены выше)
-                setCourse({
-                    title: courseData.title || '',
-                    description: courseData.description || '',
-                    longDescription: courseData.longDescription || '',
-                    difficulty: courseData.difficulty || 'начинающий',
-                    category_id: courseData.category_id || '',
-                    image: null // Изображение нельзя сохранить в localStorage
-                });
-
-                // Сохраняем превью изображения, если оно было
-                if (courseData.imagePreview) {
-                    setImagePreview(courseData.imagePreview);
-                }
-
-                // Очищаем сохраненные данные
-                localStorage.removeItem('temp_course_data');
-            } catch (error) {
-                console.error('Ошибка при чтении данных курса:', error);
-            }
-        }
-    }, [navigate]);
-
-    // Обработчик удаления урока
-    const handleRemoveLesson = (index) => {
-        const updatedLessons = [...lessons];
-        updatedLessons.splice(index, 1);
-
-        // Обновляем порядок оставшихся уроков
-        const reorderedLessons = updatedLessons.map((lesson, idx) => ({
-            ...lesson,
-            order: idx + 1
-        }));
-
-        setLessons(reorderedLessons);
+    // Функция для сохранения данных курса перед переходом к редактору сцен
+    const saveCourseDataToLocalStorage = () => {
+        const courseBackupData = {
+            course: course,
+            imagePreview: imagePreview
+        };
+        localStorage.setItem('courseFormBackup', JSON.stringify(courseBackupData));
+        console.log('Данные курса сохранены в localStorage');
     };
 
     // Обработчик отправки формы
@@ -237,17 +192,33 @@ export function CreateCoursePage() {
                 longDescription: course.longDescription,
                 difficulty: course.difficulty,
                 category_id: course.category_id,
-                image: course.image,
-                lessons: lessons
+                image: course.image
             };
 
-            // Отправляем данные на сервер
+            // Отправляем данные курса на сервер
             const response = await coursesApi.createCourse(courseData);
 
-            // Если успешно создан, перенаправляем на страницу с созданным курсом 
-            // или на общую страницу курсов
             if (response && response.id) {
-                // Можно перейти на страницу созданного курса
+                // Если есть уроки, создаем их для этого курса
+                if (lessons.length > 0) {
+                    const courseId = response.id;
+                    // Отправляем уроки
+                    await coursesApi.createManyLessons(courseId, lessons.map((lesson, index) => ({
+                        title: lesson.title,
+                        content: lesson.content,
+                        order: lesson.order || index + 1,
+                        scene_data: lesson.scene_data || null,
+                        course_id: courseId
+                    })));
+                }
+
+                // Очищаем localStorage после успешного создания курса
+                localStorage.removeItem('courseFormBackup');
+                localStorage.removeItem('allLessonsBackup');
+                localStorage.removeItem('currentEditingLesson');
+                localStorage.removeItem('savedSceneData');
+
+                // Переходим на страницу созданного курса
                 navigate(`/courses/${response.id}`);
             } else {
                 // Или просто на список курсов
@@ -338,8 +309,8 @@ export function CreateCoursePage() {
                         </div>
 
                         {/* Уровень сложности */}
-                        <div>
-                            <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700 mb-1">
+                        <div className="col-span-1 sm:col-span-1 md:col-span-1">
+                            <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700 mb-1 min-h-[40px] flex items-end">
                                 Уровень сложности*
                             </label>
                             <select
@@ -360,8 +331,8 @@ export function CreateCoursePage() {
                         </div>
 
                         {/* Категория */}
-                        <div>
-                            <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-1">
+                        <div className="col-span-1 sm:col-span-1 md:col-span-1">
+                            <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-1 min-h-[40px] flex items-end">
                                 Категория*
                             </label>
                             <select
@@ -454,73 +425,22 @@ export function CreateCoursePage() {
 
                 {/* Управление уроками */}
                 <div className="mb-8">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-semibold text-gray-800">Уроки</h2>
-                        <button
-                            type="button"
-                            onClick={handleAddLesson}
-                            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                        >
-                            <PlusIcon className="h-5 w-5 mr-1" />
-                            Добавить урок
-                        </button>
-                    </div>
-
-                    {lessons.length === 0 ? (
-                        <div className={`bg-gray-50 border ${errors.lessons ? 'border-red-500' : 'border-gray-200'} rounded-lg p-6 text-center`}>
-                            <p className={`${errors.lessons ? 'text-red-600' : 'text-gray-600'}`}>Добавьте уроки для вашего курса</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {lessons.map((lesson, index) => (
-                                <div
-                                    key={index}
-                                    className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg p-4"
-                                >
-                                    <div className="flex items-center">
-                                        <div className="bg-blue-100 text-blue-600 font-medium px-3 py-1 rounded-full mr-3">
-                                            {index + 1}
-                                        </div>
-                                        <div>
-                                            <h3 className="font-medium">{lesson.title}</h3>
-                                            <p className="text-sm text-gray-600">{lesson.longDescription}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => navigate(`/courses/create/lesson/${index}`, {
-                                                state: {
-                                                    courseData: course,
-                                                    lessonData: lesson
-                                                }
-                                            })}
-                                            className="text-blue-600 hover:text-blue-800"
-                                        >
-                                            Редактировать
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveLesson(index)}
-                                            className="text-red-600 hover:text-red-800"
-                                        >
-                                            Удалить
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    <LessonsManager
+                        initialLessons={lessons}
+                        courseId={course.id}
+                        onChange={handleLessonsUpdate}
+                        onNavigateToEditor={saveCourseDataToLocalStorage}
+                    />
                     {errors.lessons && (
                         <p className="mt-2 text-sm text-red-500">{errors.lessons}</p>
                     )}
                 </div>
 
                 {/* Кнопки действий */}
-                <div className="flex justify-end space-x-4">
+                <div className="flex flex-col sm:flex-row justify-center sm:justify-end space-y-2 sm:space-y-0 sm:space-x-4">
                     <Link
-                        to="/"
-                        className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                        to="/courses"
+                        className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-center"
                     >
                         Отмена
                     </Link>
@@ -531,11 +451,8 @@ export function CreateCoursePage() {
                             }`}
                     >
                         {loading ? (
-                            <span className="flex items-center">
-                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
+                            <span className="flex items-center justify-center">
+                                <ArrowPathIcon className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" />
                                 Сохранение...
                             </span>
                         ) : (
