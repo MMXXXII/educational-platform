@@ -82,14 +82,33 @@ export function CoursesPage() {
 
             // Добавляем фильтры категорий, если они выбраны
             if (activeFilters.categories.length > 0) {
-                // Бэкенд ожидает один category_id, а не массив
-                params.category_id = activeFilters.categories[0];
+                // Получаем названия выбранных категорий
+                const categoryNames = activeFilters.categories.map(categoryId => {
+                    const category = categories.find(cat => cat.value === categoryId);
+                    return category ? category.label : null;
+                }).filter(Boolean);
+
+                // Используем параметр category_names для множественного выбора
+                if (categoryNames.length > 0) {
+                    params.category_names = categoryNames;
+                } else if (activeFilters.categories.length > 0) {
+                    // Если не нашли имена по ID, используем сами ID
+                    params.category_id = activeFilters.categories[0]; // Используем первый ID
+                }
             }
 
             // Добавляем фильтры уровней сложности, если они выбраны
             if (activeFilters.difficulties.length > 0) {
-                // Бэкенд ожидает один difficulty параметр, а не массив
-                params.difficulty = activeFilters.difficulties[0];
+                // Валидация сложностей - на бекенде допустимы только начинающий/средний/продвинутый
+                const validDifficulties = ["начинающий", "средний", "продвинутый"];
+                const filteredDifficulties = activeFilters.difficulties.filter(
+                    diff => validDifficulties.includes(diff)
+                );
+
+                // Поддержка множественных значений сложности
+                if (filteredDifficulties.length > 0) {
+                    params.difficulties = filteredDifficulties;
+                }
             }
 
             const data = await coursesApi.getCourses(params);
@@ -105,7 +124,7 @@ export function CoursesPage() {
         } finally {
             setLoading(false);
         }
-    }, [debouncedSearchQuery, activeFilters, currentPage, pageSize]);
+    }, [debouncedSearchQuery, activeFilters, currentPage, pageSize, categories]);
 
     // Запускаем поиск курсов при изменении фильтров, поисковой строки или страницы
     useEffect(() => {

@@ -1,39 +1,37 @@
 // Компонент фильтрации
 export function Filters({ categories, difficulties, setActiveFilters, activeFilters }) {
-    // Обработчик изменения категории
+    // Обработчик изменения категории позволяет выбирать несколько категорий
     const handleCategoryChange = (categoryId) => {
         // Проверяем, выбрана ли уже эта категория
         if (activeFilters.categories.includes(categoryId)) {
             // Если выбрана - убираем из выбранных
             setActiveFilters({
                 ...activeFilters,
-                categories: []
+                categories: activeFilters.categories.filter(id => id !== categoryId)
             });
         } else {
-            // Если не выбрана - делаем активной одну категорию
-            // Из-за особенностей API мы можем фильтровать только по одной категории
+            // Если не выбрана - добавляем к уже выбранным
             setActiveFilters({
                 ...activeFilters,
-                categories: [categoryId]
+                categories: [...activeFilters.categories, categoryId]
             });
         }
     };
 
-    // Обработчик изменения уровня сложности
+    // Обработчик изменения уровня сложности позволяет выбирать несколько уровней
     const handleDifficultyChange = (difficultyValue) => {
         // Проверяем, выбран ли уже этот уровень сложности
         if (activeFilters.difficulties.includes(difficultyValue)) {
             // Если выбран - убираем из выбранных
             setActiveFilters({
                 ...activeFilters,
-                difficulties: []
+                difficulties: activeFilters.difficulties.filter(diff => diff !== difficultyValue)
             });
         } else {
-            // Если не выбран - делаем активным один уровень сложности
-            // Из-за особенностей API мы можем фильтровать только по одному уровню
+            // Если не выбран - добавляем к уже выбранным
             setActiveFilters({
                 ...activeFilters,
-                difficulties: [difficultyValue]
+                difficulties: [...activeFilters.difficulties, difficultyValue]
             });
         }
     };

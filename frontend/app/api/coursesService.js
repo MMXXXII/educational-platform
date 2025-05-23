@@ -26,7 +26,27 @@ export const coursesApi = {
     // Получение списка курсов с параметрами
     getCourses: async (params = {}) => {
         try {
-            const response = await apiClient.get('/courses', { params });
+            // FastAPI ожидает параметры в формате ?param=value1&param=value2
+            // а не в формате ?param[]=value1&param[]=value2, который генерирует axios по умолчанию
+            // Создаем новый URLSearchParams для правильного форматирования параметров
+            const searchParams = new URLSearchParams();
+            
+            // Добавляем все параметры
+            for (const key in params) {
+                const value = params[key];
+                
+                if (Array.isArray(value)) {
+                    // Для массивов добавляем каждое значение отдельно с тем же ключом
+                    value.forEach(item => {
+                        searchParams.append(key, item);
+                    });
+                } else {
+                    // Обычные параметры добавляем как есть
+                    searchParams.append(key, value);
+                }
+            }
+            
+            const response = await apiClient.get(`/courses?${searchParams.toString()}`);
             return response.data;
         } catch (error) {
             handleError(error);
