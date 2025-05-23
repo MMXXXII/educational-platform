@@ -113,7 +113,9 @@ async def list_courses(
     category_id: Optional[int] = Query(
         None, description="Фильтр по ID категории"),
     difficulty: Optional[str] = Query(
-        None, description="Фильтр по уровню сложности"),
+        None, description="Фильтр по уровню сложности (для обратной совместимости)"),
+    difficulties: Optional[List[str]] = Query(
+        None, description="Фильтр по нескольким уровням сложности"),
     search: Optional[str] = Query(
         None, description="Поиск только по названию и описанию"),
     category_names: Optional[List[str]] = Query(
@@ -133,6 +135,7 @@ async def list_courses(
             sort_order=sort_order,
             category_id=category_id,
             difficulty=difficulty,
+            difficulties=difficulties,
             search=search,
             category_names=category_names,
             author=author

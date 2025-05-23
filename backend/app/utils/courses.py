@@ -15,6 +15,7 @@ def get_filtered_courses_query(
     db: Session,
     category_id: Optional[int] = None,
     difficulty: Optional[str] = None,
+    difficulties: Optional[List[str]] = None,
     search: Optional[str] = None,
     category_names: Optional[List[str]] = None,
     author: Optional[str] = None,
@@ -27,7 +28,8 @@ def get_filtered_courses_query(
     Args:
         db: Сессия базы данных
         category_id: ID категории для фильтрации
-        difficulty: Уровень сложности курса
+        difficulty: Уровень сложности курса (для обратной совместимости)
+        difficulties: Список уровней сложности курса
         search: Строка поиска только для заголовка и описания
         category_names: Список имен категорий для фильтрации
         author: Имя автора для фильтрации
@@ -49,8 +51,17 @@ def get_filtered_courses_query(
             ).exists()
             query = query.filter(subquery)
 
-        # Фильтрация по уровню
-        if difficulty:
+        # Фильтрация по уровню сложности (поддержка старого и нового способа)
+        if difficulties and len(difficulties) > 0:
+            # Если передан список сложностей, фильтруем по нему
+            # Проверяем, что все значения difficulties допустимы
+            valid_difficulties = ["начинающий", "средний", "продвинутый"]
+            validated_difficulties = [d for d in difficulties if d in valid_difficulties]
+            
+            if validated_difficulties:
+                query = query.filter(Course.difficulty.in_(validated_difficulties))
+        elif difficulty:
+            # Обратная совместимость для одиночного значения
             query = query.filter(Course.difficulty == difficulty)
 
         # Фильтрация по автору
@@ -62,12 +73,15 @@ def get_filtered_courses_query(
         if category_names:
             category_conditions = []
             for name in category_names:
+                # Используем точное соответствие имени категории
                 subquery = db.query(course_categories).join(Category).filter(
                     course_categories.c.course_id == Course.id,
-                    func.lower(Category.name).ilike(f"%{name.lower()}%")
+                    func.lower(Category.name) == name.lower()
                 ).exists()
                 category_conditions.append(subquery)
-            query = query.filter(or_(*category_conditions))
+            
+            if category_conditions:
+                query = query.filter(or_(*category_conditions))
 
         # Поиск по названию и описанию
         if search:
@@ -85,7 +99,7 @@ def get_filtered_courses_query(
             query = query.order_by(asc(sort_column))
         else:
             query = query.order_by(desc(sort_column))
-
+        
         return query
 
     except SQLAlchemyError as e:
