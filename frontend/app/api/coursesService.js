@@ -30,11 +30,11 @@ export const coursesApi = {
             // а не в формате ?param[]=value1&param[]=value2, который генерирует axios по умолчанию
             // Создаем новый URLSearchParams для правильного форматирования параметров
             const searchParams = new URLSearchParams();
-            
+
             // Добавляем все параметры
             for (const key in params) {
                 const value = params[key];
-                
+
                 if (Array.isArray(value)) {
                     // Для массивов добавляем каждое значение отдельно с тем же ключом
                     value.forEach(item => {
@@ -45,7 +45,7 @@ export const coursesApi = {
                     searchParams.append(key, value);
                 }
             }
-            
+
             const response = await apiClient.get(`/courses?${searchParams.toString()}`);
             return response.data;
         } catch (error) {
@@ -112,6 +112,26 @@ export const coursesApi = {
         try {
             const response = await apiClient.get(`/courses/${courseId}/with-lessons`);
             return response.data;
+        } catch (error) {
+            handleError(error);
+        }
+    },
+
+    // Получение курсов, созданных текущим пользователем
+    getMyCreatedCourses: async (page = 1, size = 10) => {
+        try {
+            const response = await apiClient.get('/courses/created-by-me', { params: { page, size } });
+            return response.data;
+        } catch (error) {
+            handleError(error);
+        }
+    },
+
+    // Удаление курса
+    deleteCourse: async (courseId) => {
+        try {
+            await apiClient.delete(`/courses/${courseId}`);
+            return true;
         } catch (error) {
             handleError(error);
         }

@@ -12,6 +12,7 @@ export default [
             index("routes/home.tsx"),
             route("courses", "./routes/courses.tsx"),
             route("courses/:id", "./routes/course-detail.tsx"),
+            route("my-courses", "./routes/my-courses.tsx"),
             route("profile", "./routes/profile.tsx"),
             route("file-manager", "./routes/file-manager.tsx"),
             route("create-course", "./routes/create-course.tsx"),

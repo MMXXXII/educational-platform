@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { UserIcon, ArrowRightEndOnRectangleIcon, BookOpenIcon, PlayIcon, PencilSquareIcon, Bars3Icon, XMarkIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { UserIcon, ArrowRightEndOnRectangleIcon, BookOpenIcon, PlayIcon, PencilSquareIcon, Bars3Icon, XMarkIcon, DocumentTextIcon, AcademicCapIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 
 export function Header() {
@@ -66,6 +66,15 @@ export function Header() {
                                 >
                                     <BookOpenIcon className="h-5 w-5 mr-1" />
                                     <span>Курсы</span>
+                                </Link>
+
+                                {/* Ссылка "Мои курсы" для всех авторизованных пользователей */}
+                                <Link
+                                    to="/my-courses"
+                                    className="text-gray-700 hover:text-blue-600 flex items-center"
+                                >
+                                    <AcademicCapIcon className="h-5 w-5 mr-1" />
+                                    <span>Мои курсы</span>
                                 </Link>
 
                                 {/* Ссылка "Создать курс" только для администраторов и учителей*/}
@@ -153,6 +162,15 @@ export function Header() {
                                     >
                                         <BookOpenIcon className="h-5 w-5 mr-2" />
                                         <span>Курсы</span>
+                                    </Link>
+
+                                    <Link
+                                        to="/my-courses"
+                                        className="text-gray-700 hover:text-blue-600 flex items-center"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        <AcademicCapIcon className="h-5 w-5 mr-2" />
+                                        <span>Мои курсы</span>
                                     </Link>
 
                                     {hasRole(['admin', 'teacher']) && (
