@@ -3,8 +3,7 @@ import { Link } from 'react-router';
 import { AcademicCapIcon, PencilSquareIcon, TrashIcon, PlayIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { coursesApi } from '../api/coursesService';
 import { useAuth } from '../contexts/AuthContext';
-import { LoadingState } from '../courses/LoadingState';
-import { Pagination } from '../courses/Pagination';
+import { LoadingState, Pagination, PageSizeSelector } from '../common';
 
 export function MyCoursesPage() {
     const { hasRole } = useAuth();
@@ -227,33 +226,7 @@ export function MyCoursesPage() {
         </div>
     );
 
-    // Компонент выбора количества элементов на странице
-    const PageSizeSelector = ({ pageSize, onChange, currentPage, totalItems }) => {
-        const startItem = (currentPage - 1) * pageSize + 1;
-        const endItem = Math.min(currentPage * pageSize, totalItems);
-        
-        return (
-            <div className="flex justify-between items-center mb-6 text-sm text-gray-600">
-                <div>
-                    {totalItems > 0 && `Показано ${startItem} - ${endItem} из ${totalItems} курсов`}
-                </div>
-                <div className="flex items-center">
-                    <label htmlFor="pageSize" className="mr-2">На странице:</label>
-                    <select
-                        id="pageSize"
-                        value={pageSize}
-                        onChange={onChange}
-                        className="border rounded px-2 py-1 text-sm"
-                    >
-                        <option value="6">6</option>
-                        <option value="12">12</option>
-                        <option value="24">24</option>
-                        <option value="48">48</option>
-                    </select>
-                </div>
-            </div>
-        );
-    };
+
 
     return (
         <div className="container mx-auto px-4 sm:px-6 py-8">
@@ -328,6 +301,7 @@ export function MyCoursesPage() {
                                         onChange={handleEnrolledPageSizeChange}
                                         currentPage={enrolledPage}
                                         totalItems={enrolledTotal}
+                                        itemName="курсов"
                                     />
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                                         {enrolledCourses.map(course => (
@@ -370,6 +344,7 @@ export function MyCoursesPage() {
                                         onChange={handleCreatedPageSizeChange}
                                         currentPage={createdPage}
                                         totalItems={createdTotal}
+                                        itemName="курсов"
                                     />
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                                         {createdCourses.map(course => (

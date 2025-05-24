@@ -3,8 +3,7 @@ import { CourseCard } from './CourseCard';
 import { Filters } from './Filters';
 import { SearchBar } from './SearchBar';
 import { EmptyState } from './EmptyState';
-import { LoadingState } from './LoadingState';
-import { Pagination } from './Pagination';
+import { LoadingState, Pagination, PageSizeSelector } from '../common';
 import { coursesApi, categoriesApi } from '../api/coursesService';
 
 export function CoursesPage() {
@@ -224,25 +223,13 @@ export function CoursesPage() {
                     ) : courses.length > 0 ? (
                         <>
                             {/* Статистика результатов и выбор количества на странице */}
-                            <div className="flex justify-between items-center mb-6 mt-4 text-sm text-gray-600">
-                                <div>
-                                    Показано {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, totalItems)} из {totalItems} курсов
-                                </div>
-                                <div className="flex items-center">
-                                    <label htmlFor="pageSize" className="mr-2">На странице:</label>
-                                    <select
-                                        id="pageSize"
-                                        value={pageSize}
-                                        onChange={handlePageSizeChange}
-                                        className="border rounded px-2 py-1 text-sm"
-                                    >
-                                        <option value="6">6</option>
-                                        <option value="12">12</option>
-                                        <option value="24">24</option>
-                                        <option value="48">48</option>
-                                    </select>
-                                </div>
-                            </div>
+                            <PageSizeSelector
+                                pageSize={pageSize}
+                                onChange={handlePageSizeChange}
+                                currentPage={currentPage}
+                                totalItems={totalItems}
+                                itemName="курсов"
+                            />
 
                             {/* Сетка курсов */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
