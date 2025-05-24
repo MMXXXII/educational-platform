@@ -11,6 +11,44 @@ from fastapi import HTTPException, status
 from app.core.models import Course, Category, CourseEnrollment, User, course_categories, Lesson
 
 
+def get_course_by_id(db: Session, course_id: int) -> Course:
+    """
+    Получает детальную информацию о курсе по его ID или выдает ошибку 404
+
+    Args:
+        db: Сессия базы данных
+        course_id: ID курса
+
+    Returns:
+        Объект курса
+
+    Raises:
+        HTTPException: если курс не найден
+    """
+    try:
+        course = db.query(Course).options(
+            joinedload(Course.categories)
+        ).filter(
+            Course.id == course_id
+        ).first()
+
+        if not course:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Курс с ID {course_id} не найден"
+            )
+
+        return course
+
+    except SQLAlchemyError as e:
+        # Логирование ошибки
+        print(f"Database error in get_course_by_id: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при получении курса: {str(e)}"
+        )
+
+
 def get_filtered_courses_query(
     db: Session,
     category_id: Optional[int] = None,
@@ -56,10 +94,12 @@ def get_filtered_courses_query(
             # Если передан список сложностей, фильтруем по нему
             # Проверяем, что все значения difficulties допустимы
             valid_difficulties = ["начинающий", "средний", "продвинутый"]
-            validated_difficulties = [d for d in difficulties if d in valid_difficulties]
-            
+            validated_difficulties = [
+                d for d in difficulties if d in valid_difficulties]
+
             if validated_difficulties:
-                query = query.filter(Course.difficulty.in_(validated_difficulties))
+                query = query.filter(
+                    Course.difficulty.in_(validated_difficulties))
         elif difficulty:
             # Обратная совместимость для одиночного значения
             query = query.filter(Course.difficulty == difficulty)
@@ -79,7 +119,7 @@ def get_filtered_courses_query(
                     func.lower(Category.name) == name.lower()
                 ).exists()
                 category_conditions.append(subquery)
-            
+
             if category_conditions:
                 query = query.filter(or_(*category_conditions))
 
@@ -99,7 +139,7 @@ def get_filtered_courses_query(
             query = query.order_by(asc(sort_column))
         else:
             query = query.order_by(desc(sort_column))
-        
+
         return query
 
     except SQLAlchemyError as e:
@@ -190,6 +230,106 @@ def is_enrolled(db: Session, user_id: int, course_id: int) -> bool:
         return False
 
 
+def enroll_user_to_course(db: Session, user_id: int, course_id: int) -> Optional[CourseEnrollment]:
+    """
+    Записывает пользователя на курс
+
+    Args:
+        db: Сессия базы данных
+        user_id: ID пользователя
+        course_id: ID курса
+
+    Returns:
+        Объект записи на курс или None в случае ошибки
+    """
+    try:
+        # Проверяем, что пользователь еще не записан на курс
+        existing_enrollment = db.query(CourseEnrollment).filter(
+            CourseEnrollment.user_id == user_id,
+            CourseEnrollment.course_id == course_id
+        ).first()
+
+        if existing_enrollment:
+            # Обновляем время последнего доступа
+            existing_enrollment.last_accessed_at = datetime.now(timezone.utc)
+            db.commit()
+            return existing_enrollment
+
+        # Создаем новую запись
+        new_enrollment = CourseEnrollment(
+            user_id=user_id,
+            course_id=course_id,
+            progress=0.0,
+            completed=False,
+            enrolled_at=datetime.now(timezone.utc),
+            last_accessed_at=datetime.now(timezone.utc)
+        )
+
+        db.add(new_enrollment)
+        db.commit()
+        db.refresh(new_enrollment)
+
+        return new_enrollment
+
+    except SQLAlchemyError as e:
+        # Логирование ошибки и откат транзакции
+        print(f"Database error in enroll_user_to_course: {str(e)}")
+        db.rollback()
+        return None
+
+
+def get_user_enrolled_courses(db: Session, user_id: int,
+                              page: int = 1, size: int = 10) -> Tuple[List[Course], int, int]:
+    """
+    Получает список курсов, на которые записан пользователь, с пагинацией
+
+    Args:
+        db: Сессия базы данных
+        user_id: ID пользователя
+        page: Номер страницы
+        size: Размер страницы
+
+    Returns:
+        Tuple из трех элементов:
+        - Список объектов курсов
+        - Общее количество курсов
+        - Общее количество страниц
+    """
+    try:
+        # Проверка и исправление входных параметров
+        page = max(1, page)
+        size = max(1, min(100, size))
+
+        # Запрос для получения курсов с присоединением таблицы записей
+        query = db.query(Course).join(
+            CourseEnrollment,
+            CourseEnrollment.course_id == Course.id
+        ).options(
+            joinedload(Course.categories),
+            contains_eager(Course.enrollments)
+        ).filter(
+            CourseEnrollment.user_id == user_id
+        ).order_by(
+            desc(CourseEnrollment.last_accessed_at)
+        )
+
+        # Подсчет общего количества записей
+        total = query.count()
+
+        # Применение пагинации
+        courses = query.offset((page - 1) * size).limit(size).all()
+
+        # Расчет общего количества страниц
+        pages = (total + size - 1) // size if total > 0 else 0
+
+        return courses, total, pages
+
+    except SQLAlchemyError as e:
+        # Логирование ошибки
+        print(f"Database error in get_user_enrolled_courses: {str(e)}")
+        return [], 0, 0
+
+
 def get_user_course_progress(db: Session, user_id: int, course_id: int) -> Optional[Dict[str, Any]]:
     """
     Получает информацию о прогрессе пользователя на конкретном курсе
@@ -223,38 +363,6 @@ def get_user_course_progress(db: Session, user_id: int, course_id: int) -> Optio
         # Логирование ошибки
         print(f"Database error in get_user_course_progress: {str(e)}")
         return None
-
-
-def update_course_access_time(db: Session, user_id: int, course_id: int) -> bool:
-    """
-    Обновляет время последнего доступа к курсу
-
-    Args:
-        db: Сессия базы данных
-        user_id: ID пользователя
-        course_id: ID курса
-
-    Returns:
-        True если обновление успешно, иначе False
-    """
-    try:
-        enrollment = db.query(CourseEnrollment).filter(
-            CourseEnrollment.user_id == user_id,
-            CourseEnrollment.course_id == course_id
-        ).first()
-
-        if not enrollment:
-            return False
-
-        enrollment.last_accessed_at = datetime.now(timezone.utc)
-        db.commit()
-        return True
-
-    except SQLAlchemyError as e:
-        # Логирование ошибки и откат транзакции
-        print(f"Database error in update_course_access_time: {str(e)}")
-        db.rollback()
-        return False
 
 
 def update_course_progress(db: Session, user_id: int, course_id: int, progress: float,
@@ -299,6 +407,38 @@ def update_course_progress(db: Session, user_id: int, course_id: int, progress: 
     except SQLAlchemyError as e:
         # Логирование ошибки и откат транзакции
         print(f"Database error in update_course_progress: {str(e)}")
+        db.rollback()
+        return False
+
+
+def update_course_access_time(db: Session, user_id: int, course_id: int) -> bool:
+    """
+    Обновляет время последнего доступа к курсу
+
+    Args:
+        db: Сессия базы данных
+        user_id: ID пользователя
+        course_id: ID курса
+
+    Returns:
+        True если обновление успешно, иначе False
+    """
+    try:
+        enrollment = db.query(CourseEnrollment).filter(
+            CourseEnrollment.user_id == user_id,
+            CourseEnrollment.course_id == course_id
+        ).first()
+
+        if not enrollment:
+            return False
+
+        enrollment.last_accessed_at = datetime.now(timezone.utc)
+        db.commit()
+        return True
+
+    except SQLAlchemyError as e:
+        # Логирование ошибки и откат транзакции
+        print(f"Database error in update_course_access_time: {str(e)}")
         db.rollback()
         return False
 
@@ -365,144 +505,6 @@ def get_recent_courses(db: Session, limit: int = 5) -> List[Course]:
         # Логирование ошибки
         print(f"Database error in get_recent_courses: {str(e)}")
         return []
-
-
-def get_user_enrolled_courses(db: Session, user_id: int,
-                              page: int = 1, size: int = 10) -> Tuple[List[Course], int, int]:
-    """
-    Получает список курсов, на которые записан пользователь, с пагинацией
-
-    Args:
-        db: Сессия базы данных
-        user_id: ID пользователя
-        page: Номер страницы
-        size: Размер страницы
-
-    Returns:
-        Tuple из трех элементов:
-        - Список объектов курсов
-        - Общее количество курсов
-        - Общее количество страниц
-    """
-    try:
-        # Проверка и исправление входных параметров
-        page = max(1, page)
-        size = max(1, min(100, size))
-
-        # Запрос для получения курсов с присоединением таблицы записей
-        query = db.query(Course).join(
-            CourseEnrollment,
-            CourseEnrollment.course_id == Course.id
-        ).options(
-            joinedload(Course.categories),
-            contains_eager(Course.enrollments)
-        ).filter(
-            CourseEnrollment.user_id == user_id
-        ).order_by(
-            desc(CourseEnrollment.last_accessed_at)
-        )
-
-        # Подсчет общего количества записей
-        total = query.count()
-
-        # Применение пагинации
-        courses = query.offset((page - 1) * size).limit(size).all()
-
-        # Расчет общего количества страниц
-        pages = (total + size - 1) // size if total > 0 else 0
-
-        return courses, total, pages
-
-    except SQLAlchemyError as e:
-        # Логирование ошибки
-        print(f"Database error in get_user_enrolled_courses: {str(e)}")
-        return [], 0, 0
-
-
-def get_course_by_id(db: Session, course_id: int) -> Course:
-    """
-    Получает детальную информацию о курсе по его ID или выдает ошибку 404
-
-    Args:
-        db: Сессия базы данных
-        course_id: ID курса
-
-    Returns:
-        Объект курса
-
-    Raises:
-        HTTPException: если курс не найден
-    """
-    try:
-        course = db.query(Course).options(
-            joinedload(Course.categories)
-        ).filter(
-            Course.id == course_id
-        ).first()
-
-        if not course:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Курс с ID {course_id} не найден"
-            )
-
-        return course
-
-    except SQLAlchemyError as e:
-        # Логирование ошибки
-        print(f"Database error in get_course_by_id: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка при получении курса: {str(e)}"
-        )
-
-
-def enroll_user_to_course(db: Session, user_id: int, course_id: int) -> Optional[CourseEnrollment]:
-    """
-    Записывает пользователя на курс
-
-    Args:
-        db: Сессия базы данных
-        user_id: ID пользователя
-        course_id: ID курса
-
-    Returns:
-        Объект записи на курс или None в случае ошибки
-    """
-    try:
-        # Проверяем, что пользователь еще не записан на курс
-        existing_enrollment = db.query(CourseEnrollment).filter(
-            CourseEnrollment.user_id == user_id,
-            CourseEnrollment.course_id == course_id
-        ).first()
-
-        if existing_enrollment:
-            # Обновляем время последнего доступа
-            existing_enrollment.last_accessed_at = datetime.now(timezone.utc)
-            db.commit()
-            return existing_enrollment
-
-        # Создаем новую запись
-        new_enrollment = CourseEnrollment(
-            user_id=user_id,
-            course_id=course_id,
-            progress=0.0,
-            completed=False,
-            enrolled_at=datetime.now(timezone.utc),
-            last_accessed_at=datetime.now(timezone.utc)
-        )
-
-        db.add(new_enrollment)
-        db.commit()
-        db.refresh(new_enrollment)
-
-        return new_enrollment
-
-    except SQLAlchemyError as e:
-        # Логирование ошибки и откат транзакции
-        print(f"Database error in enroll_user_to_course: {str(e)}")
-        db.rollback()
-        return None
 
 
 def get_recommended_courses(db: Session, user_id: int, limit: int = 5) -> List[Course]:

@@ -194,8 +194,8 @@ class EnrollmentOut(EnrollmentBase):
     user_id: int
     progress: float
     completed: bool
-    enrolled_at: datetime
-    last_accessed_at: datetime
+    enrolled_at: Optional[datetime]
+    last_accessed_at: Optional[datetime]
 
     class Config:
         from_attributes = True
@@ -207,6 +207,23 @@ class EnrollmentWithCourse(EnrollmentOut):
 
     class Config:
         from_attributes = True
+
+
+class CourseWithProgress(CourseOut):
+    """Схема для вывода курса с информацией о прогрессе пользователя"""
+    enrollments: List[EnrollmentOut] = []
+
+    class Config:
+        from_attributes = True
+
+
+class MyCoursesResponse(BaseModel):
+    """Схема для вывода списка курсов пользователя с прогрессом"""
+    items: List[CourseWithProgress]
+    total: int
+    page: int
+    size: int
+    pages: int
 
 
 class CoursesResponse(BaseModel):

@@ -3,8 +3,9 @@ API endpoints for courses management
 """
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Path, UploadFile, File, Form
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import desc
 
 from app.core.database import get_db
 from app.core.models import Course, Category, CourseEnrollment, User, Lesson
@@ -12,7 +13,8 @@ from app.core.schemas import (
     CategoryCreate, CategoryOut, CourseCreate, CourseOut, CourseUpdate,
     EnrollmentCreate, EnrollmentOut, EnrollmentUpdate,
     EnrollmentWithCourse, CoursesResponse, CategoriesResponse,
-    LessonCreate, LessonOut, LessonUpdate, CourseWithLessons
+    LessonCreate, LessonOut, LessonUpdate, CourseWithLessons,
+    CourseWithProgress, MyCoursesResponse
 )
 from app.utils.auth import get_current_user, get_optional_current_user
 from app.utils.courses import (
@@ -43,28 +45,6 @@ async def list_categories(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Ошибка при получении категорий: {str(e)}"
-        )
-
-
-@router.get("/categories/{category_id}", response_model=CategoryOut)
-async def get_category(
-    category_id: int = Path(..., title="ID категории"),
-    db: Session = Depends(get_db)
-):
-    """Получение информации о конкретной категории"""
-    try:
-        category = db.query(Category).filter(
-            Category.id == category_id).first()
-        if not category:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Категория с ID {category_id} не найдена"
-            )
-        return category
-    except SQLAlchemyError as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка при получении категории: {str(e)}"
         )
 
 
@@ -104,7 +84,29 @@ async def create_category(
         )
 
 
-# Курсы
+@router.get("/categories/{category_id}", response_model=CategoryOut)
+async def get_category(
+    category_id: int = Path(..., title="ID категории"),
+    db: Session = Depends(get_db)
+):
+    """Получение информации о конкретной категории"""
+    try:
+        category = db.query(Category).filter(
+            Category.id == category_id).first()
+        if not category:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Категория с ID {category_id} не найдена"
+            )
+        return category
+    except SQLAlchemyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при получении категории: {str(e)}"
+        )
+
+
+# Курсы - статические пути
 @router.get("", response_model=CoursesResponse)
 async def list_courses(
     page: int = Query(1, ge=1, description="Номер страницы"),
@@ -201,99 +203,82 @@ async def list_recommended_courses(
         )
 
 
-@router.get("/{course_id}", response_model=CourseOut)
-async def get_course(
-    course_id: int = Path(..., title="ID курса"),
-    db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
-):
-    """Получение подробной информации о конкретном курсе"""
-    try:
-        course = db.query(Course).filter(Course.id == course_id).first()
-        if not course:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Курс с ID {course_id} не найден"
-            )
-
-        # Если пользователь авторизован, обновляем время доступа
-        if current_user:
-            if is_enrolled(db, current_user.id, course_id):
-                update_course_access_time(db, current_user.id, course_id)
-
-        return course
-    except SQLAlchemyError as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка при получении информации о курсе: {str(e)}"
-        )
-
-
-@router.get("/{course_id}/with-lessons", response_model=CourseWithLessons)
-async def get_course_with_lessons(
-    course_id: int = Path(..., title="ID курса"),
-    db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_current_user)
-):
-    """Получение подробной информации о курсе со всеми уроками"""
-    try:
-        course = db.query(Course).filter(Course.id == course_id).first()
-        if not course:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Курс с ID {course_id} не найден"
-            )
-
-        # Получаем уроки
-        lessons = db.query(Lesson).filter(
-            Lesson.course_id == course_id).order_by(Lesson.order).all()
-
-        # Если пользователь авторизован, обновляем время доступа
-        if current_user:
-            if is_enrolled(db, current_user.id, course_id):
-                update_course_access_time(db, current_user.id, course_id)
-
-        # Создаем объект CourseWithLessons
-        course_with_lessons = CourseWithLessons.from_orm(course)
-        course_with_lessons.lessons = lessons
-
-        return course_with_lessons
-    except SQLAlchemyError as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка при получении информации о курсе: {str(e)}"
-        )
-
-
-@router.get("/{course_id}/progress", response_model=dict)
-async def get_course_progress(
-    course_id: int = Path(..., title="ID курса"),
+@router.get("/created-by-me", response_model=CoursesResponse)
+async def get_my_created_courses(
+    page: int = Query(1, ge=1, description="Номер страницы"),
+    size: int = Query(10, ge=1, le=100,
+                      description="Количество элементов на странице"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Получение информации о прогрессе пользователя по курсу"""
+    """Получение списка курсов, созданных текущим пользователем"""
     try:
-        # Проверяем существование курса
-        course = db.query(Course).filter(Course.id == course_id).first()
-        if not course:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Курс с ID {course_id} не найден"
-            )
+        # Только учителя и администраторы могут создавать курсы
+        if current_user.role not in ["admin", "teacher"]:
+            return {
+                "items": [],
+                "total": 0,
+                "page": page,
+                "size": size,
+                "pages": 0
+            }
 
-        # Получаем прогресс пользователя
-        progress = get_user_course_progress(db, current_user.id, course_id)
-        if not progress:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Вы не записаны на этот курс"
-            )
+        # Получаем курсы, где автор - текущий пользователь
+        query = db.query(Course).filter(
+            Course.author == current_user.username
+        ).options(
+            joinedload(Course.categories)
+        ).order_by(
+            desc(Course.created_at)
+        )
 
-        return progress
+        # Подсчет общего количества записей
+        total = query.count()
+
+        # Применение пагинации
+        courses = query.offset((page - 1) * size).limit(size).all()
+
+        # Расчет общего количества страниц
+        pages = (total + size - 1) // size if total > 0 else 0
+
+        return {
+            "items": courses,
+            "total": total,
+            "page": page,
+            "size": size,
+            "pages": pages
+        }
     except SQLAlchemyError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка при получении прогресса: {str(e)}"
+            detail=f"Ошибка при получении списка созданных курсов: {str(e)}"
+        )
+
+
+@router.get("/my-courses", response_model=MyCoursesResponse)
+async def get_my_courses(
+    page: int = Query(1, ge=1, description="Номер страницы"),
+    size: int = Query(10, ge=1, le=100,
+                      description="Количество элементов на странице"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Получение списка курсов пользователя с пагинацией и прогрессом"""
+    try:
+        courses, total, pages = get_user_enrolled_courses(
+            db, current_user.id, page, size)
+
+        return {
+            "items": courses,
+            "total": total,
+            "page": page,
+            "size": size,
+            "pages": pages
+        }
+    except SQLAlchemyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при получении списка курсов: {str(e)}"
         )
 
 
@@ -411,125 +396,7 @@ async def create_course_form(
             detail=f"Ошибка при создании курса: {str(e)}"
         )
 
-
-@router.post("/{course_id}/upload-image", response_model=dict)
-async def upload_course_image(
-    course_id: int,
-    image: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Загрузка или обновление изображения курса"""
-    try:
-        # Проверяем существование курса и права пользователя
-        course = get_course_by_id(db, course_id)
-        check_course_owner(course, current_user)
-
-        # Сохраняем изображение
-        image_url = save_course_image(image, current_user.id)
-
-        # Обновляем курс
-        course.image_url = image_url
-        db.commit()
-
-        return {"image_url": image_url}
-    except SQLAlchemyError as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка при загрузке изображения: {str(e)}"
-        )
-
-
-@router.put("/{course_id}", response_model=CourseOut)
-async def update_course(
-    course_update: CourseUpdate,
-    course_id: int = Path(..., title="ID курса"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Обновление информации о курсе (только для администраторов и учителей)"""
-    try:
-        if current_user.role not in ["admin", "teacher"]:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Недостаточно прав для выполнения операции"
-            )
-
-        # Поиск курса
-        db_course = db.query(Course).filter(Course.id == course_id).first()
-        if not db_course:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Курс с ID {course_id} не найден"
-            )
-
-        # Обновляем категории если они указаны
-        if course_update.category_ids is not None:
-            categories = []
-            for category_id in course_update.category_ids:
-                category = db.query(Category).filter(
-                    Category.id == category_id).first()
-                if not category:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Категория с ID {category_id} не найдена"
-                    )
-                categories.append(category)
-            db_course.categories = categories
-
-        # Обновление только предоставленных полей
-        update_data = course_update.model_dump(
-            exclude={"category_ids"}, exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(db_course, key, value)
-
-        db.commit()
-        db.refresh(db_course)
-        return db_course
-    except SQLAlchemyError as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка при обновлении курса: {str(e)}"
-        )
-
-
-@router.delete("/{course_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_course(
-    course_id: int = Path(..., title="ID курса"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Удаление курса (только для администраторов)"""
-    try:
-        if current_user.role != "admin":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Недостаточно прав для выполнения операции"
-            )
-
-        # Поиск курса
-        db_course = db.query(Course).filter(Course.id == course_id).first()
-        if not db_course:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Курс с ID {course_id} не найден"
-            )
-
-        # Удаление курса
-        db.delete(db_course)
-        db.commit()
-        return None
-    except SQLAlchemyError as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка при удалении курса: {str(e)}"
-        )
-
-
-# Записи на курсы
+# Записи на курсы - статические пути
 @router.post("/enroll", response_model=EnrollmentOut, status_code=status.HTTP_201_CREATED)
 async def enroll_in_course(
     enrollment: EnrollmentCreate,
@@ -592,114 +459,102 @@ async def get_user_enrollments(
         )
 
 
-@router.get("/my-courses", response_model=CoursesResponse)
-async def get_my_courses(
-    page: int = Query(1, ge=1, description="Номер страницы"),
-    size: int = Query(10, ge=1, le=100,
-                      description="Количество элементов на странице"),
+# Курсы - параметризованные пути
+@router.get("/{course_id}/with-lessons", response_model=CourseWithLessons)
+async def get_course_with_lessons(
+    course_id: int = Path(..., title="ID курса"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_current_user)
 ):
-    """Получение списка курсов пользователя с пагинацией"""
+    """Получение подробной информации о курсе со всеми уроками"""
     try:
-        courses, total, pages = get_user_enrolled_courses(
-            db, current_user.id, page, size)
+        course = db.query(Course).filter(Course.id == course_id).first()
+        if not course:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Курс с ID {course_id} не найден"
+            )
 
-        return {
-            "items": courses,
-            "total": total,
-            "page": page,
-            "size": size,
-            "pages": pages
-        }
+        # Получаем уроки
+        lessons = db.query(Lesson).filter(
+            Lesson.course_id == course_id).order_by(Lesson.order).all()
+
+        # Если пользователь авторизован, обновляем время доступа
+        if current_user:
+            if is_enrolled(db, current_user.id, course_id):
+                update_course_access_time(db, current_user.id, course_id)
+
+        # Создаем объект CourseWithLessons
+        course_with_lessons = CourseWithLessons.from_orm(course)
+        course_with_lessons.lessons = lessons
+
+        return course_with_lessons
     except SQLAlchemyError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка при получении списка курсов: {str(e)}"
+            detail=f"Ошибка при получении информации о курсе: {str(e)}"
         )
 
 
-@router.put("/enrollments/{enrollment_id}", response_model=EnrollmentOut)
-async def update_enrollment(
-    enrollment_update: EnrollmentUpdate,
-    enrollment_id: int = Path(..., title="ID записи на курс"),
+@router.get("/{course_id}/progress", response_model=dict)
+async def get_course_progress(
+    course_id: int = Path(..., title="ID курса"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Обновление информации о прогрессе прохождения курса"""
+    """Получение информации о прогрессе пользователя по курсу"""
     try:
-        # Поиск записи
-        db_enrollment = db.query(CourseEnrollment).filter(
-            CourseEnrollment.id == enrollment_id,
-            CourseEnrollment.user_id == current_user.id
-        ).first()
-
-        if not db_enrollment:
+        # Проверяем существование курса
+        course = db.query(Course).filter(Course.id == course_id).first()
+        if not course:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Запись с ID {enrollment_id} не найдена или не принадлежит вам"
+                detail=f"Курс с ID {course_id} не найден"
             )
 
-        # Обновление только предоставленных полей
-        update_data = enrollment_update.model_dump(exclude_unset=True)
+        # Получаем прогресс пользователя
+        progress = get_user_course_progress(db, current_user.id, course_id)
+        if not progress:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Вы не записаны на этот курс"
+            )
 
-        # Проверка и нормализация значения прогресса если оно предоставлено
-        if "progress" in update_data:
-            update_data["progress"] = max(0, min(100, update_data["progress"]))
+        return progress
+    except SQLAlchemyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при получении прогресса: {str(e)}"
+        )
 
-            # Автоматическое определение статуса завершения по прогрессу
-            if update_data["progress"] >= 100 and "completed" not in update_data:
-                update_data["completed"] = True
 
-        # Обновляем время последнего доступа
-        from datetime import datetime, timezone
-        update_data["last_accessed_at"] = datetime.now(timezone.utc)
+@router.post("/{course_id}/upload-image", response_model=dict)
+async def upload_course_image(
+    course_id: int,
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Загрузка или обновление изображения курса"""
+    try:
+        # Проверяем существование курса и права пользователя
+        course = get_course_by_id(db, course_id)
+        check_course_owner(course, current_user)
 
-        for key, value in update_data.items():
-            setattr(db_enrollment, key, value)
+        # Сохраняем изображение
+        image_url = save_course_image(image, current_user.id)
 
+        # Обновляем курс
+        course.image_url = image_url
         db.commit()
-        db.refresh(db_enrollment)
-        return db_enrollment
+
+        return {"image_url": image_url}
     except SQLAlchemyError as e:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка при обновлении записи: {str(e)}"
+            detail=f"Ошибка при загрузке изображения: {str(e)}"
         )
-
-
-@router.delete("/enrollments/{enrollment_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def unenroll_from_course(
-    enrollment_id: int = Path(..., title="ID записи на курс"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Отмена записи на курс"""
-    try:
-        # Поиск записи
-        db_enrollment = db.query(CourseEnrollment).filter(
-            CourseEnrollment.id == enrollment_id,
-            CourseEnrollment.user_id == current_user.id
-        ).first()
-
-        if not db_enrollment:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Запись с ID {enrollment_id} не найдена или не принадлежит вам"
-            )
-
-        # Удаление записи
-        db.delete(db_enrollment)
-        db.commit()
-        return None
-    except SQLAlchemyError as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Ошибка при отмене записи на курс: {str(e)}"
-        )
-
 
 # Уроки
 @router.post("/{course_id}/lessons", response_model=LessonOut, status_code=status.HTTP_201_CREATED)
@@ -829,4 +684,203 @@ async def delete_lesson(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Ошибка при удалении урока: {str(e)}"
+        )
+
+# Курсы - параметризованные пути
+@router.get("/{course_id}", response_model=CourseOut)
+async def get_course(
+    course_id: int = Path(..., title="ID курса"),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user)
+):
+    """Получение подробной информации о конкретном курсе"""
+    try:
+        course = db.query(Course).filter(Course.id == course_id).first()
+        if not course:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Курс с ID {course_id} не найден"
+            )
+
+        # Если пользователь авторизован, обновляем время доступа
+        if current_user:
+            if is_enrolled(db, current_user.id, course_id):
+                update_course_access_time(db, current_user.id, course_id)
+
+        return course
+    except SQLAlchemyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при получении информации о курсе: {str(e)}"
+        )
+
+
+@router.put("/{course_id}", response_model=CourseOut)
+async def update_course(
+    course_update: CourseUpdate,
+    course_id: int = Path(..., title="ID курса"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Обновление информации о курсе (только для администраторов и учителей)"""
+    try:
+        if current_user.role not in ["admin", "teacher"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Недостаточно прав для выполнения операции"
+            )
+
+        # Поиск курса
+        db_course = db.query(Course).filter(Course.id == course_id).first()
+        if not db_course:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Курс с ID {course_id} не найден"
+            )
+
+        # Обновляем категории если они указаны
+        if course_update.category_ids is not None:
+            categories = []
+            for category_id in course_update.category_ids:
+                category = db.query(Category).filter(
+                    Category.id == category_id).first()
+                if not category:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail=f"Категория с ID {category_id} не найдена"
+                    )
+                categories.append(category)
+            db_course.categories = categories
+
+        # Обновление только предоставленных полей
+        update_data = course_update.model_dump(
+            exclude={"category_ids"}, exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(db_course, key, value)
+
+        db.commit()
+        db.refresh(db_course)
+        return db_course
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при обновлении курса: {str(e)}"
+        )
+
+
+@router.delete("/{course_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_course(
+    course_id: int = Path(..., title="ID курса"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Удаление курса (только для администраторов)"""
+    try:
+        if current_user.role != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Недостаточно прав для выполнения операции"
+            )
+
+        # Поиск курса
+        db_course = db.query(Course).filter(Course.id == course_id).first()
+        if not db_course:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Курс с ID {course_id} не найден"
+            )
+
+        # Удаление курса
+        db.delete(db_course)
+        db.commit()
+        return None
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при удалении курса: {str(e)}"
+        )
+
+
+# Записи на курсы - параметризованные пути
+@router.put("/enrollments/{enrollment_id}", response_model=EnrollmentOut)
+async def update_enrollment(
+    enrollment_update: EnrollmentUpdate,
+    enrollment_id: int = Path(..., title="ID записи на курс"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Обновление информации о прогрессе прохождения курса"""
+    try:
+        # Поиск записи
+        db_enrollment = db.query(CourseEnrollment).filter(
+            CourseEnrollment.id == enrollment_id,
+            CourseEnrollment.user_id == current_user.id
+        ).first()
+
+        if not db_enrollment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Запись с ID {enrollment_id} не найдена или не принадлежит вам"
+            )
+
+        # Обновление только предоставленных полей
+        update_data = enrollment_update.model_dump(exclude_unset=True)
+
+        # Проверка и нормализация значения прогресса если оно предоставлено
+        if "progress" in update_data:
+            update_data["progress"] = max(0, min(100, update_data["progress"]))
+
+            # Автоматическое определение статуса завершения по прогрессу
+            if update_data["progress"] >= 100 and "completed" not in update_data:
+                update_data["completed"] = True
+
+        # Обновляем время последнего доступа
+        from datetime import datetime, timezone
+        update_data["last_accessed_at"] = datetime.now(timezone.utc)
+
+        for key, value in update_data.items():
+            setattr(db_enrollment, key, value)
+
+        db.commit()
+        db.refresh(db_enrollment)
+        return db_enrollment
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при обновлении записи: {str(e)}"
+        )
+
+
+@router.delete("/enrollments/{enrollment_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def unenroll_from_course(
+    enrollment_id: int = Path(..., title="ID записи на курс"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Отмена записи на курс"""
+    try:
+        # Поиск записи
+        db_enrollment = db.query(CourseEnrollment).filter(
+            CourseEnrollment.id == enrollment_id,
+            CourseEnrollment.user_id == current_user.id
+        ).first()
+
+        if not db_enrollment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Запись с ID {enrollment_id} не найдена или не принадлежит вам"
+            )
+
+        # Удаление записи
+        db.delete(db_enrollment)
+        db.commit()
+        return None
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при отмене записи на курс: {str(e)}"
         )
