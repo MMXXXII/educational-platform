@@ -14,7 +14,7 @@ from app.core.schemas import (
     EnrollmentCreate, EnrollmentOut, EnrollmentUpdate,
     EnrollmentWithCourse, CoursesResponse, CategoriesResponse,
     LessonCreate, LessonOut, LessonUpdate, CourseWithLessons,
-    CourseWithProgress, MyCoursesResponse
+    CourseWithProgress, MyCoursesResponse, CourseEditResponse
 )
 from app.utils.auth import get_current_user, get_optional_current_user
 from app.utils.courses import (
@@ -800,6 +800,34 @@ async def delete_course(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Ошибка при удалении курса: {str(e)}"
+        )
+
+
+@router.get("/{course_id}/edit", response_model=CourseEditResponse)
+async def get_course_for_edit(
+    course_id: int = Path(..., title="ID курса"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Получение курса для редактирования с уроками (только для владельца или админа)"""
+    try:
+        # Проверяем существование курса и права пользователя
+        course = get_course_by_id(db, course_id)
+        check_course_owner(course, current_user)
+
+        # Получаем уроки
+        lessons = db.query(Lesson).filter(
+            Lesson.course_id == course_id).order_by(Lesson.order).all()
+
+        # Создаем объект CourseEditResponse
+        course_with_lessons = CourseEditResponse.from_orm(course)
+        course_with_lessons.lessons = lessons
+
+        return course_with_lessons
+    except SQLAlchemyError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка при получении курса для редактирования: {str(e)}"
         )
 
 

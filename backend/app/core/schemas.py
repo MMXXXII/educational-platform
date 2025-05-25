@@ -279,3 +279,11 @@ class CourseWithLessons(CourseOut):
 
     class Config:
         from_attributes = True
+
+
+class CourseEditResponse(CourseOut):
+    """Схема для получения курса для редактирования с уроками"""
+    lessons: List[LessonOut] = []
+
+    class Config:
+        from_attributes = True
