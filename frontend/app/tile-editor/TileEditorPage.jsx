@@ -16,12 +16,20 @@ const TileEditorPage = () => {
 
     // Получаем данные урока при монтировании компонента
     useEffect(() => {
-        const editingLessonData = localStorage.getItem('currentEditingLesson');
+        // Проверяем оба возможных ключа: для создания и для редактирования
+        let editingLessonData = localStorage.getItem('currentEditingLesson') ||
+            localStorage.getItem('editCurrentEditingLesson');
 
         if (!editingLessonData) {
             // Если нет данных о редактируемом уроке, возвращаемся обратно
-            console.warn('No lesson data found, redirecting back to course creation');
-            navigate('/create-course');
+            console.warn('No lesson data found, redirecting back');
+            // Проверяем, откуда пришли - из создания или редактирования курса
+            const editCourseBackup = localStorage.getItem('editCourseFormBackup');
+            if (editCourseBackup) {
+                navigate('/my-courses'); // Возвращаемся к списку курсов при редактировании
+            } else {
+                navigate('/create-course'); // Возвращаемся к созданию курса
+            }
             return;
         }
 

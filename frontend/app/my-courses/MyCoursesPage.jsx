@@ -12,19 +12,19 @@ export function MyCoursesPage() {
     const [createdCourses, setCreatedCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    
+
     // Состояния пагинации для записанных курсов
     const [enrolledPage, setEnrolledPage] = useState(1);
     const [enrolledTotalPages, setEnrolledTotalPages] = useState(1);
     const [enrolledTotal, setEnrolledTotal] = useState(0);
     const [enrolledPageSize, setEnrolledPageSize] = useState(12);
-    
+
     // Состояния пагинации для созданных курсов
     const [createdPage, setCreatedPage] = useState(1);
     const [createdTotalPages, setCreatedTotalPages] = useState(1);
     const [createdTotal, setCreatedTotal] = useState(0);
     const [createdPageSize, setCreatedPageSize] = useState(12);
-    
+
     const isTeacherOrAdmin = hasRole(['admin', 'teacher']);
 
     // Загрузка курсов, на которые записан пользователь
@@ -111,7 +111,7 @@ export function MyCoursesPage() {
     // Компонент прогресс-бара
     const ProgressBar = ({ progress }) => (
         <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div 
+            <div
                 className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
                 style={{ width: `${progress || 0}%` }}
             />
@@ -121,8 +121,8 @@ export function MyCoursesPage() {
     // Компонент карточки курса для изучаемых курсов
     const EnrolledCourseCard = ({ course }) => {
         // Получаем прогресс из enrollments, если есть
-        const enrollment = course.enrollments && course.enrollments.length > 0 
-            ? course.enrollments[0] 
+        const enrollment = course.enrollments && course.enrollments.length > 0
+            ? course.enrollments[0]
             : null;
         const progress = enrollment ? enrollment.progress : 0;
         const isCompleted = enrollment ? enrollment.completed : false;
@@ -142,7 +142,7 @@ export function MyCoursesPage() {
                             <span className="mx-2">•</span>
                             <span>{course.lessons_count || 0} уроков</span>
                         </div>
-                        
+
                         {/* Прогресс-бар */}
                         <div className="mb-2">
                             <div className="flex justify-between items-center mb-1">
@@ -151,7 +151,7 @@ export function MyCoursesPage() {
                             </div>
                             <ProgressBar progress={progress} />
                         </div>
-                        
+
                         {isCompleted && (
                             <div className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
                                 ✓ Завершено
@@ -160,7 +160,7 @@ export function MyCoursesPage() {
                     </div>
                     <AcademicCapIcon className="h-8 w-8 text-blue-500 flex-shrink-0 ml-4" />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                     <Link
                         to={`/courses/${course.id}`}
@@ -199,7 +199,7 @@ export function MyCoursesPage() {
                 </div>
                 <PencilSquareIcon className="h-8 w-8 text-green-500 flex-shrink-0 ml-4" />
             </div>
-            
+
             <div className="flex items-center justify-between">
                 <Link
                     to={`/courses/${course.id}`}
@@ -208,12 +208,13 @@ export function MyCoursesPage() {
                     Просмотреть
                 </Link>
                 <div className="flex space-x-2">
-                    <button
+                    <Link
+                        to={`/edit-course/${course.id}`}
                         className="flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                         title="Редактировать курс"
                     >
                         <PencilSquareIcon className="h-4 w-4" />
-                    </button>
+                    </Link>
                     <button
                         onClick={() => handleDeleteCourse(course.id, course.title)}
                         className="flex items-center px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
@@ -233,7 +234,7 @@ export function MyCoursesPage() {
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-800 mb-2">Мои курсы</h1>
                 <p className="text-gray-600">
-                    {isTeacherOrAdmin 
+                    {isTeacherOrAdmin
                         ? 'Управляйте своими курсами и продолжайте обучение'
                         : 'Продолжайте обучение с того места, где остановились'}
                 </p>
@@ -245,21 +246,19 @@ export function MyCoursesPage() {
                     <nav className="-mb-px flex space-x-8">
                         <button
                             onClick={() => setActiveTab('enrolled')}
-                            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                                activeTab === 'enrolled'
-                                    ? 'border-blue-500 text-blue-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                            }`}
+                            className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'enrolled'
+                                ? 'border-blue-500 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                }`}
                         >
                             Изучаемые курсы ({enrolledTotal})
                         </button>
                         <button
                             onClick={() => setActiveTab('created')}
-                            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                                activeTab === 'created'
-                                    ? 'border-blue-500 text-blue-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                            }`}
+                            className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'created'
+                                ? 'border-blue-500 text-blue-600'
+                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                }`}
                         >
                             Созданные курсы ({createdTotal})
                         </button>
@@ -296,7 +295,7 @@ export function MyCoursesPage() {
                                 </div>
                             ) : (
                                 <>
-                                    <PageSizeSelector 
+                                    <PageSizeSelector
                                         pageSize={enrolledPageSize}
                                         onChange={handleEnrolledPageSizeChange}
                                         currentPage={enrolledPage}
@@ -339,7 +338,7 @@ export function MyCoursesPage() {
                                 </div>
                             ) : (
                                 <>
-                                    <PageSizeSelector 
+                                    <PageSizeSelector
                                         pageSize={createdPageSize}
                                         onChange={handleCreatedPageSizeChange}
                                         currentPage={createdPage}

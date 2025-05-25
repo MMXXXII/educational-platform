@@ -4,7 +4,7 @@ import { PlusIcon, Bars3Icon } from "@heroicons/react/24/outline";
 import LessonForm from './LessonForm';
 import { useNavigate } from 'react-router';
 
-const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToEditor }) => {
+const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToEditor, isEditMode = false }) => {
     const [lessons, setLessons] = useState(initialLessons.map((lesson, idx) => ({
         ...lesson,
         order: lesson.order || idx + 1
@@ -51,13 +51,16 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
         }
 
         // Сохраняем все текущие уроки перед переходом
-        localStorage.setItem('allLessonsBackup', JSON.stringify(lessons));
+        const backupKey = isEditMode ? 'editAllLessonsBackup' : 'allLessonsBackup';
+        localStorage.setItem(backupKey, JSON.stringify(lessons));
 
         // Сохраняем данные для редактирования конкретного урока
-        localStorage.setItem('currentEditingLesson', JSON.stringify({
+        const editingLessonKey = isEditMode ? 'editCurrentEditingLesson' : 'currentEditingLesson';
+        localStorage.setItem(editingLessonKey, JSON.stringify({
             lessonIndex: index,
             courseId: courseId,
-            lesson: lesson
+            lesson: lesson,
+            isEditMode: isEditMode
         }));
 
         // Очищаем любые предыдущие сохраненные данные сцены, чтобы избежать путаницы
@@ -75,50 +78,59 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
         }
 
         const savedSceneData = localStorage.getItem('savedSceneData');
-        const editingLessonData = localStorage.getItem('currentEditingLesson');
-        const lessonsBackup = localStorage.getItem('allLessonsBackup');
+
+        // Определяем ключи для режима редактирования или создания
+        const editingLessonKey = isEditMode ? 'editCurrentEditingLesson' : 'currentEditingLesson';
+        const lessonsBackupKey = isEditMode ? 'editAllLessonsBackup' : 'allLessonsBackup';
+        const courseBackupKey = isEditMode ? 'editCourseFormBackup' : 'courseFormBackup';
+
+        const editingLessonData = localStorage.getItem(editingLessonKey);
+        const lessonsBackup = localStorage.getItem(lessonsBackupKey);
 
         if (savedSceneData && editingLessonData) {
             try {
                 const sceneData = JSON.parse(savedSceneData);
                 const editingLesson = JSON.parse(editingLessonData);
 
-                // Восстанавливаем все уроки из бэкапа
-                let lessonsToRestore = lessons;
-                if (lessonsBackup) {
-                    lessonsToRestore = JSON.parse(lessonsBackup);
-                }
-
-                if (editingLesson && typeof editingLesson.lessonIndex === 'number') {
-                    // Обновляем конкретный урок с данными сцены
-                    const updatedLessons = [...lessonsToRestore];
-                    if (updatedLessons[editingLesson.lessonIndex]) {
-                        updatedLessons[editingLesson.lessonIndex] = {
-                            ...updatedLessons[editingLesson.lessonIndex],
-                            scene_data: JSON.stringify(sceneData)
-                        };
+                // Проверяем, что это данные для текущего режима
+                if (editingLesson.isEditMode === isEditMode) {
+                    // Восстанавливаем все уроки из бэкапа
+                    let lessonsToRestore = lessons;
+                    if (lessonsBackup) {
+                        lessonsToRestore = JSON.parse(lessonsBackup);
                     }
 
-                    setLessons(updatedLessons);
-                    if (onChange) onChange(updatedLessons);
+                    if (editingLesson && typeof editingLesson.lessonIndex === 'number') {
+                        // Обновляем конкретный урок с данными сцены
+                        const updatedLessons = [...lessonsToRestore];
+                        if (updatedLessons[editingLesson.lessonIndex]) {
+                            updatedLessons[editingLesson.lessonIndex] = {
+                                ...updatedLessons[editingLesson.lessonIndex],
+                                scene_data: JSON.stringify(sceneData)
+                            };
+                        }
+
+                        setLessons(updatedLessons);
+                        if (onChange) onChange(updatedLessons);
+                    }
+
+                    // Очищаем данные из localStorage (НЕ удаляем courseFormBackup - это сделается в родительском компоненте)
+                    localStorage.removeItem('savedSceneData');
+                    localStorage.removeItem(editingLessonKey);
+                    localStorage.removeItem(lessonsBackupKey);
+
+                    // Отмечаем, что обработка завершена
+                    hasProcessedSceneData.current = true;
                 }
-
-                // Очищаем данные из localStorage (НЕ удаляем courseFormBackup - это сделается в CreateCoursePage)
-                localStorage.removeItem('savedSceneData');
-                localStorage.removeItem('currentEditingLesson');
-                localStorage.removeItem('allLessonsBackup');
-
-                // Отмечаем, что обработка завершена
-                hasProcessedSceneData.current = true;
             } catch (error) {
                 console.error('Error processing scene data:', error);
                 // В случае ошибки также очищаем localStorage
                 localStorage.removeItem('savedSceneData');
-                localStorage.removeItem('currentEditingLesson');
-                localStorage.removeItem('allLessonsBackup');
+                localStorage.removeItem(editingLessonKey);
+                localStorage.removeItem(lessonsBackupKey);
             }
         }
-    }, []); // Пустой массив зависимостей - выполняется только при монтировании
+    }, [isEditMode]); // Добавляем isEditMode в зависимости
 
     // Синхронизация с initialLessons (только если это не результат обработки сцены)
     useEffect(() => {

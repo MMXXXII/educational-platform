@@ -16,6 +16,7 @@ export default [
             route("profile", "./routes/profile.tsx"),
             route("file-manager", "./routes/file-manager.tsx"),
             route("create-course", "./routes/create-course.tsx"),
+            route("edit-course/:id", "./routes/edit-course.tsx"),
         ]),
         route("node-editor", "routes/node-editor.tsx"),
         route("tile-editor", "./routes/tile-editor.tsx"),

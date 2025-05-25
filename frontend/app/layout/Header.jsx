@@ -80,7 +80,7 @@ export function Header() {
                                 {/* Ссылка "Создать курс" только для администраторов и учителей*/}
                                 {hasRole(['admin', 'teacher']) && (
                                     <Link
-                                        to="/editor"
+                                        to="/create-course"
                                         className="text-gray-700 hover:text-blue-600 flex items-center"
                                     >
                                         <PencilSquareIcon className="h-5 w-5 mr-1" />
