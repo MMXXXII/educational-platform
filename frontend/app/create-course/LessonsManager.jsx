@@ -21,28 +21,35 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
             order: lessons.length + 1,
             scene_data: null
         };
-        const updatedLessons = [...lessons, newLesson];
-        setLessons(updatedLessons);
-        if (onChange) onChange(updatedLessons);
+        setLessons(prevLessons => [...prevLessons, newLesson]);
+        // onChange будет вызван автоматически через useEffect
     };
 
     const handleUpdateLesson = useCallback((index, updatedLesson) => {
         setLessons(prevLessons => {
             const newLessons = [...prevLessons];
             newLessons[index] = updatedLesson;
-            if (onChange) onChange(newLessons);
             return newLessons;
         });
-    }, [onChange]);
+    }, []); // Убираем onChange из зависимостей
+    
+    // Отдельный useEffect для вызова onChange
+    useEffect(() => {
+        if (onChange) {
+            onChange(lessons);
+        }
+    }, [lessons, onChange]);
 
     const handleDeleteLesson = (index) => {
-        const newLessons = lessons.filter((_, idx) => idx !== index)
-            .map((lesson, idx) => ({
-                ...lesson,
-                order: idx + 1
-            }));
-        setLessons(newLessons);
-        if (onChange) onChange(newLessons);
+        setLessons(prevLessons => {
+            const newLessons = prevLessons.filter((_, idx) => idx !== index)
+                .map((lesson, idx) => ({
+                    ...lesson,
+                    order: idx + 1
+                }));
+            return newLessons;
+        });
+        // onChange будет вызван автоматически через useEffect
     };
 
     const handleCreateScene = (index, lesson) => {
@@ -91,9 +98,15 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
         const editingLessonData = localStorage.getItem(editingLessonKey);
         const lessonsBackup = localStorage.getItem(lessonsBackupKey);
 
-        if (savedSceneData && editingLessonData) {
+        // Добавляем второе условие для восстановления данных при возвращении без сохранения
+        if ((savedSceneData && editingLessonData) || (!savedSceneData && editingLessonData && lessonsBackup)) {
             try {
-                const sceneData = JSON.parse(savedSceneData);
+                // Если есть сохраненные данные сцены, обрабатываем их
+                let sceneData = null;
+                if (savedSceneData) {
+                    sceneData = JSON.parse(savedSceneData);
+                }
+                
                 const editingLesson = JSON.parse(editingLessonData);
 
                 // Проверяем, что это данные для текущего режима
@@ -115,18 +128,22 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
                         // Создаем копию массива уроков
                         const updatedLessons = [...lessonsToUpdate];
 
-                        // Обновляем конкретный урок с данными сцены
-                        updatedLessons[editingLesson.lessonIndex] = {
-                            ...updatedLessons[editingLesson.lessonIndex],
-                            scene_data: JSON.stringify(sceneData)
-                        };
+                        // Обновляем конкретный урок с данными сцены, если они есть
+                        if (sceneData) {
+                            updatedLessons[editingLesson.lessonIndex] = {
+                                ...updatedLessons[editingLesson.lessonIndex],
+                                scene_data: JSON.stringify(sceneData)
+                            };
+                        }
 
                         // Сохраняем для последующего обновления в useEffect
                         pendingLessonsUpdate.current = updatedLessons;
                     }
 
                     // Очищаем данные из localStorage после успешной обработки
-                    localStorage.removeItem('savedSceneData');
+                    if (savedSceneData) {
+                        localStorage.removeItem('savedSceneData');
+                    }
                     localStorage.removeItem(editingLessonKey);
                     localStorage.removeItem(lessonsBackupKey);
 
@@ -156,58 +173,52 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
         return () => clearTimeout(timeoutId);
     }, [processSceneData]);
 
-    // Отдельный эффект для применения отложенных обновлений
-    useEffect(() => {
-        if (pendingLessonsUpdate.current) {
-            const updatedLessons = pendingLessonsUpdate.current;
-            setLessons(updatedLessons);
+// Отдельный эффект для применения отложенных обновлений
+useEffect(() => {
+    if (pendingLessonsUpdate.current) {
+        const updatedLessons = pendingLessonsUpdate.current;
+        setLessons(updatedLessons);
+        // Очищаем отложенное обновление
+        pendingLessonsUpdate.current = null;
+    }
+}, []); // Убираем onChange из зависимостей
 
-            // Вызываем onChange после обновления состояния
-            if (onChange) {
-                onChange(updatedLessons);
-            }
+// Синхронизация с initialLessons
+useEffect(() => {
+    // Обновляем уроки только если:
+    // 1. Есть начальные уроки
+    // 2. Мы не обрабатываем данные сцены
+    // 3. Текущие уроки пустые или это первая загрузка
+    if (initialLessons.length > 0 && !hasProcessedSceneData.current) {
+        const formattedLessons = initialLessons.map((lesson, idx) => ({
+            ...lesson,
+            order: lesson.order || idx + 1
+        }));
 
-            // Очищаем отложенное обновление
-            pendingLessonsUpdate.current = null;
+        // Проверяем, изменились ли уроки
+        const lessonsChanged = JSON.stringify(formattedLessons) !== JSON.stringify(lessons);
+
+        if (lessonsChanged) {
+            setLessons(formattedLessons);
         }
-    }, [onChange]);
+    }
+}, [initialLessons]); // Убираем lessons из зависимостей чтобы избежать бесконечного цикла
 
-    // Синхронизация с initialLessons
-    useEffect(() => {
-        // Обновляем уроки только если:
-        // 1. Есть начальные уроки
-        // 2. Мы не обрабатываем данные сцены
-        // 3. Текущие уроки пустые или это первая загрузка
-        if (initialLessons.length > 0 && !hasProcessedSceneData.current) {
-            const formattedLessons = initialLessons.map((lesson, idx) => ({
-                ...lesson,
-                order: lesson.order || idx + 1
-            }));
+const onDragEnd = (result) => {
+    // Перемещение за пределы списка
+    if (!result.destination) {
+        return;
+    }
 
-            // Проверяем, изменились ли уроки
-            const lessonsChanged = JSON.stringify(formattedLessons) !== JSON.stringify(lessons);
+    const reorderedLessons = reorderLessons(
+        lessons,
+        result.source.index,
+        result.destination.index
+    );
 
-            if (lessonsChanged) {
-                setLessons(formattedLessons);
-            }
-        }
-    }, [initialLessons, lessons]);
-
-    const onDragEnd = (result) => {
-        // Перемещение за пределы списка
-        if (!result.destination) {
-            return;
-        }
-
-        const reorderedLessons = reorderLessons(
-            lessons,
-            result.source.index,
-            result.destination.index
-        );
-
-        setLessons(reorderedLessons);
-        if (onChange) onChange(reorderedLessons);
-    };
+    setLessons(reorderedLessons);
+    // onChange будет вызван автоматически через useEffect
+};
 
     const reorderLessons = (list, startIndex, endIndex) => {
         const result = Array.from(list);

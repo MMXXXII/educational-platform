@@ -21,7 +21,7 @@ export function CreateCoursePage() {
         handleRemoveImage,
         handleLessonsUpdate,
         handleSubmit,
-        saveCourseDataToLocalStorage
+        saveCourseDataToStorage
     } = useCourseForm('create');
 
     return (
@@ -52,7 +52,7 @@ export function CreateCoursePage() {
                         initialLessons={lessons}
                         courseId={course.id}
                         onChange={handleLessonsUpdate}
-                        onNavigateToEditor={saveCourseDataToLocalStorage}
+                        onNavigateToEditor={saveCourseDataToStorage}  // обновить здесь
                     />
                     {errors.lessons && (
                         <p className="mt-2 text-sm text-red-500">{errors.lessons}</p>

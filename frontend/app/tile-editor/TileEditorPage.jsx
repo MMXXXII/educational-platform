@@ -114,9 +114,8 @@ const TileEditorPage = () => {
     };
 
     const confirmExit = () => {
-        // Очищаем данные при выходе без сохранения
-        localStorage.removeItem('currentEditingLesson');
-        localStorage.removeItem('editCurrentEditingLesson');
+        // Очищаем только данные сцены при выходе без сохранения
+        // НЕ удаляем данные о редактируемом уроке и резервные копии уроков, чтобы сохранить состояние формы
         localStorage.removeItem('savedSceneData');
 
         // Определяем, куда возвращаться

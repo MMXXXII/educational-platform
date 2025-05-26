@@ -25,7 +25,7 @@ export function EditCoursePage() {
         handleRemoveImage,
         handleLessonsUpdate,
         handleSubmit,
-        saveCourseDataToLocalStorage
+        saveCourseDataToStorage
     } = useCourseForm('edit', courseId);
 
     if (initialLoading) {
@@ -80,7 +80,7 @@ export function EditCoursePage() {
                         initialLessons={lessons}
                         courseId={courseId}
                         onChange={handleLessonsUpdate}
-                        onNavigateToEditor={saveCourseDataToLocalStorage}
+                        onNavigateToEditor={saveCourseDataToStorage}  // обновить здесь
                         isEditMode={true}
                     />
                 </div>
