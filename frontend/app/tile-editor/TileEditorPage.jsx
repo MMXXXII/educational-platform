@@ -23,13 +23,7 @@ const TileEditorPage = () => {
         if (!editingLessonData) {
             // Если нет данных о редактируемом уроке, возвращаемся обратно
             console.warn('No lesson data found, redirecting back');
-            // Проверяем, откуда пришли - из создания или редактирования курса
-            const editCourseBackup = localStorage.getItem('editCourseFormBackup');
-            if (editCourseBackup) {
-                navigate('/my-courses'); // Возвращаемся к списку курсов при редактировании
-            } else {
-                navigate('/create-course'); // Возвращаемся к созданию курса
-            }
+            navigate(-1); // Возвращаемся на предыдущую страницу
             return;
         }
 
@@ -53,14 +47,14 @@ const TileEditorPage = () => {
             }
         } catch (error) {
             console.error("Error parsing lesson data:", error);
-            navigate('/create-course');
+            navigate(-1);
             return;
         }
 
         setIsLoading(false);
     }, [navigate]);
 
-    // Сохраняем сцену и возвращаемся к созданию курса
+    // Сохраняем сцену и возвращаемся к созданию/редактированию курса
     const handleSaveScene = async () => {
         if (hasSaved.current) {
             console.log('Already saved, ignoring duplicate save attempt');
@@ -75,25 +69,33 @@ const TileEditorPage = () => {
             // Способ 1: Пытаемся использовать глобальный currentSceneInstance.serializeScene
             if (window.currentSceneInstance && window.currentSceneInstance.serializeScene) {
                 sceneData = window.currentSceneInstance.serializeScene();
-                console.log('Successfully exported scene data using global instance');
             }
             // Способ 2: Пытаемся использовать статический метод, если доступен
             else if (typeof EditorPanel.exportScene === 'function') {
                 sceneData = EditorPanel.exportScene();
-                console.log('Successfully exported scene data using static method');
             }
 
-            // Сохраняем данные сцены независимо от того, пустые они или нет (пользователь может хотеть очистить сцену)
-            if (sceneData || sceneData === null) {
-                localStorage.setItem('savedSceneData', JSON.stringify(sceneData || {
+            // Сохраняем данные сцены
+            if (sceneData !== undefined) {
+                const dataToSave = sceneData || {
                     version: "1.0",
                     timestamp: Date.now(),
                     models: []
-                }));
+                };
 
-                hasSaved.current = true; // Отмечаем, что сохранение выполнено
-                console.log('Scene data saved to localStorage');
-                navigate('/create-course');
+                localStorage.setItem('savedSceneData', JSON.stringify(dataToSave));
+
+                // Добавляем небольшую задержку перед навигацией, чтобы убедиться что данные сохранились
+                await new Promise(resolve => setTimeout(resolve, 50));
+
+                hasSaved.current = true;
+
+                // Определяем, куда возвращаться на основе lessonData
+                if (lessonData && lessonData.isEditMode && lessonData.courseId) {
+                    navigate(`/edit-course/${lessonData.courseId}`);
+                } else {
+                    navigate('/create-course');
+                }
             } else {
                 throw new Error('Could not access scene data from EditorPanel');
             }
@@ -114,8 +116,15 @@ const TileEditorPage = () => {
     const confirmExit = () => {
         // Очищаем данные при выходе без сохранения
         localStorage.removeItem('currentEditingLesson');
+        localStorage.removeItem('editCurrentEditingLesson');
         localStorage.removeItem('savedSceneData');
-        navigate('/create-course');
+
+        // Определяем, куда возвращаться
+        if (lessonData && lessonData.isEditMode && lessonData.courseId) {
+            navigate(`/edit-course/${lessonData.courseId}`);
+        } else {
+            navigate('/create-course');
+        }
     };
 
     const cancelExit = () => {

@@ -12,6 +12,7 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
 
     const navigate = useNavigate();
     const hasProcessedSceneData = useRef(false); // Флаг для предотвращения повторной обработки
+    const pendingLessonsUpdate = useRef(null); // Для хранения отложенных обновлений
 
     const handleAddLesson = () => {
         const newLesson = {
@@ -50,39 +51,42 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
             onNavigateToEditor();
         }
 
+        // Сбрасываем флаг перед переходом
+        hasProcessedSceneData.current = false;
+
         // Сохраняем все текущие уроки перед переходом
         const backupKey = isEditMode ? 'editAllLessonsBackup' : 'allLessonsBackup';
-        localStorage.setItem(backupKey, JSON.stringify(lessons));
+        const lessonsToSave = [...lessons]; // Создаем копию массива
+        localStorage.setItem(backupKey, JSON.stringify(lessonsToSave));
 
         // Сохраняем данные для редактирования конкретного урока
         const editingLessonKey = isEditMode ? 'editCurrentEditingLesson' : 'currentEditingLesson';
-        localStorage.setItem(editingLessonKey, JSON.stringify({
+        const dataToSave = {
             lessonIndex: index,
             courseId: courseId,
-            lesson: lesson,
+            lesson: {
+                ...lesson,
+                title: lesson.title || '',
+                content: lesson.content || '',
+                scene_data: lesson.scene_data
+            },
             isEditMode: isEditMode
-        }));
+        };
 
-        // Очищаем любые предыдущие сохраненные данные сцены, чтобы избежать путаницы
+        localStorage.setItem(editingLessonKey, JSON.stringify(dataToSave));
+
+        // Очищаем любые предыдущие сохраненные данные сцены
         localStorage.removeItem('savedSceneData');
 
         // Переходим к редактору сцен
         navigate('/tile-editor-scene');
     };
 
-    // Обработка возврата из редактора сцен - только один раз при монтировании
-    useEffect(() => {
-        // Предотвращаем повторную обработку
-        if (hasProcessedSceneData.current) {
-            return;
-        }
-
+    // Отдельная функция для обработки данных сцены, не зависит от рендеринга
+    const processSceneData = useCallback(() => {
         const savedSceneData = localStorage.getItem('savedSceneData');
-
-        // Определяем ключи для режима редактирования или создания
         const editingLessonKey = isEditMode ? 'editCurrentEditingLesson' : 'currentEditingLesson';
         const lessonsBackupKey = isEditMode ? 'editAllLessonsBackup' : 'allLessonsBackup';
-        const courseBackupKey = isEditMode ? 'editCourseFormBackup' : 'courseFormBackup';
 
         const editingLessonData = localStorage.getItem(editingLessonKey);
         const lessonsBackup = localStorage.getItem(lessonsBackupKey);
@@ -94,32 +98,39 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
 
                 // Проверяем, что это данные для текущего режима
                 if (editingLesson.isEditMode === isEditMode) {
-                    // Восстанавливаем все уроки из бэкапа
-                    let lessonsToRestore = lessons;
+                    // Восстанавливаем все уроки из бэкапа или используем текущие
+                    let lessonsToUpdate = lessons;
                     if (lessonsBackup) {
-                        lessonsToRestore = JSON.parse(lessonsBackup);
-                    }
-
-                    if (editingLesson && typeof editingLesson.lessonIndex === 'number') {
-                        // Обновляем конкретный урок с данными сцены
-                        const updatedLessons = [...lessonsToRestore];
-                        if (updatedLessons[editingLesson.lessonIndex]) {
-                            updatedLessons[editingLesson.lessonIndex] = {
-                                ...updatedLessons[editingLesson.lessonIndex],
-                                scene_data: JSON.stringify(sceneData)
-                            };
+                        try {
+                            lessonsToUpdate = JSON.parse(lessonsBackup);
+                        } catch (e) {
+                            console.error('Error parsing lessons backup:', e);
                         }
-
-                        setLessons(updatedLessons);
-                        if (onChange) onChange(updatedLessons);
                     }
 
-                    // Очищаем данные из localStorage (НЕ удаляем courseFormBackup - это сделается в родительском компоненте)
+                    if (typeof editingLesson.lessonIndex === 'number' &&
+                        editingLesson.lessonIndex >= 0 &&
+                        editingLesson.lessonIndex < lessonsToUpdate.length) {
+
+                        // Создаем копию массива уроков
+                        const updatedLessons = [...lessonsToUpdate];
+
+                        // Обновляем конкретный урок с данными сцены
+                        updatedLessons[editingLesson.lessonIndex] = {
+                            ...updatedLessons[editingLesson.lessonIndex],
+                            scene_data: JSON.stringify(sceneData)
+                        };
+
+                        // Сохраняем для последующего обновления в useEffect
+                        pendingLessonsUpdate.current = updatedLessons;
+                    }
+
+                    // Очищаем данные из localStorage после успешной обработки
                     localStorage.removeItem('savedSceneData');
                     localStorage.removeItem(editingLessonKey);
                     localStorage.removeItem(lessonsBackupKey);
 
-                    // Отмечаем, что обработка завершена
+                    // Устанавливаем флаг, что обработка завершена
                     hasProcessedSceneData.current = true;
                 }
             } catch (error) {
@@ -130,18 +141,57 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
                 localStorage.removeItem(lessonsBackupKey);
             }
         }
-    }, [isEditMode]); // Добавляем isEditMode в зависимости
+    }, [isEditMode, lessons]);
 
-    // Синхронизация с initialLessons (только если это не результат обработки сцены)
+    // Обработка возврата из редактора сцен
     useEffect(() => {
-        if (!hasProcessedSceneData.current && initialLessons.length > 0) {
+        // Обрабатываем данные сцены при монтировании
+        processSceneData();
+
+        // Также проверяем с небольшой задержкой, на случай если данные еще не успели сохраниться
+        const timeoutId = setTimeout(() => {
+            processSceneData();
+        }, 100);
+
+        return () => clearTimeout(timeoutId);
+    }, [processSceneData]);
+
+    // Отдельный эффект для применения отложенных обновлений
+    useEffect(() => {
+        if (pendingLessonsUpdate.current) {
+            const updatedLessons = pendingLessonsUpdate.current;
+            setLessons(updatedLessons);
+
+            // Вызываем onChange после обновления состояния
+            if (onChange) {
+                onChange(updatedLessons);
+            }
+
+            // Очищаем отложенное обновление
+            pendingLessonsUpdate.current = null;
+        }
+    }, [onChange]);
+
+    // Синхронизация с initialLessons
+    useEffect(() => {
+        // Обновляем уроки только если:
+        // 1. Есть начальные уроки
+        // 2. Мы не обрабатываем данные сцены
+        // 3. Текущие уроки пустые или это первая загрузка
+        if (initialLessons.length > 0 && !hasProcessedSceneData.current) {
             const formattedLessons = initialLessons.map((lesson, idx) => ({
                 ...lesson,
                 order: lesson.order || idx + 1
             }));
-            setLessons(formattedLessons);
+
+            // Проверяем, изменились ли уроки
+            const lessonsChanged = JSON.stringify(formattedLessons) !== JSON.stringify(lessons);
+
+            if (lessonsChanged) {
+                setLessons(formattedLessons);
+            }
         }
-    }, [initialLessons]);
+    }, [initialLessons, lessons]);
 
     const onDragEnd = (result) => {
         // Перемещение за пределы списка
@@ -211,8 +261,8 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
                                                 lesson={lesson}
                                                 index={index}
                                                 onUpdate={handleUpdateLesson}
-                                                onDelete={handleDeleteLesson}
-                                                onCreateScene={handleCreateScene}
+                                                onDelete={() => handleDeleteLesson(index)}
+                                                onCreateScene={() => handleCreateScene(index, lesson)}
                                             />
                                         </div>
                                     )}

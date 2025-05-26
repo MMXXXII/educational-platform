@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { categoriesApi, coursesApi } from '../api/coursesService';
 
@@ -10,6 +10,7 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
     const [lessons, setLessons] = useState([]);
     const [imagePreview, setImagePreview] = useState(null);
     const [existingImageUrl, setExistingImageUrl] = useState(null);
+    const hasRestoredFromLocalStorage = useRef(false);
 
     // Состояние курса
     const [course, setCourse] = useState({
@@ -31,7 +32,6 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
                 const response = await categoriesApi.getCategories();
                 setCategories(response.items || []);
             } catch (error) {
-                console.error('Failed to fetch categories:', error);
                 setCategories([]);
             }
         };
@@ -39,17 +39,67 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
         fetchCategories();
     }, []);
 
-    // Загрузка данных курса для редактирования
+    // Восстановление данных из localStorage для режима создания
     useEffect(() => {
-        if (mode !== 'edit' || !courseId) return;
+        if (mode !== 'create' || hasRestoredFromLocalStorage.current) return;
+
+        const savedCourseData = localStorage.getItem('courseFormBackup');
+        if (!savedCourseData) return;
+
+        try {
+            const parsedCourseData = JSON.parse(savedCourseData);
+            setCourse(parsedCourseData.course);
+
+            if (parsedCourseData.imagePreview) {
+                setImagePreview(parsedCourseData.imagePreview);
+            }
+
+            localStorage.removeItem('courseFormBackup');
+            hasRestoredFromLocalStorage.current = true;
+        } catch (error) {
+            localStorage.removeItem('courseFormBackup');
+        }
+    }, [mode]);
+
+    // Восстановление данных из localStorage для режима редактирования
+    useEffect(() => {
+        if (mode !== 'edit' || !courseId || hasRestoredFromLocalStorage.current) return;
+
+        const savedEditCourseData = localStorage.getItem('editCourseFormBackup');
+        if (!savedEditCourseData) return;
+
+        try {
+            const parsedCourseData = JSON.parse(savedEditCourseData);
+            if (parsedCourseData.courseId !== courseId) return;
+
+            setCourse(parsedCourseData.course);
+
+            if (parsedCourseData.imagePreview) {
+                setImagePreview(parsedCourseData.imagePreview);
+            }
+
+            if (parsedCourseData.existingImageUrl) {
+                setExistingImageUrl(parsedCourseData.existingImageUrl);
+            }
+
+            localStorage.removeItem('editCourseFormBackup');
+            setInitialLoading(false);
+            hasRestoredFromLocalStorage.current = true;
+        } catch (error) {
+            localStorage.removeItem('editCourseFormBackup');
+        }
+    }, [mode, courseId]);
+
+    // Загрузка данных курса с сервера в режиме редактирования
+    useEffect(() => {
+        if (mode !== 'edit' || !courseId || hasRestoredFromLocalStorage.current) return;
 
         const fetchCourseData = async () => {
             try {
                 setInitialLoading(true);
                 const courseData = await coursesApi.getCourseForEdit(courseId);
 
-                // Заполняем форму данными курса
-                setCourse({
+                const newCourseState = {
                     title: courseData.title || '',
                     description: courseData.description || '',
                     longDescription: courseData.longdescription || '',
@@ -58,18 +108,16 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
                         ? courseData.categories[0].id.toString()
                         : '',
                     image: null
-                });
+                };
 
-                // Устанавливаем URL существующего изображения
+                setCourse(newCourseState);
+
                 if (courseData.image_url) {
                     setExistingImageUrl(courseData.image_url);
                 }
 
-                // Загружаем уроки
                 setLessons(courseData.lessons || []);
-
             } catch (error) {
-                console.error('Failed to fetch course data:', error);
                 setErrors({ fetch: 'Не удалось загрузить данные курса' });
             } finally {
                 setInitialLoading(false);
@@ -79,118 +127,70 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
         fetchCourseData();
     }, [mode, courseId]);
 
-    // Восстановление данных курса при возврате из редактора сцен
-    useEffect(() => {
-        const savedCourseData = localStorage.getItem('courseFormBackup');
-        const savedEditCourseData = localStorage.getItem('editCourseFormBackup');
-
-        if (mode === 'create') {
-            // Проверяем, есть ли данные для восстановления (приоритет у режима создания)
-            if (savedCourseData) {
-                try {
-                    const parsedCourseData = JSON.parse(savedCourseData);
-                    setCourse(parsedCourseData.course);
-
-                    // Восстанавливаем изображение только если есть превью URL
-                    if (parsedCourseData.imagePreview) {
-                        setImagePreview(parsedCourseData.imagePreview);
-                    }
-
-                    console.log('Данные курса восстановлены из localStorage');
-                    // Очищаем сохраненные данные после восстановления
-                    localStorage.removeItem('courseFormBackup');
-                } catch (error) {
-                    console.error('Ошибка при восстановлении данных курса:', error);
-                    localStorage.removeItem('courseFormBackup');
-                }
-            } else if (savedEditCourseData) {
-                // Если пользователь попал сюда из режима редактирования, перенаправляем его обратно
-                try {
-                    const parsedEditData = JSON.parse(savedEditCourseData);
-                    if (parsedEditData.courseId) {
-                        navigate(`/edit-course/${parsedEditData.courseId}`);
-                        return;
-                    }
-                } catch (error) {
-                    console.error('Ошибка при обработке данных редактирования:', error);
-                    localStorage.removeItem('editCourseFormBackup');
-                }
-            }
-        } else if (mode === 'edit' && savedEditCourseData) {
-            try {
-                const parsedCourseData = JSON.parse(savedEditCourseData);
-                if (parsedCourseData.courseId === courseId) {
-                    setCourse(parsedCourseData.course);
-
-                    if (parsedCourseData.imagePreview) {
-                        setImagePreview(parsedCourseData.imagePreview);
-                    }
-
-                    if (parsedCourseData.existingImageUrl) {
-                        setExistingImageUrl(parsedCourseData.existingImageUrl);
-                    }
-
-                    localStorage.removeItem('editCourseFormBackup');
-                }
-            } catch (error) {
-                console.error('Ошибка при восстановлении данных курса:', error);
-                localStorage.removeItem('editCourseFormBackup');
-            }
-        }
-    }, [mode, courseId, navigate]);
-
     // Обработчик изменения полей курса
-    const handleCourseChange = (e) => {
+    const handleCourseChange = useCallback((e) => {
         const { name, value } = e.target;
-        setCourse({
-            ...course,
-            [name]: value
+
+        setCourse(prevCourse => {
+            const newCourse = {
+                ...prevCourse,
+                [name]: value
+            };
+            return newCourse;
         });
 
         // Сбрасываем ошибку для этого поля, если она была
-        if (errors[name]) {
-            setErrors({
-                ...errors,
+        setErrors(prevErrors => {
+            if (!prevErrors[name]) return prevErrors;
+
+            return {
+                ...prevErrors,
                 [name]: null
-            });
-        }
-    };
+            };
+        });
+    }, []);
 
     // Обработчик изменения изображения
-    const handleImageChange = (e) => {
+    const handleImageChange = useCallback((e) => {
         const file = e.target.files[0];
-        if (file) {
-            setCourse({
-                ...course,
-                image: file
-            });
+        if (!file) return;
 
-            // Создаем URL для предпросмотра изображения
-            const imageUrl = URL.createObjectURL(file);
-            setImagePreview(imageUrl);
+        setCourse(prevCourse => ({
+            ...prevCourse,
+            image: file
+        }));
 
-            // Очищаем ошибку для изображения, если она была
-            if (errors.image) {
-                setErrors({
-                    ...errors,
-                    image: null
-                });
-            }
-        }
-    };
+        // Создаем URL для предпросмотра изображения
+        const imageUrl = URL.createObjectURL(file);
+        setImagePreview(imageUrl);
+
+        // Очищаем ошибку для изображения, если она была
+        setErrors(prevErrors => {
+            if (!prevErrors.image) return prevErrors;
+
+            return {
+                ...prevErrors,
+                image: null
+            };
+        });
+    }, []);
 
     // Обработчик удаления изображения
-    const handleRemoveImage = () => {
+    const handleRemoveImage = useCallback(() => {
         setImagePreview(null);
-        if (imagePreview) {
-            setCourse({ ...course, image: null });
-        } else {
+        setCourse(prevCourse => {
+            if (imagePreview) {
+                return { ...prevCourse, image: null };
+            }
+            return prevCourse;
+        });
+        if (!imagePreview) {
             setExistingImageUrl(null);
         }
-    };
+    }, [imagePreview]);
 
     // Валидация формы перед отправкой
-    const validateForm = () => {
+    const validateForm = useCallback(() => {
         const newErrors = {};
 
         if (!course.title.trim()) {
@@ -231,25 +231,44 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
 
         // Форма валидна, если нет ошибок
         return Object.keys(newErrors).length === 0;
-    };
+    }, [course, lessons, mode]);
 
     // Обработчик обновления уроков
-    const handleLessonsUpdate = (updatedLessons) => {
+    const handleLessonsUpdate = useCallback((updatedLessons) => {
         setLessons(updatedLessons);
 
         // Если была ошибка с уроками, проверяем, можно ли её снять
-        if (errors.lessons && updatedLessons.length > 0) {
-            setErrors({
-                ...errors,
-                lessons: null
-            });
-        }
-    };
+        setErrors(prevErrors => {
+            if (!prevErrors.lessons || updatedLessons.length === 0) return prevErrors;
+
+            const invalidLessons = updatedLessons.filter(lesson =>
+                !lesson.title || !lesson.title.trim() ||
+                !lesson.content || !lesson.content.trim()
+            );
+
+            if (invalidLessons.length === 0) {
+                const { lessons: _, ...restErrors } = prevErrors;
+                return restErrors;
+            }
+
+            return prevErrors;
+        });
+    }, []);
 
     // Функция для сохранения данных курса перед переходом к редактору сцен
-    const saveCourseDataToLocalStorage = () => {
+    const saveCourseDataToLocalStorage = useCallback(() => {
+        // Сохраняем текущее состояние курса, а не начальное
         const courseBackupData = {
-            course: course,
+            course: {
+                ...course,
+                // Убеждаемся, что все поля сохранены
+                title: course.title,
+                description: course.description,
+                longDescription: course.longDescription,
+                difficulty: course.difficulty,
+                category_id: course.category_id,
+                image: course.image
+            },
             imagePreview: imagePreview,
             ...(mode === 'edit' && {
                 existingImageUrl: existingImageUrl,
@@ -259,8 +278,7 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
 
         const storageKey = mode === 'create' ? 'courseFormBackup' : 'editCourseFormBackup';
         localStorage.setItem(storageKey, JSON.stringify(courseBackupData));
-        console.log(`Данные курса сохранены в localStorage (${mode} mode)`);
-    };
+    }, [course, imagePreview, existingImageUrl, mode, courseId]);
 
     // Обработчик создания курса
     const handleCreateCourse = async () => {
@@ -308,7 +326,6 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
                 navigate('/courses');
             }
         } catch (error) {
-            console.error('Ошибка при создании курса:', error);
             setErrors({
                 ...errors,
                 submit: error.message || 'Произошла ошибка при создании курса. Пожалуйста, попробуйте снова.'
@@ -369,11 +386,17 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
                     await coursesApi.deleteLesson(courseId, lessonId);
                 }
 
+                // После успешного обновления курса
+                // Очищаем localStorage после успешного обновления курса
+                localStorage.removeItem('editCourseFormBackup');
+                localStorage.removeItem('editAllLessonsBackup');
+                localStorage.removeItem('editCurrentEditingLesson');
+                localStorage.removeItem('savedSceneData');
+
                 // Переходим на страницу курса
                 navigate(`/courses/${courseId}`);
             }
         } catch (error) {
-            console.error('Ошибка при обновлении курса:', error);
             setErrors({
                 ...errors,
                 submit: error.message || 'Произошла ошибка при обновлении курса. Пожалуйста, попробуйте снова.'

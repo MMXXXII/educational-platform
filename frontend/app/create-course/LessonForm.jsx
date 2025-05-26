@@ -79,13 +79,15 @@ const LessonForm = ({
         e.preventDefault();
         e.stopPropagation();
 
-        // Передаем текущие локальные значения, а не только пропсы
+        // Передаем текущие локальные значения
         const currentLessonData = {
             ...lesson,
             title: title || lesson.title || '',
-            content: content || lesson.content || ''
+            content: content || lesson.content || '',
+            scene_data: lesson.scene_data // Сохраняем существующие данные сцены
         };
 
+        // Вызываем сохранение данных курса
         onCreateScene(index, currentLessonData);
     };
 
