@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import { categoriesApi, coursesApi } from '../api/coursesService';
-import { saveCourseDataToDB, loadCourseDataFromDB, deleteCourseDataFromDB, cleanupOldData } from '../utils/indexedDB';
+import { saveCourseDataToDB, loadCourseDataFromDB, deleteCourseDataFromDB, cleanupOldData, cleanupAllSceneData } from '../utils/indexedDB';
 
 export const useCourseForm = (mode = 'create', courseId = null) => {
     const navigate = useNavigate();
@@ -39,88 +39,89 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
         };
 
         fetchCategories();
-        
+
         // Очищаем старые данные при инициализации
         cleanupOldData();
     }, []);
 
     // Восстановление данных из IndexedDB для режима создания
     useEffect(() => {
-        if (mode !== 'create' || hasRestoredFromLocalStorage.current) return;
+        if (mode !== 'create') return;
 
         const restoreFromDB = async () => {
+            if (hasRestoredFromLocalStorage.current) {
+                return;
+            }
+
             try {
                 const savedData = await loadCourseDataFromDB('create');
-                if (!savedData) return;
+                if (!savedData) {
+                    return;
+                }
 
-                console.log('Restoring course data from IndexedDB:', savedData);
-                
-                // Восстанавливаем данные курса
+                hasRestoredFromLocalStorage.current = true;
+
                 const restoredCourse = {
                     ...savedData.courseData,
-                    image: savedData.image // File объект восстанавливается напрямую
+                    image: savedData.image
                 };
 
                 setCourse(restoredCourse);
-                
-                // Если есть изображение, создаем preview
+
                 if (savedData.image) {
                     const imageUrl = URL.createObjectURL(savedData.image);
                     setImagePreview(imageUrl);
-                    console.log('Image restored from IndexedDB');
                 }
 
-                console.log('Course data restored:', restoredCourse);
-
-                // Удаляем данные после восстановления
                 await deleteCourseDataFromDB('create');
-                hasRestoredFromLocalStorage.current = true;
             } catch (error) {
                 console.error('Error restoring course data from IndexedDB:', error);
             }
         };
 
-        restoreFromDB();
+        const timeoutId = setTimeout(restoreFromDB, 50);
+        return () => clearTimeout(timeoutId);
     }, [mode]);
 
     // Восстановление данных из IndexedDB для режима редактирования
     useEffect(() => {
-        if (mode !== 'edit' || !courseId || hasRestoredFromLocalStorage.current) return;
+        if (mode !== 'edit' || !courseId) return;
 
         const restoreFromDB = async () => {
+            if (hasRestoredFromLocalStorage.current) {
+                return;
+            }
+
             try {
                 const savedData = await loadCourseDataFromDB('edit', courseId);
-                if (!savedData) return;
+                if (!savedData) {
+                    return;
+                }
 
-                console.log('Restoring edit course data from IndexedDB:', savedData);
+                hasRestoredFromLocalStorage.current = true;
 
-                // Восстанавливаем данные курса
                 const restoredCourse = {
                     ...savedData.courseData,
-                    image: savedData.image // File объект восстанавливается напрямую
+                    image: savedData.image
                 };
 
                 setCourse(restoredCourse);
-                
-                // Если есть изображение, создаем preview
+
                 if (savedData.image) {
                     const imageUrl = URL.createObjectURL(savedData.image);
                     setImagePreview(imageUrl);
-                    console.log('Image restored from IndexedDB');
                 }
 
-                console.log('Edit course data restored:', restoredCourse);
-
-                // Удаляем данные после восстановления
                 await deleteCourseDataFromDB('edit', courseId);
                 setInitialLoading(false);
-                hasRestoredFromLocalStorage.current = true;
             } catch (error) {
                 console.error('Error restoring edit course data from IndexedDB:', error);
+                setInitialLoading(false);
             }
         };
 
-        restoreFromDB();
+        const timeoutId = setTimeout(restoreFromDB, 50);
+        return () => clearTimeout(timeoutId);
     }, [mode, courseId]);
 
     // Загрузка данных курса с сервера в режиме редактирования
@@ -215,7 +216,7 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
             ...prevCourse,
             image: null
         }));
-        
+
         // Если это режим редактирования и есть существующее изображение
         if (mode === 'edit' && !imagePreview) {
             setExistingImageUrl(null);
@@ -268,9 +269,31 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
 
     // Обработчик обновления уроков
     const handleLessonsUpdate = useCallback((updatedLessons) => {
+        const editingLessonKey = mode === 'edit' ? 'editCurrentEditingLesson' : 'currentEditingLesson';
+        const hasSceneDataToRestore = localStorage.getItem(editingLessonKey);
+
+        if (hasSceneDataToRestore && updatedLessons.length === 0 && lessons.length > 0) {
+            return;
+        }
+        
+        if (updatedLessons.length === 0 && lessons.length > 0) {
+            const isSceneProcessing = 
+                localStorage.getItem('allLessonsBackup') || 
+                localStorage.getItem('editAllLessonsBackup');
+                
+            if (isSceneProcessing) {
+                return;
+            }
+        }
+
+        const lessonsChanged = JSON.stringify(updatedLessons) !== JSON.stringify(lessons);
+        if (!lessonsChanged) {
+            return;
+        }
+
         setLessons(updatedLessons);
 
-        // Если была ошибка с уроками, проверяем, можно ли её снять
+        // Остальная логика валидации ошибок...
         setErrors(prevErrors => {
             if (!prevErrors.lessons || updatedLessons.length === 0) return prevErrors;
 
@@ -286,15 +309,13 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
 
             return prevErrors;
         });
-    }, []);
+    }, [lessons, mode]);
 
     // Функция для сохранения данных курса перед переходом к редактору сцен
     const saveCourseDataToStorage = useCallback(async () => {
         try {
             setIsSaving(true);
-            console.log('Saving course data to IndexedDB:', course);
-            
-            // Подготавливаем данные курса для сохранения
+
             const courseToSave = {
                 title: course.title || '',
                 description: course.description || '',
@@ -303,14 +324,7 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
                 category_id: course.category_id || ''
             };
 
-            // Сохраняем в IndexedDB с изображением
-            const success = await saveCourseDataToDB(courseToSave, course.image, mode, courseId);
-            
-            if (success) {
-                console.log('Course data saved to IndexedDB successfully');
-            } else {
-                console.warn('Failed to save course data to IndexedDB');
-            }
+            await saveCourseDataToDB(courseToSave, course.image, mode, courseId);
         } catch (error) {
             console.error('Error saving course data to IndexedDB:', error);
         } finally {
@@ -353,9 +367,9 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
 
                 // Очищаем данные после успешного создания курса
                 await deleteCourseDataFromDB('create');
+                await cleanupAllSceneData('create'); // Добавляем очистку данных сцен
                 localStorage.removeItem('allLessonsBackup');
                 localStorage.removeItem('currentEditingLesson');
-                localStorage.removeItem('savedSceneData');
 
                 // Переходим на страницу созданного курса
                 navigate(`/courses/${response.id}`);
@@ -427,9 +441,9 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
                 // После успешного обновления курса
                 // Очищаем данные после успешного обновления курса
                 await deleteCourseDataFromDB('edit', courseId);
+                await cleanupAllSceneData('edit', courseId); // Добавляем очистку данных сцен
                 localStorage.removeItem('editAllLessonsBackup');
                 localStorage.removeItem('editCurrentEditingLesson');
-                localStorage.removeItem('savedSceneData');
 
                 // Переходим на страницу курса
                 navigate(`/courses/${courseId}`);

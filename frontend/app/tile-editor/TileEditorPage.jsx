@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { ArrowLeftIcon, CheckIcon } from '@heroicons/react/24/outline';
 // Импорт по умолчанию, поскольку компонент экспортируется как default
 import EditorPanel from './EditorPanel';
+import { saveSceneDataToDB, deleteSceneDataFromDB } from '../utils/indexedDB';
 
 // Этот компонент связывает создание урока и редактор сцены
 // Спроектирован так, чтобы минимально влиять на EditorPanel.jsx
@@ -22,7 +23,6 @@ const TileEditorPage = () => {
 
         if (!editingLessonData) {
             // Если нет данных о редактируемом уроке, возвращаемся обратно
-            console.warn('No lesson data found, redirecting back');
             navigate(-1); // Возвращаемся на предыдущую страницу
             return;
         }
@@ -40,7 +40,6 @@ const TileEditorPage = () => {
                         sceneData = JSON.parse(sceneData);
                     }
                     setInitialSceneData(sceneData);
-                    console.log('Loaded existing scene data for lesson:', data.lesson.title);
                 } catch (e) {
                     console.error("Error parsing existing scene data:", e);
                 }
@@ -57,7 +56,6 @@ const TileEditorPage = () => {
     // Сохраняем сцену и возвращаемся к созданию/редактированию курса
     const handleSaveScene = async () => {
         if (hasSaved.current) {
-            console.log('Already saved, ignoring duplicate save attempt');
             return;
         }
 
@@ -83,10 +81,31 @@ const TileEditorPage = () => {
                     models: []
                 };
 
-                localStorage.setItem('savedSceneData', JSON.stringify(dataToSave));
+                // Проверяем, что у нас есть все необходимые данные
+                if (!lessonData) {
+                    throw new Error('Missing lesson data for scene save');
+                }
 
-                // Добавляем небольшую задержку перед навигацией, чтобы убедиться что данные сохранились
-                await new Promise(resolve => setTimeout(resolve, 50));
+                // Извлекаем все необходимые данные
+                const lessonIndex = lessonData.lessonIndex;
+                const mode = lessonData.isEditMode ? 'edit' : 'create';
+                const courseId = lessonData.courseId;
+
+                console.log(`Saving scene data for lesson index ${lessonIndex}, mode: ${mode}, courseId: ${courseId}`);
+
+                // Сохраняем в IndexedDB вместо localStorage
+                const saved = await saveSceneDataToDB(dataToSave, lessonIndex, mode, courseId);
+
+                if (!saved) {
+                    // Fallback к localStorage если IndexedDB недоступен
+                    localStorage.setItem('savedSceneData', JSON.stringify(dataToSave));
+                    console.warn('Fallback: Scene data saved to localStorage');
+                } else {
+                    console.log('Scene data successfully saved to IndexedDB');
+                }
+
+                // Добавляем небольшую задержку перед навигацией
+                await new Promise(resolve => setTimeout(resolve, 150));
 
                 hasSaved.current = true;
 
@@ -113,9 +132,15 @@ const TileEditorPage = () => {
         setShowExitConfirm(true);
     };
 
-    const confirmExit = () => {
-        // Очищаем только данные сцены при выходе без сохранения
-        // НЕ удаляем данные о редактируемом уроке и резервные копии уроков, чтобы сохранить состояние формы
+    const confirmExit = async () => {
+        // Очищаем данные сцены при выходе без сохранения
+        const lessonIndex = lessonData?.lessonIndex || null;
+        const mode = lessonData?.isEditMode ? 'edit' : 'create';
+        const courseId = lessonData?.courseId || null;
+
+        await deleteSceneDataFromDB(lessonIndex, mode, courseId);
+
+        // Также очищаем localStorage для обратной совместимости
         localStorage.removeItem('savedSceneData');
 
         // Определяем, куда возвращаться

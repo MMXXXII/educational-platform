@@ -3,6 +3,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { PlusIcon, Bars3Icon } from "@heroicons/react/24/outline";
 import LessonForm from './LessonForm';
 import { useNavigate } from 'react-router';
+import { loadSceneDataWithFallback, deleteSceneDataFromDB } from '../utils/indexedDB';
 
 const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToEditor, isEditMode = false }) => {
     const [lessons, setLessons] = useState(initialLessons.map((lesson, idx) => ({
@@ -11,8 +12,10 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
     })));
 
     const navigate = useNavigate();
-    const hasProcessedSceneData = useRef(false); // Флаг для предотвращения повторной обработки
-    const pendingLessonsUpdate = useRef(null); // Для хранения отложенных обновлений
+    const hasProcessedSceneData = useRef(false);
+    const pendingLessonsUpdate = useRef(null);
+    const isInitialRender = useRef(true);
+    const isRestoringSceneData = useRef(false);
 
     const handleAddLesson = () => {
         const newLesson = {
@@ -22,7 +25,6 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
             scene_data: null
         };
         setLessons(prevLessons => [...prevLessons, newLesson]);
-        // onChange будет вызван автоматически через useEffect
     };
 
     const handleUpdateLesson = useCallback((index, updatedLesson) => {
@@ -31,11 +33,19 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
             newLessons[index] = updatedLesson;
             return newLessons;
         });
-    }, []); // Убираем onChange из зависимостей
-    
-    // Отдельный useEffect для вызова onChange
+    }, []);
+
     useEffect(() => {
-        if (onChange) {
+        if (isInitialRender.current) {
+            isInitialRender.current = false;
+            return;
+        }
+
+        if (isRestoringSceneData.current) {
+            return;
+        }
+
+        if (onChange && lessons.length > 0) {
             onChange(lessons);
         }
     }, [lessons, onChange]);
@@ -49,24 +59,19 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
                 }));
             return newLessons;
         });
-        // onChange будет вызван автоматически через useEffect
     };
 
     const handleCreateScene = (index, lesson) => {
-        // Вызываем функцию сохранения данных курса из родительского компонента
         if (onNavigateToEditor) {
             onNavigateToEditor();
         }
 
-        // Сбрасываем флаг перед переходом
         hasProcessedSceneData.current = false;
 
-        // Сохраняем все текущие уроки перед переходом
         const backupKey = isEditMode ? 'editAllLessonsBackup' : 'allLessonsBackup';
-        const lessonsToSave = [...lessons]; // Создаем копию массива
+        const lessonsToSave = [...lessons];
         localStorage.setItem(backupKey, JSON.stringify(lessonsToSave));
 
-        // Сохраняем данные для редактирования конкретного урока
         const editingLessonKey = isEditMode ? 'editCurrentEditingLesson' : 'currentEditingLesson';
         const dataToSave = {
             lessonIndex: index,
@@ -81,91 +86,114 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
         };
 
         localStorage.setItem(editingLessonKey, JSON.stringify(dataToSave));
-
-        // Очищаем любые предыдущие сохраненные данные сцены
         localStorage.removeItem('savedSceneData');
 
-        // Переходим к редактору сцен
         navigate('/tile-editor-scene');
     };
 
-    // Отдельная функция для обработки данных сцены, не зависит от рендеринга
-    const processSceneData = useCallback(() => {
-        const savedSceneData = localStorage.getItem('savedSceneData');
+    const processSceneData = useCallback(async () => {
+        if (hasProcessedSceneData.current) {
+            return;
+        }
+
         const editingLessonKey = isEditMode ? 'editCurrentEditingLesson' : 'currentEditingLesson';
         const lessonsBackupKey = isEditMode ? 'editAllLessonsBackup' : 'allLessonsBackup';
 
         const editingLessonData = localStorage.getItem(editingLessonKey);
         const lessonsBackup = localStorage.getItem(lessonsBackupKey);
 
-        // Добавляем второе условие для восстановления данных при возвращении без сохранения
-        if ((savedSceneData && editingLessonData) || (!savedSceneData && editingLessonData && lessonsBackup)) {
-            try {
-                // Если есть сохраненные данные сцены, обрабатываем их
-                let sceneData = null;
-                if (savedSceneData) {
-                    sceneData = JSON.parse(savedSceneData);
-                }
-                
-                const editingLesson = JSON.parse(editingLessonData);
-
-                // Проверяем, что это данные для текущего режима
-                if (editingLesson.isEditMode === isEditMode) {
-                    // Восстанавливаем все уроки из бэкапа или используем текущие
-                    let lessonsToUpdate = lessons;
-                    if (lessonsBackup) {
-                        try {
-                            lessonsToUpdate = JSON.parse(lessonsBackup);
-                        } catch (e) {
-                            console.error('Error parsing lessons backup:', e);
-                        }
-                    }
-
-                    if (typeof editingLesson.lessonIndex === 'number' &&
-                        editingLesson.lessonIndex >= 0 &&
-                        editingLesson.lessonIndex < lessonsToUpdate.length) {
-
-                        // Создаем копию массива уроков
-                        const updatedLessons = [...lessonsToUpdate];
-
-                        // Обновляем конкретный урок с данными сцены, если они есть
-                        if (sceneData) {
-                            updatedLessons[editingLesson.lessonIndex] = {
-                                ...updatedLessons[editingLesson.lessonIndex],
-                                scene_data: JSON.stringify(sceneData)
-                            };
-                        }
-
-                        // Сохраняем для последующего обновления в useEffect
-                        pendingLessonsUpdate.current = updatedLessons;
-                    }
-
-                    // Очищаем данные из localStorage после успешной обработки
-                    if (savedSceneData) {
-                        localStorage.removeItem('savedSceneData');
-                    }
-                    localStorage.removeItem(editingLessonKey);
-                    localStorage.removeItem(lessonsBackupKey);
-
-                    // Устанавливаем флаг, что обработка завершена
-                    hasProcessedSceneData.current = true;
-                }
-            } catch (error) {
-                console.error('Error processing scene data:', error);
-                // В случае ошибки также очищаем localStorage
-                localStorage.removeItem('savedSceneData');
-                localStorage.removeItem(editingLessonKey);
-                localStorage.removeItem(lessonsBackupKey);
-            }
+        if (!editingLessonData) {
+            return;
         }
-    }, [isEditMode, lessons]);
 
-    // Обработка возврата из редактора сцен
+        try {
+            isRestoringSceneData.current = true;
+            const editingLesson = JSON.parse(editingLessonData);
+
+            if (editingLesson.isEditMode !== isEditMode) {
+                isRestoringSceneData.current = false;
+                return;
+            }
+
+            const lessonIndex = editingLesson.lessonIndex;
+            const mode = isEditMode ? 'edit' : 'create';
+            const courseId = editingLesson.courseId;
+
+            const sceneData = await loadSceneDataWithFallback(lessonIndex, mode, courseId);
+
+            let lessonsToUpdate = [];
+
+            if (lessonsBackup) {
+                try {
+                    lessonsToUpdate = JSON.parse(lessonsBackup);
+                } catch (e) {
+                    isRestoringSceneData.current = false;
+                    return;
+                }
+            } else {
+                lessonsToUpdate = [...lessons];
+            }
+
+            if (typeof editingLesson.lessonIndex === 'number' &&
+                editingLesson.lessonIndex >= 0 &&
+                editingLesson.lessonIndex < lessonsToUpdate.length) {
+
+                const updatedLessons = [...lessonsToUpdate];
+
+                if (sceneData) {
+                    updatedLessons[editingLesson.lessonIndex] = {
+                        ...updatedLessons[editingLesson.lessonIndex],
+                        scene_data: JSON.stringify(sceneData)
+                    };
+                }
+
+                setLessons(updatedLessons);
+                
+                if (onChange) {
+                    onChange(updatedLessons);
+                }
+            } else {
+                setLessons(lessonsToUpdate);
+                
+                if (onChange) {
+                    onChange(lessonsToUpdate);
+                }
+            }
+
+            hasProcessedSceneData.current = true;
+
+            if (sceneData) {
+                await deleteSceneDataFromDB(lessonIndex, mode, courseId);
+            }
+
+            localStorage.removeItem('savedSceneData');
+            localStorage.removeItem(editingLessonKey);
+            localStorage.removeItem(lessonsBackupKey);
+
+        } catch (error) {
+            if (lessonsBackup) {
+                try {
+                    const lessonsToUpdate = JSON.parse(lessonsBackup);
+                    setLessons(lessonsToUpdate);
+                    if (onChange) {
+                        onChange(lessonsToUpdate);
+                    }
+                } catch (e) {
+                    // Пустое действие при ошибке
+                }
+            }
+
+            localStorage.removeItem('savedSceneData');
+            localStorage.removeItem(editingLessonKey);
+            localStorage.removeItem(lessonsBackupKey);
+
+            hasProcessedSceneData.current = true;
+        } finally {
+            isRestoringSceneData.current = false;
+        }
+    }, [isEditMode, lessons, onChange]);
+
     useEffect(() => {
-        // Обрабатываем данные сцены при монтировании
-        processSceneData();
-
-        // Также проверяем с небольшой задержкой, на случай если данные еще не успели сохраниться
         const timeoutId = setTimeout(() => {
             processSceneData();
         }, 100);
@@ -173,59 +201,43 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
         return () => clearTimeout(timeoutId);
     }, [processSceneData]);
 
-// Отдельный эффект для применения отложенных обновлений
-useEffect(() => {
-    if (pendingLessonsUpdate.current) {
-        const updatedLessons = pendingLessonsUpdate.current;
-        setLessons(updatedLessons);
-        // Очищаем отложенное обновление
-        pendingLessonsUpdate.current = null;
-    }
-}, []); // Убираем onChange из зависимостей
+    useEffect(() => {
+        if (initialLessons.length > 0 &&
+            !hasProcessedSceneData.current &&
+            !isRestoringSceneData.current) {
 
-// Синхронизация с initialLessons
-useEffect(() => {
-    // Обновляем уроки только если:
-    // 1. Есть начальные уроки
-    // 2. Мы не обрабатываем данные сцены
-    // 3. Текущие уроки пустые или это первая загрузка
-    if (initialLessons.length > 0 && !hasProcessedSceneData.current) {
-        const formattedLessons = initialLessons.map((lesson, idx) => ({
-            ...lesson,
-            order: lesson.order || idx + 1
-        }));
+            const formattedLessons = initialLessons.map((lesson, idx) => ({
+                ...lesson,
+                order: lesson.order || idx + 1
+            }));
 
-        // Проверяем, изменились ли уроки
-        const lessonsChanged = JSON.stringify(formattedLessons) !== JSON.stringify(lessons);
+            const lessonsChanged = JSON.stringify(formattedLessons) !== JSON.stringify(lessons);
 
-        if (lessonsChanged) {
-            setLessons(formattedLessons);
+            if (lessonsChanged) {
+                setLessons(formattedLessons);
+            }
         }
-    }
-}, [initialLessons]); // Убираем lessons из зависимостей чтобы избежать бесконечного цикла
+    }, [initialLessons]);
 
-const onDragEnd = (result) => {
-    // Перемещение за пределы списка
-    if (!result.destination) {
-        return;
-    }
+    const onDragEnd = (result) => {
+        if (!result.destination) {
+            return;
+        }
 
-    const reorderedLessons = reorderLessons(
-        lessons,
-        result.source.index,
-        result.destination.index
-    );
+        const reorderedLessons = reorderLessons(
+            lessons,
+            result.source.index,
+            result.destination.index
+        );
 
-    setLessons(reorderedLessons);
-    // onChange будет вызван автоматически через useEffect
-};
+        setLessons(reorderedLessons);
+    };
 
     const reorderLessons = (list, startIndex, endIndex) => {
         const result = Array.from(list);
         const [removed] = result.splice(startIndex, 1);
         result.splice(endIndex, 0, removed);
 
-        // Обновляем свойство order для каждого урока
         return result.map((item, index) => ({
             ...item,
             order: index + 1
