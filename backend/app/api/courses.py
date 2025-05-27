@@ -24,7 +24,7 @@ from app.utils.courses import (
     get_user_enrolled_courses, get_recommended_courses,
     get_course_by_id, check_course_owner, reorder_lessons
 )
-from app.utils.file_storage import save_course_image
+from app.utils.file_storage import save_course_image, delete_course_image
 
 router = APIRouter(prefix="/courses")
 
@@ -541,12 +541,19 @@ async def upload_course_image(
         course = get_course_by_id(db, course_id)
         check_course_owner(course, current_user)
 
-        # Сохраняем изображение
+        # Сохраняем старый URL изображения для удаления
+        old_image_url = course.image_url
+
+        # Сохраняем новое изображение
         image_url = save_course_image(image, current_user.id)
 
         # Обновляем курс
         course.image_url = image_url
         db.commit()
+
+        # Удаляем старое изображение, если оно существовало
+        if old_image_url:
+            delete_course_image(old_image_url)
 
         return {"image_url": image_url}
     except SQLAlchemyError as e:
@@ -775,14 +782,8 @@ async def delete_course(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Удаление курса (только для администраторов)"""
+    """Удаление курса (для администраторов и автора курса)"""
     try:
-        if current_user.role != "admin":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Недостаточно прав для выполнения операции"
-            )
-
         # Поиск курса
         db_course = db.query(Course).filter(Course.id == course_id).first()
         if not db_course:
@@ -790,6 +791,17 @@ async def delete_course(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Курс с ID {course_id} не найден"
             )
+
+        # Проверяем права пользователя (админ или автор курса)
+        if current_user.role != "admin" and db_course.author != current_user.username:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Недостаточно прав для выполнения операции"
+            )
+
+        # Удаляем изображение курса, если оно есть
+        if db_course.image_url:
+            delete_course_image(db_course.image_url)
 
         # Удаление курса
         db.delete(db_course)
