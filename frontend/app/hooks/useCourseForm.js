@@ -146,6 +146,8 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
 
                 setCourse(newCourseState);
 
+                // Устанавливаем существующий URL изображения без модификаций
+                // Модификации будут выполнены в компоненте CourseFormFields
                 if (courseData.image_url) {
                     setExistingImageUrl(courseData.image_url);
                 }
@@ -275,12 +277,12 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
         if (hasSceneDataToRestore && updatedLessons.length === 0 && lessons.length > 0) {
             return;
         }
-        
+
         if (updatedLessons.length === 0 && lessons.length > 0) {
-            const isSceneProcessing = 
-                localStorage.getItem('allLessonsBackup') || 
+            const isSceneProcessing =
+                localStorage.getItem('allLessonsBackup') ||
                 localStorage.getItem('editAllLessonsBackup');
-                
+
             if (isSceneProcessing) {
                 return;
             }

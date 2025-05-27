@@ -207,7 +207,7 @@ export const loadSceneDataWithFallback = async (lessonIndex = null, mode = 'crea
         return null;
     } catch (error) {
         console.error('Error in loadSceneDataWithFallback:', error);
-        
+
         try {
             const localStorageData = localStorage.getItem('savedSceneData');
             if (localStorageData) {
@@ -216,7 +216,7 @@ export const loadSceneDataWithFallback = async (lessonIndex = null, mode = 'crea
         } catch (e) {
             console.error('Error in localStorage fallback:', e);
         }
-        
+
         return null;
     }
 };

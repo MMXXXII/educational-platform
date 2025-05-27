@@ -164,8 +164,8 @@ export const coursesApi = {
                     requestConfig.headers['Authorization'] = `Bearer ${options.token}`;
                 }
 
-                // Сначала обновляем изображение
-                await apiClient.post(`/courses/${courseId}/upload-image`, formData, requestConfig);
+                // Сначала обновляем изображение - это автоматически удалит старое изображение на сервере
+                const imageResponse = await apiClient.post(`/courses/${courseId}/upload-image`, formData, requestConfig);
 
                 // Затем обновляем остальные данные
                 const updateData = {
@@ -173,10 +173,16 @@ export const coursesApi = {
                     description: courseData.description,
                     longdescription: courseData.longDescription,
                     difficulty: courseData.difficulty,
-                    category_ids: courseData.category_ids || [courseData.category_id]
+                    category_ids: courseData.category_ids || [parseInt(courseData.category_id)]
                 };
 
                 const response = await apiClient.put(`/courses/${courseId}`, updateData);
+
+                // Комбинируем результаты для сохранения URL изображения
+                if (imageResponse && imageResponse.data && imageResponse.data.image_url) {
+                    response.data.image_url = imageResponse.data.image_url;
+                }
+
                 return response.data;
             } else {
                 // Обычное обновление без изображения
@@ -191,9 +197,10 @@ export const coursesApi = {
     // Удаление курса
     deleteCourse: async (courseId) => {
         try {
-            await apiClient.delete(`/courses/${courseId}`);
-            return true;
+            const response = await apiClient.delete(`/courses/${courseId}`);
+            return response.data || true;
         } catch (error) {
+            console.error('Error in deleteCourse:', error);
             handleError(error);
         }
     },

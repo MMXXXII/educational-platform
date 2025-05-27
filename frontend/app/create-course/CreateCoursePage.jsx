@@ -52,7 +52,7 @@ export function CreateCoursePage() {
                         initialLessons={lessons}
                         courseId={course.id}
                         onChange={handleLessonsUpdate}
-                        onNavigateToEditor={saveCourseDataToStorage}  // обновить здесь
+                        onNavigateToEditor={saveCourseDataToStorage}
                     />
                     {errors.lessons && (
                         <p className="mt-2 text-sm text-red-500">{errors.lessons}</p>

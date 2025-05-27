@@ -1,4 +1,6 @@
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useEffect, useState } from 'react';
+import config from '../../config';
 
 const CourseFormFields = ({
     course,
@@ -10,6 +12,36 @@ const CourseFormFields = ({
     onImageChange,
     onRemoveImage
 }) => {
+    const [displayImageUrl, setDisplayImageUrl] = useState('');
+
+    // Получение URL сервера API из config
+    const apiBaseUrl = config.apiUrl || '';
+
+    // Обработка URL изображения
+    useEffect(() => {
+        if (imagePreview) {
+            // Изображение для предварительного просмотра из объекта File (URL blob)
+            setDisplayImageUrl(imagePreview);
+        } else if (existingImageUrl) {
+            // Обработка существующего URL изображения из backend
+            let imageUrl = existingImageUrl;
+
+            // Для URL, начинающихся с /static, мы должны получить их через API
+            if (imageUrl.startsWith('/static/')) {
+                imageUrl = `${apiBaseUrl}/api${imageUrl}`;
+            }
+            // Для других URL, начинающихся с /, добавитьбазовый URL API
+            else if (imageUrl.startsWith('/')) {
+                imageUrl = `${apiBaseUrl}${imageUrl}`;
+            }
+
+            console.log("CourseFormFields: Using image URL:", imageUrl);
+            setDisplayImageUrl(imageUrl);
+        } else {
+            setDisplayImageUrl('');
+        }
+    }, [imagePreview, existingImageUrl, apiBaseUrl]);
+
     return (
         <>
             {/* Основная информация о курсе */}
@@ -160,12 +192,16 @@ const CourseFormFields = ({
 
                     {/* Предпросмотр изображения */}
                     <div>
-                        {imagePreview || existingImageUrl ? (
+                        {displayImageUrl ? (
                             <div className="relative">
                                 <img
-                                    src={imagePreview || existingImageUrl}
+                                    src={displayImageUrl}
                                     alt="Предпросмотр"
                                     className="w-full h-64 object-cover rounded-lg"
+                                    onError={(e) => {
+                                        console.error("Failed to load image:", displayImageUrl);
+                                        e.target.style.display = 'none';
+                                    }}
                                 />
                                 <button
                                     type="button"

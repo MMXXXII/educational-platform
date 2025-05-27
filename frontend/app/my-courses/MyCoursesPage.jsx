@@ -83,14 +83,18 @@ export function MyCoursesPage() {
         }
 
         try {
+            setLoading(true);
             await coursesApi.deleteCourse(courseId);
+
             // Обновляем список после удаления
             const updatedCourses = createdCourses.filter(course => course.id !== courseId);
             setCreatedCourses(updatedCourses);
             setCreatedTotal(prev => prev - 1);
         } catch (err) {
             console.error('Failed to delete course:', err);
-            alert('Не удалось удалить курс');
+            alert(`Не удалось удалить курс: ${err.message || 'Неизвестная ошибка'}`);
+        } finally {
+            setLoading(false);
         }
     };
 

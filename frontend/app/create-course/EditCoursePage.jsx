@@ -80,7 +80,7 @@ export function EditCoursePage() {
                         initialLessons={lessons}
                         courseId={courseId}
                         onChange={handleLessonsUpdate}
-                        onNavigateToEditor={saveCourseDataToStorage}  // обновить здесь
+                        onNavigateToEditor={saveCourseDataToStorage}
                         isEditMode={true}
                     />
                 </div>

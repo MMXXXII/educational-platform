@@ -1,6 +1,11 @@
-const API_URL = import.meta.env.VITE_API_URL;
+import { useEffect, useState } from 'react';
+import config from '../../config';
+
+const API_URL = config.apiUrl || '';
 
 export function CourseImage({ course }) {
+    const [displayImageUrl, setDisplayImageUrl] = useState(null);
+
     // Функция для получения инициалов курса
     const getInitialsPlaceholder = (title) => {
         return title.substring(0, 2).toUpperCase();
@@ -38,30 +43,42 @@ export function CourseImage({ course }) {
         return { bg: colors.bg, text: colors.text };
     };
 
+    // Обработка URL изображения
+    useEffect(() => {
+        // Определяем URL изображения (в API это image_url)
+        let imageUrl = course.imageUrl || course.image_url;
+
+        if (imageUrl) {
+            // Для URL, начинающихся с /static, мы должны получить их через API
+            if (imageUrl.startsWith('/static/')) {
+                imageUrl = `${API_URL}/api${imageUrl}`;
+            }
+            // Для других URL, начинающихся с /, добавить базовый URL API
+            else if (imageUrl.startsWith('/')) {
+                imageUrl = `${API_URL}${imageUrl}`;
+            }
+            // Для других URL, не начинающихся с /, добавить к базовому URL API
+            else if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://') && !imageUrl.startsWith('data:')) {
+                imageUrl = `${API_URL}/${imageUrl}`;
+            }
+
+            console.log("CourseImage: Using image URL:", imageUrl);
+            setDisplayImageUrl(imageUrl);
+        } else {
+            setDisplayImageUrl(null);
+        }
+    }, [course]);
+
     // Определяем категорию курса (в API это может быть массив)
     const categoryName = course.category ||
         (course.categories && course.categories.length > 0 ? course.categories[0].name : 'default');
-
-    // Определяем URL изображения (в API это image_url)
-    let imageUrl = course.imageUrl || course.image_url;
-
-    // Преобразование относительного URL в абсолютный
-    if (imageUrl && imageUrl.startsWith('/static/')) {
-        imageUrl = `${API_URL}/api${imageUrl}`;
-    }
-
-    // Проверяем, является ли URL изображения валидным
-    const shouldUsePlaceholder = !imageUrl ||
-        !(imageUrl.startsWith('http://') ||
-            imageUrl.startsWith('https://') ||
-            imageUrl.startsWith('data:image'));
 
     // Получение цвета на основе категории курса
     const colors = getCategoryColor(categoryName);
 
     return (
         <div className="h-48 sm:h-64 bg-gray-200 relative">
-            {shouldUsePlaceholder ? (
+            {!displayImageUrl ? (
                 <div className={`w-full h-full flex items-center justify-center ${colors.bg}`}>
                     <span className={`font-bold text-4xl ${colors.text}`}>
                         {getInitialsPlaceholder(course.title)}
@@ -69,11 +86,12 @@ export function CourseImage({ course }) {
                 </div>
             ) : (
                 <img
-                    src={imageUrl}
+                    src={displayImageUrl}
                     alt={course.title}
                     className="w-full h-full object-cover"
                     onError={(e) => {
                         e.target.onerror = null;
+                        console.error("Failed to load image:", displayImageUrl);
                         // При ошибке загрузки показать заглушку с инициалами
                         const parent = e.target.parentNode;
                         if (parent) {
