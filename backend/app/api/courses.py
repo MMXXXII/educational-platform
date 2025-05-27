@@ -759,9 +759,20 @@ async def update_course(
                 categories.append(category)
             db_course.categories = categories
 
+        # Проверяем, нужно ли удалить существующее изображение
+        if course_update.remove_image:
+            # Удаляем изображение курса, если оно есть
+            old_image_url = db_course.image_url
+            if old_image_url:
+                try:
+                    delete_course_image(old_image_url)
+                except Exception as e:
+                    print(f"Ошибка при удалении изображения: {str(e)}")
+                db_course.image_url = None  # Обнуляем URL изображения в БД
+
         # Обновление только предоставленных полей
         update_data = course_update.model_dump(
-            exclude={"category_ids"}, exclude_unset=True)
+            exclude={"category_ids", "remove_image"}, exclude_unset=True)
         for key, value in update_data.items():
             setattr(db_course, key, value)
 

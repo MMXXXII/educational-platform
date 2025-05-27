@@ -145,6 +145,7 @@ class CourseUpdate(BaseModel):
     lessons_count: Optional[int] = Field(default=None, ge=0)
     image_url: Optional[str] = None
     category_ids: Optional[List[int]] = None
+    remove_image: Optional[bool] = False
 
     @validator('difficulty')
     def validate_difficulty(cls, v):
