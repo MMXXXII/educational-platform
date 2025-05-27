@@ -60,7 +60,7 @@ const CourseFormFields = ({
                             name="title"
                             value={course.title}
                             onChange={onCourseChange}
-                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.title ? 'border-red-500' : 'border-gray-300'}`}
+                            className={`w-full px-3 py-2 border rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.title ? 'border-red-500' : 'border-gray-300'}`}
                         />
                         {errors.title && (
                             <p className="mt-1 text-sm text-red-500">{errors.title}</p>
@@ -79,7 +79,7 @@ const CourseFormFields = ({
                             onChange={onCourseChange}
                             rows="2"
                             placeholder="Краткое описание будет отображаться в каталоге курсов"
-                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.description ? 'border-red-500' : 'border-gray-300'} placeholder-gray-400`}
+                            className={`w-full px-3 py-2 border rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.description ? 'border-red-500' : 'border-gray-300'} placeholder-gray-400`}
                         />
                         {errors.description && (
                             <p className="mt-1 text-sm text-red-500">{errors.description}</p>
@@ -98,57 +98,60 @@ const CourseFormFields = ({
                             onChange={onCourseChange}
                             rows="6"
                             placeholder="Подробно опишите ваш курс, чему научатся студенты, какие навыки приобретут"
-                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.longDescription ? 'border-red-500' : 'border-gray-300'} placeholder-gray-400`}
+                            className={`w-full px-3 py-2 border rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.longDescription ? 'border-red-500' : 'border-gray-300'} placeholder-gray-400`}
                         />
                         {errors.longDescription && (
                             <p className="mt-1 text-sm text-red-500">{errors.longDescription}</p>
                         )}
                     </div>
 
-                    {/* Уровень сложности */}
-                    <div className="col-span-1 sm:col-span-1 md:col-span-1">
-                        <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700 mb-1 min-h-[40px] flex items-end">
-                            Уровень сложности*
-                        </label>
-                        <select
-                            id="difficulty"
-                            name="difficulty"
-                            value={course.difficulty}
-                            onChange={onCourseChange}
-                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.difficulty ? 'border-red-500' : 'border-gray-300'} text-gray-900 bg-white`}
-                        >
-                            <option value="" className="text-gray-900">Выберите уровень сложности</option>
-                            <option value="начинающий" className="text-gray-900">Начинающий</option>
-                            <option value="средний" className="text-gray-900">Средний</option>
-                            <option value="продвинутый" className="text-gray-900">Продвинутый</option>
-                        </select>
-                        {errors.difficulty && (
-                            <p className="mt-1 text-sm text-red-500">{errors.difficulty}</p>
-                        )}
-                    </div>
+                    {/* Селекты с уровнем сложности и категорией в колонку на мобильных */}
+                    <div className="col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Уровень сложности */}
+                        <div>
+                            <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700 mb-2">
+                                Уровень сложности*
+                            </label>
+                            <select
+                                id="difficulty"
+                                name="difficulty"
+                                value={course.difficulty}
+                                onChange={onCourseChange}
+                                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.difficulty ? 'border-red-500' : 'border-gray-300'} text-black bg-white`}
+                            >
+                                <option value="" className="text-black">Выберите уровень сложности</option>
+                                <option value="начинающий" className="text-black">Начинающий</option>
+                                <option value="средний" className="text-black">Средний</option>
+                                <option value="продвинутый" className="text-black">Продвинутый</option>
+                            </select>
+                            {errors.difficulty && (
+                                <p className="mt-1 text-sm text-red-500">{errors.difficulty}</p>
+                            )}
+                        </div>
 
-                    {/* Категория */}
-                    <div className="col-span-1 sm:col-span-1 md:col-span-1">
-                        <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-1 min-h-[40px] flex items-end">
-                            Категория*
-                        </label>
-                        <select
-                            id="category_id"
-                            name="category_id"
-                            value={course.category_id}
-                            onChange={onCourseChange}
-                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.difficulty ? 'border-red-500' : 'border-gray-300'} text-gray-900 bg-white`}
-                        >
-                            <option value="" className="text-gray-900">Выберите категорию</option>
-                            {categories.map(category => (
-                                <option key={category.id} value={category.id} className="text-gray-900">
-                                    {category.name}
-                                </option>
-                            ))}
-                        </select>
-                        {errors.category_id && (
-                            <p className="mt-1 text-sm text-red-500">{errors.category_id}</p>
-                        )}
+                        {/* Категория */}
+                        <div>
+                            <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-2">
+                                Категория*
+                            </label>
+                            <select
+                                id="category_id"
+                                name="category_id"
+                                value={course.category_id}
+                                onChange={onCourseChange}
+                                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category_id ? 'border-red-500' : 'border-gray-300'} text-black bg-white`}
+                            >
+                                <option value="" className="text-black">Выберите категорию</option>
+                                {categories.map(category => (
+                                    <option key={category.id} value={category.id} className="text-black">
+                                        {category.name}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.category_id && (
+                                <p className="mt-1 text-sm text-red-500">{errors.category_id}</p>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

@@ -49,7 +49,7 @@ export function SyllabusAccordion({ lessons }) {
                         </div>
 
                         {activeLesson === index && (
-                            <div className="p-4 bg-white border-t border-gray-200">
+                            <div className="p-4 bg-white border-t border-gray-200 text-gray-700">
                                 <div className="prose max-w-none">
                                     <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
                                 </div>

@@ -148,7 +148,7 @@ export function Header() {
                                 <>
                                     <Link
                                         to="/node-editor"
-                                        className="text-gray-700 hover:text-blue-600 flex items-center"
+                                        className="text-gray-700 hover:text-blue-600 flex items-center justify-center"
                                         onClick={() => setMobileMenuOpen(false)}
                                     >
                                         <PlayIcon className="h-5 w-5 mr-2" />
@@ -157,7 +157,7 @@ export function Header() {
 
                                     <Link
                                         to="/courses"
-                                        className="text-gray-700 hover:text-blue-600 flex items-center"
+                                        className="text-gray-700 hover:text-blue-600 flex items-center justify-center"
                                         onClick={() => setMobileMenuOpen(false)}
                                     >
                                         <BookOpenIcon className="h-5 w-5 mr-2" />
@@ -166,7 +166,7 @@ export function Header() {
 
                                     <Link
                                         to="/my-courses"
-                                        className="text-gray-700 hover:text-blue-600 flex items-center"
+                                        className="text-gray-700 hover:text-blue-600 flex items-center justify-center"
                                         onClick={() => setMobileMenuOpen(false)}
                                     >
                                         <AcademicCapIcon className="h-5 w-5 mr-2" />
@@ -176,7 +176,7 @@ export function Header() {
                                     {hasRole(['admin', 'teacher']) && (
                                         <Link
                                             to="/create-course"
-                                            className="text-gray-700 hover:text-blue-600 flex items-center"
+                                            className="text-gray-700 hover:text-blue-600 flex items-center justify-center"
                                             onClick={() => setMobileMenuOpen(false)}
                                         >
                                             <PencilSquareIcon className="h-5 w-5 mr-2" />
@@ -187,7 +187,7 @@ export function Header() {
                                     {hasRole(['admin', 'teacher']) && (
                                         <Link
                                             to="/file-manager"
-                                            className="text-gray-700 hover:text-blue-600 flex items-center"
+                                            className="text-gray-700 hover:text-blue-600 flex items-center justify-center"
                                         >
                                             <DocumentTextIcon className="h-5 w-5 mr-1" />
                                             <span>Файлы</span>

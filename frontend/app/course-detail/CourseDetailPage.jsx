@@ -27,10 +27,10 @@ export function CourseDetailPage({ courseId }) {
         const fetchCourseData = async () => {
             try {
                 setLoading(true);
-                
+
                 // Получение основной информации о курсе
                 const courseData = await coursesApi.getCourseById(currentCourseId);
-                
+
                 // Получение курса с уроками если они есть
                 try {
                     const courseWithLessons = await coursesApi.getCourseWithLessons(currentCourseId);
@@ -48,7 +48,7 @@ export function CourseDetailPage({ courseId }) {
                         lessons: [] // Пустой массив уроков
                     });
                 }
-                
+
                 setError(null);
             } catch (err) {
                 console.error('Error fetching course data:', err);
@@ -93,8 +93,13 @@ export function CourseDetailPage({ courseId }) {
             <CourseBreadcrumbs course={course} />
 
             <div className="flex flex-col lg:flex-row gap-8">
+                {/* Сайдбар с информацией о записи на курс */}
+                <div className="order-1 lg:order-2 lg:w-1/3">
+                    <CourseSidebar course={course} />
+                </div>
+
                 {/* Основная информация о курсе */}
-                <div className="lg:w-2/3">
+                <div className="order-2 lg:order-1 lg:w-2/3">
                     <div className="bg-white rounded-lg shadow-md overflow-hidden">
                         {/* Обложка курса */}
                         <CourseImage course={course} />
@@ -118,9 +123,6 @@ export function CourseDetailPage({ courseId }) {
                         </div>
                     </div>
                 </div>
-
-                {/* Сайдбар с информацией о записи на курс */}
-                <CourseSidebar course={course} />
             </div>
         </div>
     );

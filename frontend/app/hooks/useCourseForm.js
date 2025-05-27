@@ -27,6 +27,9 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
     // Состояние для отслеживания ошибок валидации
     const [errors, setErrors] = useState({});
 
+    // Флаг для отслеживания удаления существующего изображения
+    const [removeExistingImage, setRemoveExistingImage] = useState(false);
+
     // Получаем категории с сервера
     useEffect(() => {
         const fetchCategories = async () => {
@@ -220,10 +223,11 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
         }));
 
         // Если это режим редактирования и есть существующее изображение
-        if (mode === 'edit' && !imagePreview) {
+        if (mode === 'edit' && existingImageUrl) {
             setExistingImageUrl(null);
+            setRemoveExistingImage(true); // Устанавливаем флаг для удаления изображения на сервере
         }
-    }, [imagePreview, mode]);
+    }, [existingImageUrl, mode]);
 
     // Валидация формы перед отправкой
     const validateForm = useCallback(() => {
@@ -399,7 +403,8 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
                 longdescription: course.longDescription,
                 difficulty: course.difficulty,
                 category_ids: [parseInt(course.category_id)],
-                image: course.image
+                image: course.image,
+                remove_image: removeExistingImage // Добавляем флаг для удаления изображения
             };
 
             // Обновляем данные курса на сервере

@@ -132,7 +132,7 @@ const LessonForm = ({
                         value={title}
                         onChange={handleTitleChange}
                         required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
                     />
                 </div>
 
@@ -150,7 +150,7 @@ const LessonForm = ({
                         onChange={handleContentChange}
                         rows={5}
                         required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical placeholder-gray-400"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical placeholder-gray-400"
                     />
                 </div>
             </div>

@@ -185,8 +185,15 @@ export const coursesApi = {
 
                 return response.data;
             } else {
-                // Обычное обновление без изображения
-                const response = await apiClient.put(`/courses/${courseId}`, courseData);
+                // Обычное обновление без нового изображения
+                // Если нужно удалить существующее изображение, передаем флаг remove_image
+                const updateData = {
+                    ...courseData,
+                    // Убедимся, что remove_image передается как булево значение
+                    remove_image: courseData.remove_image === true
+                };
+                
+                const response = await apiClient.put(`/courses/${courseId}`, updateData);
                 return response.data;
             }
         } catch (error) {

@@ -86,51 +86,49 @@ export function CourseSidebar({ course }) {
     };
 
     return (
-        <div className="lg:w-1/3">
-            <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
-                <div className="text-center mb-6">
-                    <div className="text-3xl font-bold text-blue-600 mb-2">Бесплатно</div>
-                    <p className="text-gray-500">Начните обучение уже сегодня</p>
+        <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
+            <div className="text-center mb-6">
+                <div className="text-3xl font-bold text-blue-600 mb-2">Бесплатно</div>
+                <p className="text-gray-500">Начните обучение уже сегодня</p>
+            </div>
+
+            <button
+                className={`w-full py-3 ${enrolled ? 'bg-green-600' : 'bg-blue-600'} text-white font-semibold rounded-lg hover:${enrolled ? 'bg-green-700' : 'bg-blue-700'} transition-colors mb-4 ${enrolling ? 'opacity-70 cursor-not-allowed' : ''}`}
+                onClick={handleEnroll}
+                disabled={enrolling || enrolled}
+            >
+                {enrolling ? (
+                    <span className="flex items-center justify-center">
+                        <ArrowPathIcon className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
+                        Запись...
+                    </span>
+                ) : enrolled ? (
+                    'Вы записаны на курс'
+                ) : (
+                    'Начать прохождение'
+                )}
+            </button>
+
+            {error && (
+                <div className="text-red-500 text-sm mb-4 text-center">
+                    {error}
+                </div>
+            )}
+
+            <div className="space-y-4 mb-2">
+                <div className="flex items-center">
+                    <ClockIcon className="h-5 w-5 text-blue-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" />
+                    <span className="text-gray-700">{duration}</span>
+                </div>
+                <div className="flex items-center">
+                    <ClipboardIcon className="h-5 w-5 text-blue-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" />
+                    <span className="text-gray-700">{lessonsCount} уроков</span>
                 </div>
 
-                <button
-                    className={`w-full py-3 ${enrolled ? 'bg-green-600' : 'bg-blue-600'} text-white font-semibold rounded-lg hover:${enrolled ? 'bg-green-700' : 'bg-blue-700'} transition-colors mb-4 ${enrolling ? 'opacity-70 cursor-not-allowed' : ''}`}
-                    onClick={handleEnroll}
-                    disabled={enrolling || enrolled}
-                >
-                    {enrolling ? (
-                        <span className="flex items-center justify-center">
-                            <ArrowPathIcon className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />
-                            Запись...
-                        </span>
-                    ) : enrolled ? (
-                        'Вы записаны на курс'
-                    ) : (
-                        'Начать прохождение'
-                    )}
-                </button>
-
-                {error && (
-                    <div className="text-red-500 text-sm mb-4 text-center">
-                        {error}
-                    </div>
-                )}
-
-                <div className="space-y-4 mb-2">
-                    <div className="flex items-center">
-                        <ClockIcon className="h-5 w-5 text-blue-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" />
-                        <span className="text-gray-700">{duration}</span>
-                    </div>
-                    <div className="flex items-center">
-                        <ClipboardIcon className="h-5 w-5 text-blue-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" />
-                        <span className="text-gray-700">{lessonsCount} уроков</span>
-                    </div>
-
-                    {/* Катеогории */}
-                    <div className="flex items-center">
-                        <TagIcon className="h-5 w-5 text-blue-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" />
-                        <span className="text-gray-700">{categories}</span>
-                    </div>
+                {/* Катеогории */}
+                <div className="flex items-center">
+                    <TagIcon className="h-5 w-5 text-blue-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" />
+                    <span className="text-gray-700">{categories}</span>
                 </div>
             </div>
         </div>
