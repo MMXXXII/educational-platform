@@ -51,7 +51,18 @@ export function SyllabusAccordion({ lessons }) {
                         {activeLesson === index && (
                             <div className="p-4 bg-white border-t border-gray-200 text-gray-700">
                                 <div className="prose max-w-none">
-                                    <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
+                                    <>
+                                        <div
+                                            className="max-h-32 overflow-hidden relative"
+                                            style={{
+                                                maskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)',
+                                                WebkitMaskImage: 'linear-gradient(to bottom, black 60%, transparent 100%)'
+                                            }}
+                                        >
+                                            <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
+                                        </div>
+                                    </>
+
                                 </div>
                             </div>
                         )}

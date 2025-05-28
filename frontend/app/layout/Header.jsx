@@ -18,7 +18,7 @@ export function Header() {
     };
 
     return (
-        <header className="bg-white shadow-md relative z-20">
+        <header className="bg-white shadow-md fixed w-full z-50">
             <div className="container mx-auto px-4 sm:px-6 py-3">
                 <div className="flex justify-between items-center">
                     {/* Защищенный логотип с использованием CSS background-image */}

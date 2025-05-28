@@ -13,6 +13,7 @@ const CourseFormFields = ({
     onRemoveImage
 }) => {
     const [displayImageUrl, setDisplayImageUrl] = useState('');
+    const [isDragging, setIsDragging] = useState(false);
 
     // Получение URL сервера API из config
     const apiBaseUrl = config.apiUrl || '';
@@ -41,6 +42,32 @@ const CourseFormFields = ({
             setDisplayImageUrl('');
         }
     }, [imagePreview, existingImageUrl, apiBaseUrl]);
+
+    // Обработчики для drag-and-drop
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const file = e.dataTransfer.files[0];
+            // Создаем синтетическое событие для обработчика onImageChange
+            const event = { target: { files: [file] } };
+            onImageChange(event);
+        }
+    };
 
     return (
         <>
@@ -165,28 +192,32 @@ const CourseFormFields = ({
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Обложка курса
                         </label>
-                        <div className="mt-1 flex items-center">
-                            <div className={`w-full px-3 py-6 border-2 border-dashed rounded-lg text-center ${errors.image ? 'border-red-500' : 'border-gray-300'}`}>
-                                <input
-                                    type="file"
-                                    id="image"
-                                    name="image"
-                                    accept="image/*"
-                                    onChange={onImageChange}
-                                    className="hidden"
-                                />
-                                <label htmlFor="image" className="cursor-pointer">
-                                    <div className="space-y-2">
-                                        <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-blue-100">
-                                            <PlusIcon className="h-6 w-6 text-blue-600" />
-                                        </div>
-                                        <div className="text-gray-600">
-                                            <span className="text-blue-600 font-medium">Нажмите для загрузки</span> или перетащите изображение
-                                        </div>
-                                        <p className="text-xs text-gray-500">PNG, JPG, GIF до 10MB</p>
+                        <div
+                            className={`w-full px-3 py-6 border-2 border-dashed rounded-lg text-center ${errors.image ? 'border-red-500' : isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+                            onDragOver={handleDragOver}
+                            onDragEnter={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                        >
+                            <input
+                                type="file"
+                                id="image"
+                                name="image"
+                                accept="image/*"
+                                onChange={onImageChange}
+                                className="hidden"
+                            />
+                            <label htmlFor="image" className="cursor-pointer">
+                                <div className="space-y-2">
+                                    <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-blue-100">
+                                        <PlusIcon className="h-6 w-6 text-blue-600" />
                                     </div>
-                                </label>
-                            </div>
+                                    <div className="text-gray-600">
+                                        <span className="text-blue-600 font-medium">Нажмите для загрузки</span> или перетащите изображение
+                                    </div>
+                                    <p className="text-xs text-gray-500">PNG, JPG, GIF до 10MB</p>
+                                </div>
+                            </label>
                         </div>
                         {errors.image && (
                             <p className="mt-1 text-sm text-red-500">{errors.image}</p>
