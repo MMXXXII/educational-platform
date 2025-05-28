@@ -15,10 +15,21 @@ from app.core.schemas import FolderSchema, FileSchema
 from app.core.config import BASE_FOLDER_DIR, THUMBNAIL_DIR, BASE_URL
 from typing import List, Optional
 
+# Создаем директории, если они не существуют
+Path(BASE_FOLDER_DIR).mkdir(parents=True, exist_ok=True)
+Path(THUMBNAIL_DIR).mkdir(parents=True, exist_ok=True)
+
+
+def ensure_directory(directory_path: Path) -> Path:
+    """Ensure a directory exists, creating it if necessary"""
+    directory_path.mkdir(parents=True, exist_ok=True)
+    return directory_path
+
 
 def get_absolute_path(user: User, relative_path: str) -> Path:
     """Convert relative path to absolute path for user"""
-    return Path(BASE_FOLDER_DIR) / user.username / relative_path
+    user_dir = ensure_directory(Path(BASE_FOLDER_DIR) / user.username)
+    return user_dir / relative_path
 
 
 def get_folders(db: Session, user: User, parent_id: Optional[int] = None) -> List[FolderSchema]:
@@ -78,23 +89,25 @@ def create_folder(db: Session, user: User, folder_name: str, parent_id: Optional
 
     # Create folder on disk
     absolute_path = get_absolute_path(user, relative_path)
-    absolute_path.mkdir(parents=True, exist_ok=True)
+    ensure_directory(absolute_path)
 
     return FolderSchema(id=new_folder.id, name=new_folder.filename, parent=new_folder.parent_id)
 
 
 def create_thumbnail(file_path: Path, user_username: str, thumbnail_size=(100, 100)) -> str:
     """Create thumbnail for image file"""
-    user_thumbnail_dir = Path(THUMBNAIL_DIR) / user_username
-    user_thumbnail_dir.mkdir(parents=True, exist_ok=True)
-
+    user_thumbnail_dir = ensure_directory(Path(THUMBNAIL_DIR) / user_username)
     thumbnail_path = user_thumbnail_dir / f"th_{file_path.stem}.webp"
 
-    with Image.open(file_path) as img:
-        img.thumbnail(thumbnail_size)
-        img.save(thumbnail_path, "WEBP")
+    try:
+        with Image.open(file_path) as img:
+            img.thumbnail(thumbnail_size)
+            img.save(thumbnail_path, "WEBP")
 
-    return f"{BASE_URL}/api/thumbnails/{user_username}/{thumbnail_path.name}"
+        return f"{BASE_URL}/api/thumbnails/{user_username}/{thumbnail_path.name}"
+    except Exception as e:
+        print(f"Error creating thumbnail: {str(e)}")
+        return f"{BASE_URL}/path/to/default/icon.png"
 
 
 def get_thumbnail_path(file_path: Path, user_username: str) -> str:
@@ -146,40 +159,48 @@ def upload_file(db: Session, user: User, file: UploadFile, folder_id: Optional[i
             raise HTTPException(
                 status_code=404, detail="Parent folder not found")
 
-    relative_path = file.filename if not parent else str(
-        Path(parent.relative_path) / file.filename)
-    absolute_path = get_absolute_path(user, relative_path)
+    try:
+        relative_path = file.filename if not parent else str(
+            Path(parent.relative_path) / file.filename)
+        absolute_path = get_absolute_path(user, relative_path)
 
-    # Create user directory if it doesn't exist
-    absolute_path.parent.mkdir(parents=True, exist_ok=True)
+        # Create user directory if it doesn't exist
+        ensure_directory(absolute_path.parent)
 
-    new_file = UserFile(
-        user_id=user.id,
-        filename=file.filename,
-        relative_path=relative_path,
-        is_folder=False,
-        parent_id=folder_id,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc)
-    )
+        new_file = UserFile(
+            user_id=user.id,
+            filename=file.filename,
+            relative_path=relative_path,
+            is_folder=False,
+            parent_id=folder_id,
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc)
+        )
 
-    db.add(new_file)
-    db.commit()
-    db.refresh(new_file)
+        db.add(new_file)
+        db.commit()
+        db.refresh(new_file)
 
-    with absolute_path.open("wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        with absolute_path.open("wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
-    thumbnail_path = get_thumbnail_path(absolute_path, user.username)
+        thumbnail_path = get_thumbnail_path(absolute_path, user.username)
 
-    return FileSchema(
-        id=new_file.id,
-        name=new_file.filename,
-        url=f"{BASE_URL}/api/files/{new_file.id}/download",
-        size=absolute_path.stat().st_size,
-        folder=new_file.parent_id,
-        thumbnail=thumbnail_path
-    )
+        return FileSchema(
+            id=new_file.id,
+            name=new_file.filename,
+            url=f"{BASE_URL}/api/files/{new_file.id}/download",
+            size=absolute_path.stat().st_size,
+            folder=new_file.parent_id,
+            thumbnail=thumbnail_path
+        )
+    except Exception as e:
+        # Если произошла ошибка, откатываем транзакцию
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при загрузке файла: {str(e)}"
+        )
 
 
 def delete_recursive(db: Session, item: UserFile):
@@ -210,23 +231,30 @@ def delete_folder(db: Session, user: User, folder_id: int):
 
 def delete_file(db: Session, user: User, file_id: int):
     """Delete single file"""
-    file = db.query(UserFile).filter(
-        UserFile.id == file_id,
-        UserFile.user_id == user.id,
-        UserFile.is_folder == False
-    ).first()
-    if not file:
-        raise HTTPException(status_code=404, detail="File not found")
+    try:
+        file = db.query(UserFile).filter(
+            UserFile.id == file_id,
+            UserFile.user_id == user.id,
+            UserFile.is_folder == False
+        ).first()
+        if not file:
+            raise HTTPException(status_code=404, detail="File not found")
 
-    absolute_path = get_absolute_path(user, file.relative_path)
-    thumbnail_path = Path(THUMBNAIL_DIR) / user.username / \
-        f"th_{absolute_path.stem}.webp"
+        absolute_path = get_absolute_path(user, file.relative_path)
+        thumbnail_path = Path(THUMBNAIL_DIR) / user.username / \
+            f"th_{absolute_path.stem}.webp"
 
-    db.delete(file)
-    db.commit()
+        db.delete(file)
+        db.commit()
 
-    absolute_path.unlink(missing_ok=True)
-    thumbnail_path.unlink(missing_ok=True)
+        absolute_path.unlink(missing_ok=True)
+        thumbnail_path.unlink(missing_ok=True)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Ошибка при удалении файла: {str(e)}"
+        )
 
 
 def download_file(db: Session, user: User, file_id: int):
