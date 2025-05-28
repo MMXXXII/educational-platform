@@ -22,15 +22,26 @@ export function FileListItem({ file, onClick, onMenuClick, selected }) {
         return null;
     };
 
+    // Check if it's an image file that might have a thumbnail
+    const isImage = !file.is_folder && file.name.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
+
     return (
         <li className="relative">
-            <button
-                className={`flex items-center w-full px-4 py-2 text-left ${selected ? 'bg-purple-900 bg-opacity-40' : 'hover:bg-gray-700'
+            <div
+                className={`flex items-center w-full px-4 py-2 text-left cursor-pointer ${selected ? 'bg-purple-900 bg-opacity-40' : 'hover:bg-gray-700'
                     }`}
                 onClick={() => onClick?.(file)}
             >
                 <div className="mr-4">
-                    <FileIcon file={file} />
+                    {isImage && file.thumbnail ? (
+                        <img
+                            src={file.thumbnail}
+                            alt={file.name}
+                            className="h-6 w-6 object-cover rounded"
+                        />
+                    ) : (
+                        <FileIcon file={file} />
+                    )}
                 </div>
                 <div className="flex-grow min-w-0">
                     <div className="text-sm font-medium text-gray-200 truncate">{file.name}</div>
@@ -44,7 +55,7 @@ export function FileListItem({ file, onClick, onMenuClick, selected }) {
                 >
                     <EllipsisVerticalIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
                 </button>
-            </button>
+            </div>
         </li>
     );
 }
@@ -54,6 +65,7 @@ FileListItem.propTypes = {
         name: PropTypes.string.isRequired,
         is_folder: PropTypes.bool,
         size: PropTypes.number,
+        thumbnail: PropTypes.string,
     }),
     onClick: PropTypes.func,
     onMenuClick: PropTypes.func,
