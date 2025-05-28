@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 
-from app.core.config import CORS_ORIGINS, THUMBNAIL_DIR
+from app.core.config import CORS_ORIGINS, THUMBNAIL_DIR, ENVIRONMENT
 from app.core.create_tables import create_tables
 from app.api import auth, files, users, courses
 
@@ -15,10 +15,16 @@ async def lifespan(app: FastAPI):
     create_tables()
     yield
 
+# Disable OpenAPI docs in production
+docs_url = None if ENVIRONMENT == "production" else "/docs"
+redoc_url = None if ENVIRONMENT == "production" else "/redoc"
+
 app = FastAPI(
     title="Backend API",
     root_path="/api",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url=docs_url,
+    redoc_url=redoc_url
 )
 
 # CORS middleware

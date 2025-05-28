@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Environment settings
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+
 # Database settings
 DATABASE_URL = os.getenv("DATABASE_URL")
 
