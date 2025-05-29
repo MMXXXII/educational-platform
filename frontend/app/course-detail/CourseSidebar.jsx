@@ -132,10 +132,10 @@ export function CourseSidebar({ course }) {
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sticky top-4">
             <div className="text-center mb-6">
-                <div className="text-3xl font-bold text-blue-600 mb-2">Бесплатно</div>
-                <p className="text-gray-500">Начните обучение уже сегодня</p>
+                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">Бесплатно</div>
+                <p className="text-gray-500 dark:text-gray-400">Начните обучение уже сегодня</p>
             </div>
 
             {loading ? (
@@ -166,25 +166,25 @@ export function CourseSidebar({ course }) {
             )}
 
             {error && (
-                <div className="text-red-500 text-sm mb-4 text-center">
+                <div className="text-red-500 dark:text-red-400 text-sm mb-4 text-center">
                     {error}
                 </div>
             )}
 
             <div className="space-y-4 mb-2">
                 <div className="flex items-center">
-                    <ClockIcon className="h-5 w-5 text-blue-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" />
-                    <span className="text-gray-700">{duration}</span>
+                    <ClockIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" />
+                    <span className="text-gray-700 dark:text-gray-300">{duration}</span>
                 </div>
                 <div className="flex items-center">
-                    <ClipboardIcon className="h-5 w-5 text-blue-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" />
-                    <span className="text-gray-700">{lessonsCount} уроков</span>
+                    <ClipboardIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" />
+                    <span className="text-gray-700 dark:text-gray-300">{lessonsCount} уроков</span>
                 </div>
 
                 {/* Катеогории */}
                 <div className="flex items-center">
-                    <TagIcon className="h-5 w-5 text-blue-600 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" />
-                    <span className="text-gray-700">{categories}</span>
+                    <TagIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" />
+                    <span className="text-gray-700 dark:text-gray-300">{categories}</span>
                 </div>
             </div>
         </div>

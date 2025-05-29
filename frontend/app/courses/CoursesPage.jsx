@@ -163,8 +163,8 @@ export function CoursesPage() {
     return (
         <div className="container mx-auto px-4 sm:px-6 py-8">
             <div className="mb-8 text-center md:text-left">
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Каталог курсов</h1>
-                <p className="text-gray-600">Выбери подходящий курс и начни обучение программированию прямо сейчас</p>
+                <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">Каталог курсов</h1>
+                <p className="text-gray-600 dark:text-gray-300">Выбери подходящий курс и начни обучение программированию прямо сейчас</p>
             </div>
 
             <div className="flex flex-col md:flex-row gap-6">
@@ -178,7 +178,7 @@ export function CoursesPage() {
                     />
                     <button
                         onClick={resetFilters}
-                        className="w-full bg-blue-600 hover:hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                     >
                         Сбросить фильтры
                     </button>
@@ -211,7 +211,7 @@ export function CoursesPage() {
                     <div className="md:hidden mb-4">
                         <button
                             onClick={resetFilters}
-                            className="w-full bg-blue-600 hover:hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
                         >
                             Сбросить фильтры
                         </button>

@@ -114,7 +114,7 @@ export function MyCoursesPage() {
 
     // Компонент прогресс-бара
     const ProgressBar = ({ progress }) => (
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
             <div
                 className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
                 style={{ width: `${progress || 0}%` }}
@@ -132,16 +132,16 @@ export function MyCoursesPage() {
         const isCompleted = enrollment ? enrollment.completed : false;
 
         return (
-            <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2 line-clamp-2">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2 line-clamp-2">
                             {course.title}
                         </h3>
-                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                        <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">
                             {course.description}
                         </p>
-                        <div className="flex items-center text-sm text-gray-500 mb-3">
+                        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
                             <span>Автор: {course.author}</span>
                             <span className="mx-2">•</span>
                             <span>{course.lessons_count || 0} уроков</span>
@@ -150,14 +150,14 @@ export function MyCoursesPage() {
                         {/* Прогресс-бар */}
                         <div className="mb-2">
                             <div className="flex justify-between items-center mb-1">
-                                <span className="text-xs text-gray-600">Прогресс</span>
-                                <span className="text-xs font-medium text-gray-700">{Math.round(progress)}%</span>
+                                <span className="text-xs text-gray-600 dark:text-gray-300">Прогресс</span>
+                                <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{Math.round(progress)}%</span>
                             </div>
                             <ProgressBar progress={progress} />
                         </div>
 
                         {isCompleted && (
-                            <div className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                            <div className="inline-flex items-center px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 text-xs font-medium rounded-full">
                                 ✓ Завершено
                             </div>
                         )}
@@ -168,7 +168,7 @@ export function MyCoursesPage() {
                 <div className="flex items-center justify-between">
                     <Link
                         to={`/courses/${course.id}`}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
                     >
                         Подробнее о курсе
                     </Link>
@@ -186,16 +186,16 @@ export function MyCoursesPage() {
 
     // Компонент карточки курса для созданных курсов
     const CreatedCourseCard = ({ course }) => (
-        <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2 line-clamp-2">
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2 line-clamp-2">
                         {course.title}
                     </h3>
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                    <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">
                         {course.description}
                     </p>
-                    <div className="flex items-center text-sm text-gray-500">
+                    <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                         <span>{course.students_count || 0} студентов</span>
                         <span className="mx-2">•</span>
                         <span>{course.lessons_count || 0} уроков</span>
@@ -207,21 +207,21 @@ export function MyCoursesPage() {
             <div className="flex items-center justify-between">
                 <Link
                     to={`/courses/${course.id}`}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
                 >
                     Просмотреть
                 </Link>
                 <div className="flex space-x-2">
                     <Link
                         to={`/edit-course/${course.id}`}
-                        className="flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                        className="flex items-center px-3 py-2 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                         title="Редактировать курс"
                     >
                         <PencilSquareIcon className="h-4 w-4" />
                     </Link>
                     <button
                         onClick={() => handleDeleteCourse(course.id, course.title)}
-                        className="flex items-center px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                        className="flex items-center px-3 py-2 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
                         title="Удалить курс"
                     >
                         <TrashIcon className="h-4 w-4" />
@@ -236,8 +236,8 @@ export function MyCoursesPage() {
     return (
         <div className="container mx-auto px-4 sm:px-6 py-8">
             <div className="mb-8 text-center md:text-left">
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Мои курсы</h1>
-                <p className="text-gray-600">
+                <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">Мои курсы</h1>
+                <p className="text-gray-600 dark:text-gray-300">
                     {isTeacherOrAdmin
                         ? 'Управляйте своими курсами и продолжайте обучение'
                         : 'Продолжайте обучение с того места, где остановились'}
@@ -246,13 +246,13 @@ export function MyCoursesPage() {
 
             {/* Вкладки */}
             {isTeacherOrAdmin && (
-                <div className="border-b border-gray-200 mb-6">
+                <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
                     <nav className="-mb-px flex space-x-8">
                         <button
                             onClick={() => setActiveTab('enrolled')}
                             className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'enrolled'
-                                ? 'border-blue-500 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                                 }`}
                         >
                             Изучаемые курсы ({enrolledTotal})
@@ -260,8 +260,8 @@ export function MyCoursesPage() {
                         <button
                             onClick={() => setActiveTab('created')}
                             className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'created'
-                                ? 'border-blue-500 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                                 }`}
                         >
                             Созданные курсы ({createdTotal})
@@ -275,7 +275,7 @@ export function MyCoursesPage() {
                 <LoadingState />
             ) : error ? (
                 <div className="text-center py-8">
-                    <p className="text-red-600">{error}</p>
+                    <p className="text-red-600 dark:text-red-400">{error}</p>
                 </div>
             ) : (
                 <>
@@ -283,11 +283,11 @@ export function MyCoursesPage() {
                         <>
                             {enrolledCourses.length === 0 ? (
                                 <div className="text-center py-12">
-                                    <AcademicCapIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                    <AcademicCapIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                                         Вы еще не записаны ни на один курс
                                     </h3>
-                                    <p className="text-gray-500 mb-4">
+                                    <p className="text-gray-500 dark:text-gray-400 mb-4">
                                         Начните свое обучение прямо сейчас
                                     </p>
                                     <Link
@@ -325,11 +325,11 @@ export function MyCoursesPage() {
                         <>
                             {createdCourses.length === 0 ? (
                                 <div className="text-center py-12">
-                                    <PencilSquareIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                    <PencilSquareIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                                         Вы еще не создали ни одного курса
                                     </h3>
-                                    <p className="text-gray-500 mb-4">
+                                    <p className="text-gray-500 dark:text-gray-400 mb-4">
                                         Создайте свой первый курс и поделитесь знаниями
                                     </p>
                                     <Link

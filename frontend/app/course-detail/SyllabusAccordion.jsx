@@ -7,8 +7,8 @@ export function SyllabusAccordion({ lessons }) {
     // Если нет уроков, выводим сообщение
     if (!lessons || lessons.length === 0) {
         return (
-            <div className="text-center py-6 bg-gray-50 rounded-lg">
-                <p className="text-gray-500">Для этого курса пока нет доступных уроков</p>
+            <div className="text-center py-6 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <p className="text-gray-500 dark:text-gray-400">Для этого курса пока нет доступных уроков</p>
             </div>
         );
     }
@@ -20,23 +20,29 @@ export function SyllabusAccordion({ lessons }) {
 
     return (
         <div className="mt-6 space-y-4">
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">Программа курса</h2>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">Программа курса</h2>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
                 {lessons.map((lesson, index) => (
-                    <div key={lesson.id || index} className={`border-b border-gray-200 ${index === lessons.length - 1 ? 'border-b-0' : ''}`}>
+                    <div key={lesson.id || index} className={`border-b border-gray-200 dark:border-gray-700 ${index === lessons.length - 1 ? 'border-b-0' : ''}`}>
                         <div
                             onClick={() => setActiveLesson(activeLesson === index ? null : index)}
-                            className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${activeLesson === index ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                            className={`flex items-center justify-between p-4 cursor-pointer transition-colors ${activeLesson === index
+                                    ? 'bg-blue-50 dark:bg-blue-900/30'
+                                    : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                                }`}
                         >
                             <div className="flex items-center space-x-3">
-                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${activeLesson === index ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}>
+                                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${activeLesson === index
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                                    }`}>
                                     {index + 1}
                                 </div>
                                 <div>
-                                    <h3 className="font-medium text-gray-900">{lesson.title}</h3>
+                                    <h3 className="font-medium text-gray-900 dark:text-gray-100">{lesson.title}</h3>
                                     {hasInteractiveScene(lesson) && (
-                                        <span className="inline-flex items-center mt-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full">
+                                        <span className="inline-flex items-center mt-1 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-full">
                                             <EyeIcon className="w-3 h-3 mr-1" />
                                             Интерактивный
                                         </span>
@@ -44,13 +50,13 @@ export function SyllabusAccordion({ lessons }) {
                                 </div>
                             </div>
                             <ChevronDownIcon
-                                className={`h-5 w-5 text-gray-500 transform transition-transform ${activeLesson === index ? 'rotate-180' : ''}`}
+                                className={`h-5 w-5 text-gray-500 dark:text-gray-400 transform transition-transform ${activeLesson === index ? 'rotate-180' : ''}`}
                             />
                         </div>
 
                         {activeLesson === index && (
-                            <div className="p-4 bg-white border-t border-gray-200 text-gray-700">
-                                <div className="prose max-w-none">
+                            <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">
+                                <div className="prose dark:prose-invert max-w-none">
                                     <>
                                         <div
                                             className="max-h-32 overflow-hidden relative"

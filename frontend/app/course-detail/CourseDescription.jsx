@@ -9,9 +9,9 @@ export function CourseDescription({ course }) {
 
     return (
         <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">Об этом курсе</h2>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Об этом курсе</h2>
             <div
-                className="text-gray-700"
+                className="text-gray-700 dark:text-gray-300"
                 dangerouslySetInnerHTML={{ __html: longDescription }}
             />
         </div>

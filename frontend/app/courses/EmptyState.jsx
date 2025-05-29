@@ -3,7 +3,7 @@ export function EmptyState({ resetFilters }) {
         <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
             <div className="mb-6">
                 <svg
-                    className="w-24 h-24 mx-auto text-gray-400"
+                    className="w-24 h-24 mx-auto text-gray-400 dark:text-gray-500"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -16,14 +16,14 @@ export function EmptyState({ resetFilters }) {
                     />
                 </svg>
             </div>
-            <h3 className="text-xl font-medium text-gray-700 mb-2">Курсы не найдены</h3>
-            <p className="text-gray-500 mb-6">
+            <h3 className="text-xl font-medium text-gray-700 dark:text-gray-200 mb-2">Курсы не найдены</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
                 По указанным параметрам поиска не удалось найти курсы.
                 Попробуйте изменить критерии поиска или сбросить фильтры.
             </p>
             <button
                 onClick={resetFilters}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white dark:text-gray-100 font-medium py-2 px-6 rounded-md transition-colors"
             >
                 Сбросить фильтры
             </button>

@@ -4,7 +4,7 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
 // Импорт компонентов
 import { CourseBreadcrumbs } from './CourseBreadcrumbs';
-import { CourseImage } from './CourseImage';
+import { CourseImagePlaceholder } from '../common';
 import { CourseInfo } from './CourseInfo';
 import { CourseDescription } from './CourseDescription';
 import { SyllabusAccordion } from './SyllabusAccordion';
@@ -74,8 +74,8 @@ export function CourseDetailPage({ courseId }) {
     if (error || !course) {
         return (
             <div className="container mx-auto px-4 sm:px-6 py-16 text-center">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Курс не найден</h2>
-                <p className="text-gray-600 mb-6">{error || "К сожалению, запрашиваемый курс не существует или был удален"}</p>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">Курс не найден</h2>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">{error || "К сожалению, запрашиваемый курс не существует или был удален"}</p>
                 <Link
                     to="/courses"
                     className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -100,23 +100,24 @@ export function CourseDetailPage({ courseId }) {
 
                 {/* Основная информация о курсе */}
                 <div className="order-2 lg:order-1 lg:w-2/3">
-                    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
                         {/* Обложка курса */}
-                        <CourseImage course={course} />
-
+                        <div className="h-48 sm:h-64 bg-gray-200 dark:bg-gray-700 relative">
+                            <CourseImagePlaceholder course={course} />
+                        </div>
                         {/* Информация о курсе */}
                         <div className="p-6">
                             <CourseInfo course={course} />
 
                             <div className="mt-4 mb-6">
-                                <p className="text-gray-700">{course.description}</p>
+                                <p className="text-gray-700 dark:text-gray-300">{course.description}</p>
                             </div>
 
                             <CourseDescription course={course} />
 
                             {course.lessons && (
                                 <div className="mb-6">
-                                    <h2 className="text-xl font-semibold text-gray-800 mb-3">Учебный план</h2>
+                                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Учебный план</h2>
                                     <SyllabusAccordion lessons={course.lessons} />
                                 </div>
                             )}

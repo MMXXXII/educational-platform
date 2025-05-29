@@ -24,7 +24,7 @@ export function FileList({
 
     return (
         <div
-            className="h-full overflow-auto bg-gray-800 rounded-md shadow"
+            className="h-full overflow-auto bg-gray-50 dark:bg-gray-800 rounded-md shadow"
             onDrop={onDrop}
             onDragOver={handleDragOver}
         >

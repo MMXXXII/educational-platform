@@ -148,13 +148,13 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
                 }
 
                 setLessons(updatedLessons);
-                
+
                 if (onChange) {
                     onChange(updatedLessons);
                 }
             } else {
                 setLessons(lessonsToUpdate);
-                
+
                 if (onChange) {
                     onChange(lessonsToUpdate);
                 }
@@ -247,7 +247,7 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold text-gray-800">Уроки ({lessons.length})</h3>
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Уроки ({lessons.length})</h3>
                 <button
                     type="button"
                     onClick={handleAddLesson}
@@ -278,7 +278,7 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
                                                 {...provided.dragHandleProps}
                                                 className="absolute left-[-20px] top-[50%] transform translate-y-[-50%] cursor-move"
                                             >
-                                                <Bars3Icon className="h-5 w-5 text-gray-400" />
+                                                <Bars3Icon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                                             </div>
                                             <LessonForm
                                                 lesson={lesson}
@@ -298,7 +298,7 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
             </DragDropContext>
 
             {lessons.length === 0 && (
-                <div className="text-center py-10 border-2 border-dashed rounded-lg text-gray-800">
+                <div className="text-center py-10 border-2 border-dashed rounded-lg text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700">
                     <p className="text-muted-foreground">Пока нет уроков. Нажмите "Добавить урок", чтобы создать первый урок.</p>
                 </div>
             )}

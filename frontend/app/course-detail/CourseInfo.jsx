@@ -12,20 +12,20 @@ export function CourseInfo({ course }) {
 
     return (
         <>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-3">{course.title}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-3">{course.title}</h1>
 
             {/* Author */}
             <div className="flex items-center mb-3">
-                <AcademicCapIcon className="h-5 w-5 text-gray-600 mr-2" />
-                <span className="text-gray-600">{author}</span>
+                <AcademicCapIcon className="h-5 w-5 text-gray-600 dark:text-gray-400 mr-2" />
+                <span className="text-gray-600 dark:text-gray-400">{author}</span>
             </div>
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm mb-4">
-                <div className="flex items-center text-gray-500">
+                <div className="flex items-center text-gray-500 dark:text-gray-400">
                     <UserIcon className="h-4 w-4 mr-1" />
                     <span>{studentCount} учеников</span>
                 </div>
-                <div className="flex items-center text-gray-500">
+                <div className="flex items-center text-gray-500 dark:text-gray-400">
                     <ChartBarIcon className="h-4 w-4 mr-1" />
                     <span>Уровень: {course.difficulty}</span>
                 </div>

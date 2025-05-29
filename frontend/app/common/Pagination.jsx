@@ -38,8 +38,8 @@ export function Pagination({ currentPage, totalPages, onPageChange }) {
                 onClick={() => onPageChange(currentPage - 1)}
                 disabled={currentPage === 1}
                 className={`px-3 py-1 rounded ${currentPage === 1
-                        ? 'text-gray-400 cursor-not-allowed'
-                        : 'text-blue-600 hover:bg-blue-50'
+                    ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                    : 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700'
                     }`}
             >
                 &laquo;
@@ -50,12 +50,12 @@ export function Pagination({ currentPage, totalPages, onPageChange }) {
                 <>
                     <button
                         onClick={() => onPageChange(1)}
-                        className="px-3 py-1 rounded hover:bg-blue-50 text-blue-600"
+                        className="px-3 py-1 rounded hover:bg-blue-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
                     >
                         1
                     </button>
                     {currentPage > 4 && (
-                        <span className="px-2 py-1 text-gray-500">...</span>
+                        <span className="px-2 py-1 text-gray-500 dark:text-gray-400">...</span>
                     )}
                 </>
             )}
@@ -66,8 +66,8 @@ export function Pagination({ currentPage, totalPages, onPageChange }) {
                     key={number}
                     onClick={() => onPageChange(number)}
                     className={`px-3 py-1 rounded ${currentPage === number
-                            ? 'bg-blue-600 text-white'
-                            : 'text-blue-600 hover:bg-blue-50'
+                        ? 'bg-blue-600 text-white dark:bg-blue-500 dark:text-gray-100'
+                        : 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700'
                         }`}
                 >
                     {number}
@@ -78,11 +78,11 @@ export function Pagination({ currentPage, totalPages, onPageChange }) {
             {currentPage < totalPages - 2 && (
                 <>
                     {currentPage < totalPages - 3 && (
-                        <span className="px-2 py-1 text-gray-500">...</span>
+                        <span className="px-2 py-1 text-gray-500 dark:text-gray-400">...</span>
                     )}
                     <button
                         onClick={() => onPageChange(totalPages)}
-                        className="px-3 py-1 rounded hover:bg-blue-50 text-blue-600"
+                        className="px-3 py-1 rounded hover:bg-blue-50 dark:hover:bg-gray-700 text-blue-600 dark:text-blue-400"
                     >
                         {totalPages}
                     </button>
@@ -94,8 +94,8 @@ export function Pagination({ currentPage, totalPages, onPageChange }) {
                 onClick={() => onPageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
                 className={`px-3 py-1 rounded ${currentPage === totalPages
-                        ? 'text-gray-400 cursor-not-allowed'
-                        : 'text-blue-600 hover:bg-blue-50'
+                    ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                    : 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700'
                     }`}
             >
                 &raquo;
