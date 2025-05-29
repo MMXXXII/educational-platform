@@ -6,7 +6,9 @@ const LessonForm = ({
     index,
     onUpdate,
     onDelete,
-    onCreateScene
+    onCreateScene,
+    canDelete = true,
+    errors = {}
 }) => {
     const [title, setTitle] = useState(lesson.title || '');
     const [content, setContent] = useState(lesson.content || '');
@@ -91,6 +93,9 @@ const LessonForm = ({
         onCreateScene(index, currentLessonData);
     };
 
+    const titleError = errors[`lesson_${index}_title`];
+    const contentError = errors[`lesson_${index}_content`];
+
     return (
         <div className="mb-6 border-2 border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-sm">
             <div className="bg-gray-50 dark:bg-gray-700 px-6 py-4 rounded-t-lg">
@@ -106,14 +111,23 @@ const LessonForm = ({
                             </span>
                         )}
                     </div>
-                    <button
-                        type="button"
-                        onClick={handleDeleteLesson}
-                        className="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
-                        title="Удалить урок"
-                    >
-                        <TrashIcon className="h-5 w-5" />
-                    </button>
+                    {canDelete ? (
+                        <button
+                            type="button"
+                            onClick={handleDeleteLesson}
+                            className="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                            title="Удалить урок"
+                        >
+                            <TrashIcon className="h-5 w-5" />
+                        </button>
+                    ) : (
+                        <div
+                            className="p-2 text-gray-400 dark:text-gray-600 cursor-not-allowed"
+                            title="Нельзя удалить последний урок в курсе"
+                        >
+                            <TrashIcon className="h-5 w-5" />
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -127,13 +141,16 @@ const LessonForm = ({
                     </label>
                     <input
                         id={`lesson-title-${index}`}
+                        name={`lesson_${index}_title`}
                         type="text"
                         placeholder="Введите название урока"
                         value={title}
                         onChange={handleTitleChange}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-black dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 dark:placeholder-gray-500"
+                        className={`w-full px-3 py-2 border ${titleError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md text-black dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 dark:placeholder-gray-500`}
                     />
+                    {titleError && (
+                        <p className="text-sm text-red-500">{titleError}</p>
+                    )}
                 </div>
 
                 <div className="space-y-2">
@@ -145,13 +162,16 @@ const LessonForm = ({
                     </label>
                     <textarea
                         id={`lesson-content-${index}`}
+                        name={`lesson_${index}_content`}
                         placeholder="Введите содержание урока, теорию или задания..."
                         value={content}
                         onChange={handleContentChange}
                         rows={5}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-black dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical placeholder-gray-400 dark:placeholder-gray-500"
+                        className={`w-full px-3 py-2 border ${contentError ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md text-black dark:text-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical placeholder-gray-400 dark:placeholder-gray-500`}
                     />
+                    {contentError && (
+                        <p className="text-sm text-red-500">{contentError}</p>
+                    )}
                 </div>
             </div>
 

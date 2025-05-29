@@ -253,21 +253,61 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
             newErrors.category_id = 'Выберите категорию';
         }
 
-        if (mode === 'create' && lessons.length === 0) {
-            newErrors.lessons = 'Добавьте хотя бы один урок';
-        } else if (lessons.length > 0) {
-            // Проверяем, что все уроки имеют заголовок и содержание 
-            const invalidLessons = lessons.filter(lesson =>
-                !lesson.title || !lesson.title.trim() ||
-                !lesson.content || !lesson.content.trim()
-            );
-
-            if (invalidLessons.length > 0) {
-                newErrors.lessons = 'Все уроки должны иметь заголовок и содержание';
+        // Проверка уроков для режимов создания и редактирования
+        if (lessons.length === 0) {
+            if (mode === 'create') {
+                newErrors.lessons = 'Добавьте хотя бы один урок';
+            } else if (mode === 'edit') {
+                newErrors.lessons = 'В курсе должен быть хотя бы один урок';
             }
+        } else if (lessons.length > 0) {
+            lessons.forEach((lesson, index) => {
+                if (!lesson.title || !lesson.title.trim()) {
+                    newErrors[`lesson_${index}_title`] = 'Заголовок урока обязателен';
+                }
+                if (!lesson.content || !lesson.content.trim()) {
+                    newErrors[`lesson_${index}_content`] = 'Содержание урока обязательно';
+                }
+            });
         }
 
         setErrors(newErrors);
+
+        // Если есть ошибки, прокручиваем к первому полю с ошибкой
+        if (Object.keys(newErrors).length > 0) {
+            // Используем setTimeout, чтобы дать время для обновления DOM с ошибками
+            setTimeout(() => {
+                // Получаем первый ключ ошибки
+                const firstErrorKey = Object.keys(newErrors)[0];
+                // Находим элемент с соответствующим id или близкий элемент
+                let errorElement = document.getElementById(firstErrorKey);
+
+                if (!errorElement) {
+                    // Пытаемся найти по имени, если ID не является достаточно специфичным (например, для уроков)
+                    errorElement = document.getElementsByName(firstErrorKey)[0];
+                }
+
+                // Если это ошибка урока, это может быть конкретное поле урока
+                if (firstErrorKey.startsWith('lesson_') && !firstErrorKey.endsWith('_title') && !firstErrorKey.endsWith('_content')) {
+                    // Это была общая ошибка 'lessons', попробуем найти первое конкретное поле урока для прокрутки
+                    const firstLessonErrorKey = Object.keys(newErrors).find(k => k.startsWith('lesson_') && (k.endsWith('_title') || k.endsWith('_content')));
+                    if (firstLessonErrorKey) {
+                        errorElement = document.getElementById(firstLessonErrorKey.replace(/_([^_]*)$/, '-$1')) || document.getElementsByName(firstLessonErrorKey)[0];
+                    }
+                } else if (firstErrorKey.startsWith('lesson_')) {
+                    // Это конкретное поле урока, если нужно, отрегулируем ID для тире
+                    errorElement = document.getElementById(firstErrorKey.replace(/_([^_]*)$/, '-$1')) || document.getElementsByName(firstErrorKey)[0];
+                }
+
+                if (errorElement) {
+                    // Плавно прокручиваем к элементу с отступом сверху
+                    errorElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+                }
+            }, 100);
+        }
 
         // Форма валидна, если нет ошибок
         return Object.keys(newErrors).length === 0;
@@ -293,27 +333,37 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
         }
 
         const lessonsChanged = JSON.stringify(updatedLessons) !== JSON.stringify(lessons);
-        if (!lessonsChanged) {
+        if (!lessonsChanged && lessons.length === updatedLessons.length) { // also check if length changed for new lessons
             return;
         }
 
         setLessons(updatedLessons);
 
-        // Остальная логика валидации ошибок...
+        // Очищаем ошибки для конкретных полей уроков, которые теперь валидны
+        // Общая валидация формы будет происходить при отправке через validateForm
         setErrors(prevErrors => {
-            if (!prevErrors.lessons || updatedLessons.length === 0) return prevErrors;
+            const newErrors = { ...prevErrors };
 
-            const invalidLessons = updatedLessons.filter(lesson =>
-                !lesson.title || !lesson.title.trim() ||
-                !lesson.content || !lesson.content.trim()
-            );
+            updatedLessons.forEach((lesson, index) => {
+                const titleErrorKey = `lesson_${index}_title`;
+                const contentErrorKey = `lesson_${index}_content`;
 
-            if (invalidLessons.length === 0) {
-                const { lessons: _, ...restErrors } = prevErrors;
-                return restErrors;
+                if (lesson.title && lesson.title.trim() && newErrors[titleErrorKey]) {
+                    delete newErrors[titleErrorKey];
+                }
+                if (lesson.content && lesson.content.trim() && newErrors[contentErrorKey]) {
+                    delete newErrors[contentErrorKey];
+                }
+            });
+
+            // Если все конкретные ошибки уроков очищены, и была общая ошибка 'lessons',
+            // очищаем ее только если есть уроки. Если уроков нет, validateForm обработает это.
+            const remainingLessonErrors = Object.keys(newErrors).some(key => key.startsWith('lesson_'));
+            if (!remainingLessonErrors && newErrors.lessons && updatedLessons.length > 0) {
+                delete newErrors.lessons;
             }
 
-            return prevErrors;
+            return newErrors;
         });
     }, [lessons, mode]);
 

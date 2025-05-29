@@ -82,7 +82,11 @@ export function EditCoursePage() {
                         onChange={handleLessonsUpdate}
                         onNavigateToEditor={saveCourseDataToStorage}
                         isEditMode={true}
+                        errors={errors}
                     />
+                    {errors.lessons && (
+                        <p className="mt-2 text-sm text-red-500">{errors.lessons}</p>
+                    )}
                 </div>
 
                 {/* Кнопки действий */}

@@ -5,7 +5,7 @@ import LessonForm from './LessonForm';
 import { useNavigate } from 'react-router';
 import { loadSceneDataWithFallback, deleteSceneDataFromDB } from '../utils/indexedDB';
 
-const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToEditor, isEditMode = false }) => {
+const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToEditor, isEditMode = false, errors = {} }) => {
     const [lessons, setLessons] = useState(initialLessons.map((lesson, idx) => ({
         ...lesson,
         order: lesson.order || idx + 1
@@ -51,6 +51,11 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
     }, [lessons, onChange]);
 
     const handleDeleteLesson = (index) => {
+        // В режиме редактирования не позволяем удалить последний урок
+        if (isEditMode && lessons.length <= 1) {
+            return; // Не удаляем последний урок в режиме редактирования
+        }
+
         setLessons(prevLessons => {
             const newLessons = prevLessons.filter((_, idx) => idx !== index)
                 .map((lesson, idx) => ({
@@ -284,8 +289,10 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
                                                 lesson={lesson}
                                                 index={index}
                                                 onUpdate={handleUpdateLesson}
-                                                onDelete={() => handleDeleteLesson(index)}
-                                                onCreateScene={() => handleCreateScene(index, lesson)}
+                                                onDelete={handleDeleteLesson}
+                                                onCreateScene={handleCreateScene}
+                                                canDelete={!(isEditMode && lessons.length <= 1)}
+                                                errors={errors}
                                             />
                                         </div>
                                     )}

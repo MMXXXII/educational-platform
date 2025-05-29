@@ -53,6 +53,7 @@ export function CreateCoursePage() {
                         courseId={course.id}
                         onChange={handleLessonsUpdate}
                         onNavigateToEditor={saveCourseDataToStorage}
+                        errors={errors}
                     />
                     {errors.lessons && (
                         <p className="mt-2 text-sm text-red-500">{errors.lessons}</p>
