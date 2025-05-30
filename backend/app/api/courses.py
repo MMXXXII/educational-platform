@@ -341,7 +341,7 @@ async def create_course_form(
     longdescription: str = Form(...),
     difficulty: str = Form(...),
     author: str = Form(None),
-    category_id: int = Form(...),
+    category_ids: List[int] = Form(...),
     image: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -359,14 +359,23 @@ async def create_course_form(
         if image:
             image_url = save_course_image(image, current_user.id)
 
-        # Проверяем существование категории
-        category = db.query(Category).filter(
-            Category.id == category_id).first()
-        if not category:
+        # Проверяем существование категорий
+        if not category_ids:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Категория с ID {category_id} не найдена"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Необходимо указать хотя бы одну категорию"
             )
+
+        categories = []
+        for category_id in category_ids:
+            category = db.query(Category).filter(
+                Category.id == category_id).first()
+            if not category:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Категория с ID {category_id} не найдена"
+                )
+            categories.append(category)
 
         # Если автор не указан, используем имя текущего пользователя
         if not author:
@@ -382,8 +391,8 @@ async def create_course_form(
             image_url=image_url
         )
 
-        # Добавляем категорию
-        db_course.categories.append(category)
+        # Добавляем категории
+        db_course.categories = categories
 
         db.add(db_course)
         db.commit()
@@ -395,6 +404,7 @@ async def create_course_form(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Ошибка при создании курса: {str(e)}"
         )
+
 
 # Записи на курсы - статические пути
 @router.post("/enroll", response_model=EnrollmentOut, status_code=status.HTTP_201_CREATED)
@@ -563,6 +573,7 @@ async def upload_course_image(
             detail=f"Ошибка при загрузке изображения: {str(e)}"
         )
 
+
 # Уроки
 @router.post("/{course_id}/lessons", response_model=LessonOut, status_code=status.HTTP_201_CREATED)
 async def create_lesson(
@@ -692,6 +703,7 @@ async def delete_lesson(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Ошибка при удалении урока: {str(e)}"
         )
+
 
 # Курсы - параметризованные пути
 @router.get("/{course_id}", response_model=CourseOut)
