@@ -1,7 +1,8 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { authService, userService } from '../api';
 import { getAccessToken, setTokens, removeTokens } from '../utils/auth';
+import { cleanupOldData } from '../utils/indexedDB';
 
 // Создаем контекст
 const AuthContext = createContext(null);
@@ -56,6 +57,10 @@ export function AuthProvider({ children }) {
         try {
             removeTokens();
             setUser(null);
+            
+            // Очищаем IndexedDB при выходе
+            await cleanupOldData();
+            
             navigate('/');
         } catch (error) {
             console.error('Logout error:', error);

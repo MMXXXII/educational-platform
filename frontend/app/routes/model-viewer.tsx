@@ -1,4 +1,5 @@
 import type { Route } from "./+types/model-viewer";
+// @ts-ignore
 import { ModelViewer } from "../model-viewer/ModelViewer";
 
 export function meta({ }: Route.MetaArgs) {

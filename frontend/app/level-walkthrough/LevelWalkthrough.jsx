@@ -28,6 +28,7 @@ import { resetPlayerState } from '../utils/signalVisualizerConnector';
 const LevelWalkthrough = () => {
     const [isMounted, setIsMounted] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [isDarkMode, setIsDarkMode] = useState(false);
     const [rightPanelOpen, setRightPanelOpen] = useState(false);
     const {
         nodes,
@@ -72,12 +73,12 @@ const LevelWalkthrough = () => {
 
         // Используем импортированную функцию для сброса позиции игрока
         resetPlayerState();
-        
+
         // Прямое обращение к компоненту через ref для сброса локального состояния
         if (signalVisualizerRef.current && typeof signalVisualizerRef.current.resetState === 'function') {
             signalVisualizerRef.current.resetState();
         }
-        
+
         // Сброс состояния в Scene3DContext
         if (scene3dContext && typeof scene3dContext.resetScene === 'function') {
             scene3dContext.resetScene();
@@ -97,10 +98,10 @@ const LevelWalkthrough = () => {
 
     // Состояние для симуляции
     const [isSimulationRunning, setIsSimulationRunning] = useState(false);
-    
+
     // Состояние для отслеживания текущего шага симуляции
     const [simulationStep, setSimulationStep] = useState(0);
-    
+
     // Интервал для плавной симуляции
     const simulationIntervalRef = useRef(null);
 
@@ -113,13 +114,13 @@ const LevelWalkthrough = () => {
     // Устанавливаем флаг монтирования компонента и загружаем список быстрых сохранений
     useEffect(() => {
         setIsMounted(true);
-        
+
         // Загружаем список быстрых сохранений из localStorage
         loadQuickSavesList();
-        
+
         // Обновляем список проектов
         refreshProjectsList();
-        
+
         // Очистка таймеров при размонтировании
         return () => {
             if (simulationIntervalRef.current) {
@@ -137,7 +138,7 @@ const LevelWalkthrough = () => {
             const saves = [];
             // В EditorContext проекты сохраняются с префиксом "nodeEditor_project_"
             const projectPrefix = "nodeEditor_project_";
-            
+
             // Ищем в localStorage все ключи, начинающиеся с префикса
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
@@ -148,7 +149,7 @@ const LevelWalkthrough = () => {
             }
             console.log("Найдено сохранений:", saves.length, saves);
             setQuickSaves(saves);
-            
+
             // Если список обновился, но выбранное сохранение больше не существует, сбрасываем выбор
             if (selectedQuickSave && !saves.includes(selectedQuickSave)) {
                 setSelectedQuickSave("");
@@ -174,7 +175,7 @@ const LevelWalkthrough = () => {
         if (!isSimulationRunning) {
             return;
         }
-        
+
         // Проверяем, идет ли сейчас анимация
         if (isAnimationInProgress) {
             // Если анимация в процессе, просто ждем её завершения и пробуем снова через 500ms
@@ -184,41 +185,41 @@ const LevelWalkthrough = () => {
 
         // Устанавливаем флаг анимации
         setIsAnimationInProgress(true);
-        
+
         // Выполняем шаг симуляции
         const result = executeStep();
-        
+
         // Увеличиваем счетчик шагов
         setSimulationStep(prevStep => prevStep + 1);
-        
+
         // Если есть результат и выполнение не завершено, планируем следующий шаг
         if (result && !result.isComplete) {
             // Задержка перед следующим шагом (больше времени для наблюдения за анимацией)
             const nextStepDelay = 1200; // 1.2 секунды
-            
+
             // Сначала сбрасываем флаг анимации через 700 мс (после основной анимации)
             setTimeout(() => {
                 setIsAnimationInProgress(false);
             }, 700);
-            
+
             // Планируем следующий шаг через более длительный интервал
             simulationIntervalRef.current = setTimeout(performSimulationStep, nextStepDelay);
         } else {
             // Если выполнение завершено, останавливаем симуляцию
             setIsSimulationRunning(false);
             setIsAnimationInProgress(false);
-            
+
             // Проверяем, был ли достигнут выход
             let exitReached = false;
-            
+
             // Проверяем наличие сообщения о достижении выхода в консоли
             if (consoleOutput && consoleOutput.length > 0) {
-                exitReached = consoleOutput.some(msg => 
-                    msg.type === 'output' && 
+                exitReached = consoleOutput.some(msg =>
+                    msg.type === 'output' &&
                     (msg.value.includes('выход достигнут') || msg.value.includes('Выход достигнут'))
                 );
             }
-            
+
             if (!exitReached) {
                 // Если выход не был достигнут, сбрасываем состояние визуализатора
                 resetVisualizerState();
@@ -235,13 +236,13 @@ const LevelWalkthrough = () => {
         if (isSimulationRunning && !simulationIntervalRef.current) {
             // Небольшая задержка перед началом для подготовки
             simulationIntervalRef.current = setTimeout(performSimulationStep, 500);
-        } 
+        }
         // Если симуляция остановлена, но интервал существует, очищаем его
         else if (!isSimulationRunning && simulationIntervalRef.current) {
             clearTimeout(simulationIntervalRef.current);
             simulationIntervalRef.current = null;
         }
-        
+
         // Очистка таймера при размонтировании
         return () => {
             if (simulationIntervalRef.current) {
@@ -258,15 +259,15 @@ const LevelWalkthrough = () => {
             handleStopSimulation();
             return;
         }
-        
+
         // Сбрасываем счетчик шагов и устанавливаем начальное состояние
         setSimulationStep(0);
-        
+
         // Сбрасываем состояние визуализатора перед началом симуляции
         resetVisualizerState();
-        
+
         // executeStep() внутри сам подготовит выполнение при первом вызове
-        
+
         // Запускаем симуляцию
         setIsSimulationRunning(true);
         showNotification("Начинаем плавную симуляцию...", "info");
@@ -276,20 +277,20 @@ const LevelWalkthrough = () => {
     const handleStopSimulation = () => {
         // Останавливаем выполнение алгоритма
         stopExecution();
-        
+
         // Сбрасываем состояние симуляции
         setIsSimulationRunning(false);
         setIsAnimationInProgress(false);
-        
+
         // Очищаем таймер, если он существует
         if (simulationIntervalRef.current) {
             clearTimeout(simulationIntervalRef.current);
             simulationIntervalRef.current = null;
         }
-        
+
         // Сбрасываем состояние визуализатора
         resetVisualizerState();
-        
+
         showNotification("Симуляция остановлена", "info");
     };
 
@@ -302,10 +303,10 @@ const LevelWalkthrough = () => {
     const handleQuickSave = () => {
         // Генерируем имя для быстрого сохранения
         const saveName = `debug_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "_")}`;
-        
+
         // Используем функцию сохранения из EditorContext
         const result = saveProject(saveName);
-        
+
         if (result) {
             // Обновляем список быстрых сохранений
             loadQuickSavesList();
@@ -322,15 +323,15 @@ const LevelWalkthrough = () => {
             showNotification("Выберите сохранение для загрузки", "warning");
             return;
         }
-        
+
         // Останавливаем текущую симуляцию, если она запущена
         if (isSimulationRunning) {
             handleStopSimulation();
         }
-        
+
         // Используем функцию загрузки из EditorContext
         const result = loadProject(selectedQuickSave);
-        
+
         if (result) {
             // Сбрасываем состояние визуализатора
             resetVisualizerState();
@@ -351,12 +352,28 @@ const LevelWalkthrough = () => {
         const checkMobileView = () => {
             setIsMobile(window.innerWidth < 768);
         };
-        
+
         checkMobileView();
         window.addEventListener('resize', checkMobileView);
-        
+
         return () => {
             window.removeEventListener('resize', checkMobileView);
+        };
+    }, []);
+
+    // Определение темной темы при загрузке и изменении настроек системы
+    useEffect(() => {
+        const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        setIsDarkMode(darkModeMediaQuery.matches);
+
+        const handleChange = (e) => {
+            setIsDarkMode(e.matches);
+        };
+
+        darkModeMediaQuery.addEventListener('change', handleChange);
+
+        return () => {
+            darkModeMediaQuery.removeEventListener('change', handleChange);
         };
     }, []);
 
@@ -392,12 +409,13 @@ const LevelWalkthrough = () => {
                                     <img
                                         src="/logo.png"
                                         alt="EduPlatform Logo"
-                                        className="h-10 sm:h-12 w-auto select-none"
-                                        style={{
-                                            pointerEvents: 'none',
-                                            userSelect: 'none',
-                                            WebkitUserSelect: 'none'
-                                        }}
+                                        className="h-10 sm:h-12 w-auto select-none light-mode-logo"
+                                        draggable="false"
+                                    />
+                                    <img
+                                        src="/dark logo.png"
+                                        alt="EduPlatform Logo"
+                                        className="h-10 sm:h-12 w-auto select-none dark-mode-logo"
                                         draggable="false"
                                     />
                                     {/* Защитный слой поверх изображения */}
@@ -465,7 +483,7 @@ const LevelWalkthrough = () => {
                                     {isMobile && (
                                         <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
                                             <h3 className="font-bold text-gray-800 dark:text-gray-200">3D Просмотр</h3>
-                                            <button 
+                                            <button
                                                 className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
                                                 onClick={() => setRightPanelOpen(false)}
                                             >
@@ -475,7 +493,7 @@ const LevelWalkthrough = () => {
                                             </button>
                                         </div>
                                     )}
-                                    
+
                                     {/* Используем скроллируемый контейнер для содержимого правой панели */}
                                     <div className="flex-1 p-4 overflow-y-auto">
                                         {!isMobile && (
@@ -511,15 +529,15 @@ const LevelWalkthrough = () => {
                                                 <InformationCircleIcon className="h-4 w-4 text-yellow-600 dark:text-yellow-500 mr-2" />
                                                 <h4 className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium text-yellow-800 dark:text-yellow-400`}>Отладочные функции</h4>
                                             </div>
-                                            
+
                                             {/* Быстрое сохранение */}
-                                            <button 
+                                            <button
                                                 className={`w-full mb-2 p-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded ${isMobile ? 'text-xs' : 'text-sm'}`}
                                                 onClick={handleQuickSave}
                                             >
                                                 Быстрое сохранение
                                             </button>
-                                            
+
                                             {/* Выбор и загрузка сохранения */}
                                             <div className="flex mb-2">
                                                 <select
@@ -532,7 +550,7 @@ const LevelWalkthrough = () => {
                                                         <option key={save} value={save}>{save}</option>
                                                     ))}
                                                 </select>
-                                                <button 
+                                                <button
                                                     className={`p-1.5 bg-green-500 hover:bg-green-600 text-white rounded-r ${isMobile ? 'text-xs' : 'text-sm'}`}
                                                     onClick={handleQuickLoad}
                                                     disabled={!selectedQuickSave}
@@ -540,9 +558,9 @@ const LevelWalkthrough = () => {
                                                     Загрузить
                                                 </button>
                                             </div>
-                                            
+
                                             {/* Кнопка сброса визуализатора */}
-                                            <button 
+                                            <button
                                                 className={`w-full p-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded ${isMobile ? 'text-xs' : 'text-sm'}`}
                                                 onClick={() => {
                                                     resetVisualizerState();

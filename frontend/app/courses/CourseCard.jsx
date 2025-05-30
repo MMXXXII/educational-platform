@@ -1,120 +1,42 @@
 import { Link } from 'react-router';
 import { UsersIcon } from '@heroicons/react/24/outline';
-const API_URL = import.meta.env.VITE_API_URL;
+import { CourseImagePlaceholder } from '../common';
 
 export function CourseCard({ course }) {
-    const getInitialsPlaceholder = (title) => {
-        return title.substring(0, 2).toUpperCase();
-    };
-
-    const getCategoryColor = (categoryName) => {
-        const colorOptions = [
-            { bg: 'bg-blue-100', text: 'text-blue-600' },
-            { bg: 'bg-green-100', text: 'text-green-600' },
-            { bg: 'bg-yellow-100', text: 'text-yellow-600' },
-            { bg: 'bg-purple-100', text: 'text-purple-600' },
-            { bg: 'bg-red-100', text: 'text-red-600' },
-            { bg: 'bg-cyan-100', text: 'text-cyan-600' },
-            { bg: 'bg-indigo-100', text: 'text-indigo-600' },
-            { bg: 'bg-pink-100', text: 'text-pink-600' },
-            { bg: 'bg-orange-100', text: 'text-orange-600' },
-            { bg: 'bg-teal-100', text: 'text-teal-600' }
-        ];
-
-        if (!categoryName) return `${colorOptions[0].bg} ${colorOptions[0].text}`;
-
-        let hash = 0;
-        for (let i = 0; i < categoryName.length; i++) {
-            hash = ((hash << 5) - hash) + categoryName.charCodeAt(i);
-            hash |= 0;
-        }
-
-        const colors = colorOptions[Math.abs(hash) % colorOptions.length];
-        return `${colors.bg} ${colors.text}`;
-    };
-
-    const categoryName = course.categories?.[0]?.name || '';
-
-    const renderImage = () => {
-        // Обработка image_url - преобразование относительного URL в абсолютный
-        let imageUrl = course.image_url;
-        if (imageUrl && imageUrl.startsWith('/static/')) {
-            imageUrl = `${API_URL}/api${imageUrl}`;
-        }
-
-        // Проверяем, является ли URL изображения валидным
-        const isValidImage = imageUrl && (
-            imageUrl.startsWith('http://') ||
-            imageUrl.startsWith('https://') ||
-            imageUrl.startsWith('data:image')
-        );
-
-        if (!isValidImage) {
-            const [bgClass, textClass] = getCategoryColor(categoryName).split(' ');
-            return (
-                <div className={`w-full h-full flex items-center justify-center ${bgClass}`}>
-                    <span className={`font-bold text-lg ${textClass}`}>
-                        {getInitialsPlaceholder(course.title)}
-                    </span>
-                </div>
-            );
-        }
-
-        return (
-            <img
-                src={imageUrl}
-                alt={course.title}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                    e.target.onerror = null;
-                    const [bgClass, textClass] = getCategoryColor(categoryName).split(' ');
-                    const parent = e.target.parentNode;
-                    if (parent) {
-                        parent.innerHTML = `
-                            <div class="w-full h-full flex items-center justify-center ${bgClass}">
-                                <span class="font-bold text-lg ${textClass}">
-                                    ${getInitialsPlaceholder(course.title)}
-                                </span>
-                            </div>
-                        `;
-                    }
-                }}
-            />
-        );
-    };
-
     const formatDifficulty = (difficulty) => {
         return difficulty ? difficulty.charAt(0).toUpperCase() + difficulty.slice(1) : '';
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-            <div className="h-40 bg-gray-200 relative">
-                {renderImage()}
-                <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg dark:hover:shadow-gray-700/50 transition-shadow duration-300">
+            <div className="h-40 bg-gray-200 dark:bg-gray-700 relative">
+                <CourseImagePlaceholder course={course} />
+                <div className="absolute top-2 right-2 bg-blue-600 dark:bg-blue-500 text-white dark:text-gray-100 text-xs px-2 py-1 rounded-full">
                     {formatDifficulty(course.difficulty)}
                 </div>
             </div>
 
             <div className="p-4">
-                <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-2">{course.title}</h3>
-                <p className="text-gray-600 text-sm mb-3 line-clamp-2">{course.description}</p>
+                <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-2 line-clamp-2">{course.title}</h3>
+                <div className="h-10 mb-3">
+                    <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2">{course.description}</p>
+                </div>
 
-                <div className="flex items-center text-sm text-gray-500 mb-3">
+                <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
                     <span>Автор: {course.author}</span>
                     <span className="mx-2">•</span>
                     <span>{course.lessons_count || 0} уроков</span>
                 </div>
 
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center text-sm text-gray-500">
+                    <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                         <UsersIcon className="h-4 w-4 mr-1" />
                         {course.students_count || 0} учеников
                     </div>
 
                     <Link
                         to={`/courses/${course.id}`}
-                        className="px-3 py-1 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors"
+                        className="px-3 py-1 bg-blue-600 dark:bg-blue-500 text-white dark:text-gray-100 text-sm font-medium rounded hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                     >
                         Подробнее
                     </Link>

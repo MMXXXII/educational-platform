@@ -26,7 +26,27 @@ export const coursesApi = {
     // Получение списка курсов с параметрами
     getCourses: async (params = {}) => {
         try {
-            const response = await apiClient.get('/courses', { params });
+            // FastAPI ожидает параметры в формате ?param=value1&param=value2
+            // а не в формате ?param[]=value1&param[]=value2, который генерирует axios по умолчанию
+            // Создаем новый URLSearchParams для правильного форматирования параметров
+            const searchParams = new URLSearchParams();
+
+            // Добавляем все параметры
+            for (const key in params) {
+                const value = params[key];
+
+                if (Array.isArray(value)) {
+                    // Для массивов добавляем каждое значение отдельно с тем же ключом
+                    value.forEach(item => {
+                        searchParams.append(key, item);
+                    });
+                } else {
+                    // Обычные параметры добавляем как есть
+                    searchParams.append(key, value);
+                }
+            }
+
+            const response = await apiClient.get(`/courses?${searchParams.toString()}`);
             return response.data;
         } catch (error) {
             handleError(error);
@@ -44,7 +64,14 @@ export const coursesApi = {
             formData.append('description', courseData.description);
             formData.append('longdescription', courseData.longDescription);
             formData.append('difficulty', courseData.difficulty);
-            formData.append('category_id', courseData.category_id);
+
+            // Добавляем category_ids как отдельные значения
+            if (courseData.category_ids && courseData.category_ids.length > 0) {
+                courseData.category_ids.forEach(categoryId => {
+                    // Убедимся, что categoryId передается как число
+                    formData.append('category_ids', Number(categoryId));
+                });
+            }
 
             // Добавляем изображение, если оно есть
             if (courseData.image) {
@@ -93,6 +120,107 @@ export const coursesApi = {
             const response = await apiClient.get(`/courses/${courseId}/with-lessons`);
             return response.data;
         } catch (error) {
+            handleError(error);
+        }
+    },
+
+    // Получение курсов, созданных текущим пользователем
+    getMyCreatedCourses: async (page = 1, size = 10) => {
+        try {
+            const response = await apiClient.get('/courses/created-by-me', { params: { page, size } });
+            return response.data;
+        } catch (error) {
+            handleError(error);
+        }
+    },
+
+    // Получение курса для редактирования
+    getCourseForEdit: async (courseId) => {
+        try {
+            const response = await apiClient.get(`/courses/${courseId}/edit`);
+            return response.data;
+        } catch (error) {
+            handleError(error);
+        }
+    },
+
+    // Обновление курса
+    updateCourse: async (courseId, courseData, options = {}) => {
+        try {
+            // Если есть изображение, используем FormData
+            if (courseData.image instanceof File) {
+                const formData = new FormData();
+
+                // Добавляем текстовые поля (только если они не undefined)
+                if (courseData.title !== undefined) formData.append('title', courseData.title);
+                if (courseData.description !== undefined) formData.append('description', courseData.description);
+                if (courseData.longDescription !== undefined) formData.append('longdescription', courseData.longDescription);
+                if (courseData.difficulty !== undefined) formData.append('difficulty', courseData.difficulty);
+                
+                // Добавляем category_ids как отдельные значения
+                if (courseData.category_ids !== undefined && courseData.category_ids.length > 0) {
+                    courseData.category_ids.forEach(categoryId => {
+                        formData.append('category_ids', Number(categoryId));
+                    });
+                }
+
+                // Добавляем изображение
+                formData.append('image', courseData.image);
+
+                const requestConfig = {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                };
+
+                if (options.token) {
+                    requestConfig.headers['Authorization'] = `Bearer ${options.token}`;
+                }
+
+                // Сначала обновляем изображение - это автоматически удалит старое изображение на сервере
+                const imageResponse = await apiClient.post(`/courses/${courseId}/upload-image`, formData, requestConfig);
+
+                // Затем обновляем остальные данные
+                const updateData = {
+                    title: courseData.title,
+                    description: courseData.description,
+                    longdescription: courseData.longDescription,
+                    difficulty: courseData.difficulty,
+                    category_ids: courseData.category_ids
+                };
+
+                const response = await apiClient.put(`/courses/${courseId}`, updateData);
+
+                // Комбинируем результаты для сохранения URL изображения
+                if (imageResponse && imageResponse.data && imageResponse.data.image_url) {
+                    response.data.image_url = imageResponse.data.image_url;
+                }
+
+                return response.data;
+            } else {
+                // Обычное обновление без нового изображения
+                // Если нужно удалить существующее изображение, передаем флаг remove_image
+                const updateData = {
+                    ...courseData,
+                    // Убедимся, что remove_image передается как булево значение
+                    remove_image: courseData.remove_image === true
+                };
+
+                const response = await apiClient.put(`/courses/${courseId}`, updateData);
+                return response.data;
+            }
+        } catch (error) {
+            handleError(error);
+        }
+    },
+
+    // Удаление курса
+    deleteCourse: async (courseId) => {
+        try {
+            const response = await apiClient.delete(`/courses/${courseId}`);
+            return response.data || true;
+        } catch (error) {
+            console.error('Error in deleteCourse:', error);
             handleError(error);
         }
     },

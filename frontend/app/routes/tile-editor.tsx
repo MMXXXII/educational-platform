@@ -1,5 +1,6 @@
-import type { Route } from "./+types/editor";
-import TileEditorPage from "../tile-editor/EditorPanel.jsx";
+import type { Route } from "./+types/tile-editor";
+// @ts-ignore
+import EditorPanel from "../tile-editor/EditorPanel.jsx";
 
 export function meta({ }: Route.MetaArgs) {
     return [
@@ -10,6 +11,6 @@ export function meta({ }: Route.MetaArgs) {
 
 export default function Editor() {
     return (
-        <TileEditorPage />
+        <EditorPanel />
     );
 }

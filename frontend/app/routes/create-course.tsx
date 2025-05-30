@@ -1,5 +1,7 @@
 import type { Route } from "./+types/create-course";
+// @ts-ignore
 import { CreateCoursePage } from "../create-course/CreateCoursePage";
+// @ts-ignore
 import { ProtectedRoute } from '../auth/ProtectedRoute';
 
 export function meta({ }: Route.MetaArgs) {

@@ -1,5 +1,6 @@
 import type { Route } from "./+types/course-detail";
 import { useParams } from "react-router";
+// @ts-ignore
 import { CourseDetailPage } from "../course-detail/CourseDetailPage";
 
 export function meta({ params }: Route.MetaArgs) {

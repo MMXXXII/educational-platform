@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { ArrowLeftIcon, CheckIcon } from '@heroicons/react/24/outline';
 // Импорт по умолчанию, поскольку компонент экспортируется как default
 import EditorPanel from './EditorPanel';
+import { saveSceneDataToDB, deleteSceneDataFromDB } from '../utils/indexedDB';
 
 // Этот компонент связывает создание урока и редактор сцены
 // Спроектирован так, чтобы минимально влиять на EditorPanel.jsx
@@ -16,12 +17,13 @@ const TileEditorPage = () => {
 
     // Получаем данные урока при монтировании компонента
     useEffect(() => {
-        const editingLessonData = localStorage.getItem('currentEditingLesson');
+        // Проверяем оба возможных ключа: для создания и для редактирования
+        let editingLessonData = localStorage.getItem('currentEditingLesson') ||
+            localStorage.getItem('editCurrentEditingLesson');
 
         if (!editingLessonData) {
             // Если нет данных о редактируемом уроке, возвращаемся обратно
-            console.warn('No lesson data found, redirecting back to course creation');
-            navigate('/create-course');
+            navigate(-1); // Возвращаемся на предыдущую страницу
             return;
         }
 
@@ -38,24 +40,22 @@ const TileEditorPage = () => {
                         sceneData = JSON.parse(sceneData);
                     }
                     setInitialSceneData(sceneData);
-                    console.log('Loaded existing scene data for lesson:', data.lesson.title);
                 } catch (e) {
                     console.error("Error parsing existing scene data:", e);
                 }
             }
         } catch (error) {
             console.error("Error parsing lesson data:", error);
-            navigate('/create-course');
+            navigate(-1);
             return;
         }
 
         setIsLoading(false);
     }, [navigate]);
 
-    // Сохраняем сцену и возвращаемся к созданию курса
+    // Сохраняем сцену и возвращаемся к созданию/редактированию курса
     const handleSaveScene = async () => {
         if (hasSaved.current) {
-            console.log('Already saved, ignoring duplicate save attempt');
             return;
         }
 
@@ -67,25 +67,54 @@ const TileEditorPage = () => {
             // Способ 1: Пытаемся использовать глобальный currentSceneInstance.serializeScene
             if (window.currentSceneInstance && window.currentSceneInstance.serializeScene) {
                 sceneData = window.currentSceneInstance.serializeScene();
-                console.log('Successfully exported scene data using global instance');
             }
             // Способ 2: Пытаемся использовать статический метод, если доступен
             else if (typeof EditorPanel.exportScene === 'function') {
                 sceneData = EditorPanel.exportScene();
-                console.log('Successfully exported scene data using static method');
             }
 
-            // Сохраняем данные сцены независимо от того, пустые они или нет (пользователь может хотеть очистить сцену)
-            if (sceneData || sceneData === null) {
-                localStorage.setItem('savedSceneData', JSON.stringify(sceneData || {
+            // Сохраняем данные сцены
+            if (sceneData !== undefined) {
+                const dataToSave = sceneData || {
                     version: "1.0",
                     timestamp: Date.now(),
                     models: []
-                }));
+                };
 
-                hasSaved.current = true; // Отмечаем, что сохранение выполнено
-                console.log('Scene data saved to localStorage');
-                navigate('/create-course');
+                // Проверяем, что у нас есть все необходимые данные
+                if (!lessonData) {
+                    throw new Error('Missing lesson data for scene save');
+                }
+
+                // Извлекаем все необходимые данные
+                const lessonIndex = lessonData.lessonIndex;
+                const mode = lessonData.isEditMode ? 'edit' : 'create';
+                const courseId = lessonData.courseId;
+
+                console.log(`Saving scene data for lesson index ${lessonIndex}, mode: ${mode}, courseId: ${courseId}`);
+
+                // Сохраняем в IndexedDB вместо localStorage
+                const saved = await saveSceneDataToDB(dataToSave, lessonIndex, mode, courseId);
+
+                if (!saved) {
+                    // Fallback к localStorage если IndexedDB недоступен
+                    localStorage.setItem('savedSceneData', JSON.stringify(dataToSave));
+                    console.warn('Fallback: Scene data saved to localStorage');
+                } else {
+                    console.log('Scene data successfully saved to IndexedDB');
+                }
+
+                // Добавляем небольшую задержку перед навигацией
+                await new Promise(resolve => setTimeout(resolve, 150));
+
+                hasSaved.current = true;
+
+                // Определяем, куда возвращаться на основе lessonData
+                if (lessonData && lessonData.isEditMode && lessonData.courseId) {
+                    navigate(`/edit-course/${lessonData.courseId}`);
+                } else {
+                    navigate('/create-course');
+                }
             } else {
                 throw new Error('Could not access scene data from EditorPanel');
             }
@@ -103,11 +132,23 @@ const TileEditorPage = () => {
         setShowExitConfirm(true);
     };
 
-    const confirmExit = () => {
-        // Очищаем данные при выходе без сохранения
-        localStorage.removeItem('currentEditingLesson');
+    const confirmExit = async () => {
+        // Очищаем данные сцены при выходе без сохранения
+        const lessonIndex = lessonData?.lessonIndex || null;
+        const mode = lessonData?.isEditMode ? 'edit' : 'create';
+        const courseId = lessonData?.courseId || null;
+
+        await deleteSceneDataFromDB(lessonIndex, mode, courseId);
+
+        // Также очищаем localStorage для обратной совместимости
         localStorage.removeItem('savedSceneData');
-        navigate('/create-course');
+
+        // Определяем, куда возвращаться
+        if (lessonData && lessonData.isEditMode && lessonData.courseId) {
+            navigate(`/edit-course/${lessonData.courseId}`);
+        } else {
+            navigate('/create-course');
+        }
     };
 
     const cancelExit = () => {
@@ -117,29 +158,29 @@ const TileEditorPage = () => {
     // Показываем загрузку во время инициализации
     if (isLoading && !lessonData) {
         return (
-            <div className="fixed inset-0 flex items-center justify-center bg-gray-100">
+            <div className="fixed inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Загрузка редактора...</p>
+                    <p className="text-gray-600 dark:text-gray-300">Загрузка редактора...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="fixed inset-0 flex flex-col overflow-hidden">
+        <div className="fixed inset-0 flex flex-col overflow-hidden bg-white dark:bg-gray-900">
             {/* Шапка зафиксирована сверху с z-index, чтобы оставаться поверх другого контента */}
-            <header className="bg-white border-b border-gray-200 p-3 shadow-sm z-10 flex-shrink-0">
-                <div className="container mx-auto flex justify-between items-center">
+            <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-3 shadow-sm z-10 flex-shrink-0">
+                <div className="flex justify-between items-center">
                     <div className="flex items-center min-w-0 flex-1">
                         <button
                             onClick={handleExit}
-                            className="mr-4 p-2 rounded-full hover:bg-gray-100 flex-shrink-0"
+                            className="mr-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0"
                             disabled={isLoading}
                         >
-                            <ArrowLeftIcon className="h-5 w-5 text-gray-600" />
+                            <ArrowLeftIcon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
                         </button>
-                        <h1 className="font-bold text-xl truncate text-gray-800">
+                        <h1 className="font-bold text-xl truncate text-gray-800 dark:text-white">
                             {lessonData ?
                                 `Создание сцены для урока: ${lessonData.lesson.title || 'Новый урок'}` :
                                 'Редактор сцены'
@@ -150,7 +191,7 @@ const TileEditorPage = () => {
                         onClick={handleSaveScene}
                         disabled={isLoading}
                         className={`px-4 py-2 rounded-md flex items-center flex-shrink-0 ml-4 ${isLoading
-                            ? 'bg-gray-400 cursor-not-allowed'
+                            ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
                             : 'bg-green-600 hover:bg-green-700'
                             } text-white`}
                     >
@@ -170,7 +211,7 @@ const TileEditorPage = () => {
             </header>
 
             {/* Контент редактора - занимает всё оставшееся место */}
-            <div className="flex-grow overflow-hidden">
+            <div className="flex flex-col w-full h-screen overflow-hidden">
                 <EditorPanel
                     initialSceneData={initialSceneData}
                     className="w-full h-full"
@@ -180,15 +221,15 @@ const TileEditorPage = () => {
             {/* Модальное окно подтверждения выхода */}
             {showExitConfirm && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 max-w-md mx-auto m-4">
-                        <h3 className="text-lg font-medium text-gray-800 mb-4">Выйти без сохранения?</h3>
-                        <p className="text-gray-600 mb-6">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-auto m-4">
+                        <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-4">Выйти без сохранения?</h3>
+                        <p className="text-gray-600 dark:text-gray-300 mb-6">
                             Все несохраненные изменения будут потеряны. Вы уверены, что хотите выйти?
                         </p>
                         <div className="flex justify-end space-x-3">
                             <button
                                 onClick={cancelExit}
-                                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
+                                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                             >
                                 Отмена
                             </button>

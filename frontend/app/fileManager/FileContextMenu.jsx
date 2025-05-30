@@ -55,7 +55,7 @@ export function FileContextMenu({
     return (
         <div
             ref={menuRef}
-            className="fixed z-50 bg-gray-800 rounded-md shadow-lg py-1 w-48 ring-1 ring-black ring-opacity-5 focus:outline-none"
+            className="fixed z-50 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 w-48 ring-1 ring-black ring-opacity-5 focus:outline-none"
             style={{
                 top: `${position.top}px`,
                 left: `${position.left}px`,
@@ -64,38 +64,38 @@ export function FileContextMenu({
             {/* Показываем кнопку скачивания только для файлов */}
             {!selectedItem.is_folder && (
                 <button
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                     onClick={() => {
                         onDownload?.();
                         onClose();
                     }}
                 >
-                    <ArrowDownTrayIcon className="h-5 w-5 mr-3 text-gray-400" />
+                    <ArrowDownTrayIcon className="h-5 w-5 mr-3 text-gray-500 dark:text-gray-400" />
                     <span>Скачать</span>
                 </button>
             )}
 
             <button
-                className="flex items-center w-full px-4 py-2 text-sm text-gray-200 hover:bg-gray-700"
+                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={() => {
                     onRename?.();
                     onClose();
                 }}
             >
-                <PencilIcon className="h-5 w-5 mr-3 text-gray-400" />
+                <PencilIcon className="h-5 w-5 mr-3 text-gray-500 dark:text-gray-400" />
                 <span>Переименовать</span>
             </button>
 
-            <div className="border-t border-gray-700 my-1"></div>
+            <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
 
             <button
-                className="flex items-center w-full px-4 py-2 text-sm text-red-400 hover:bg-gray-700"
+                className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={() => {
                     onDelete?.();
                     onClose();
                 }}
             >
-                <TrashIcon className="h-5 w-5 mr-3 text-red-400" />
+                <TrashIcon className="h-5 w-5 mr-3 text-red-600 dark:text-red-400" />
                 <span>Удалить</span>
             </button>
         </div>

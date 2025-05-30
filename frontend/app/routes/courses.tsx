@@ -1,4 +1,5 @@
 import type { Route } from "./+types/courses";
+// @ts-ignore
 import { CoursesPage } from "../courses/CoursesPage";
 
 export function meta({ }: Route.MetaArgs) {

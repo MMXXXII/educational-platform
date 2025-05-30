@@ -3,15 +3,19 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { PlusIcon, Bars3Icon } from "@heroicons/react/24/outline";
 import LessonForm from './LessonForm';
 import { useNavigate } from 'react-router';
+import { loadSceneDataWithFallback, deleteSceneDataFromDB } from '../utils/indexedDB';
 
-const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToEditor }) => {
+const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToEditor, isEditMode = false, errors = {} }) => {
     const [lessons, setLessons] = useState(initialLessons.map((lesson, idx) => ({
         ...lesson,
         order: lesson.order || idx + 1
     })));
 
     const navigate = useNavigate();
-    const hasProcessedSceneData = useRef(false); // Флаг для предотвращения повторной обработки
+    const hasProcessedSceneData = useRef(false);
+    const pendingLessonsUpdate = useRef(null);
+    const isInitialRender = useRef(true);
+    const isRestoringSceneData = useRef(false);
 
     const handleAddLesson = () => {
         const newLesson = {
@@ -20,119 +24,207 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
             order: lessons.length + 1,
             scene_data: null
         };
-        const updatedLessons = [...lessons, newLesson];
-        setLessons(updatedLessons);
-        if (onChange) onChange(updatedLessons);
+        setLessons(prevLessons => [...prevLessons, newLesson]);
     };
 
     const handleUpdateLesson = useCallback((index, updatedLesson) => {
         setLessons(prevLessons => {
             const newLessons = [...prevLessons];
             newLessons[index] = updatedLesson;
-            if (onChange) onChange(newLessons);
             return newLessons;
         });
-    }, [onChange]);
+    }, []);
+
+    useEffect(() => {
+        if (isInitialRender.current) {
+            isInitialRender.current = false;
+            return;
+        }
+
+        if (isRestoringSceneData.current) {
+            return;
+        }
+
+        if (onChange && lessons.length > 0) {
+            onChange(lessons);
+        }
+    }, [lessons, onChange]);
 
     const handleDeleteLesson = (index) => {
-        const newLessons = lessons.filter((_, idx) => idx !== index)
-            .map((lesson, idx) => ({
-                ...lesson,
-                order: idx + 1
-            }));
-        setLessons(newLessons);
-        if (onChange) onChange(newLessons);
+        // В режиме редактирования не позволяем удалить последний урок
+        if (isEditMode && lessons.length <= 1) {
+            return; // Не удаляем последний урок в режиме редактирования
+        }
+
+        setLessons(prevLessons => {
+            const newLessons = prevLessons.filter((_, idx) => idx !== index)
+                .map((lesson, idx) => ({
+                    ...lesson,
+                    order: idx + 1
+                }));
+            return newLessons;
+        });
     };
 
     const handleCreateScene = (index, lesson) => {
-        // Вызываем функцию сохранения данных курса из родительского компонента
         if (onNavigateToEditor) {
             onNavigateToEditor();
         }
 
-        // Сохраняем все текущие уроки перед переходом
-        localStorage.setItem('allLessonsBackup', JSON.stringify(lessons));
+        hasProcessedSceneData.current = false;
 
-        // Сохраняем данные для редактирования конкретного урока
-        localStorage.setItem('currentEditingLesson', JSON.stringify({
+        const backupKey = isEditMode ? 'editAllLessonsBackup' : 'allLessonsBackup';
+        const lessonsToSave = [...lessons];
+        localStorage.setItem(backupKey, JSON.stringify(lessonsToSave));
+
+        const editingLessonKey = isEditMode ? 'editCurrentEditingLesson' : 'currentEditingLesson';
+        const dataToSave = {
             lessonIndex: index,
             courseId: courseId,
-            lesson: lesson
-        }));
+            lesson: {
+                ...lesson,
+                title: lesson.title || '',
+                content: lesson.content || '',
+                scene_data: lesson.scene_data
+            },
+            isEditMode: isEditMode
+        };
 
-        // Очищаем любые предыдущие сохраненные данные сцены, чтобы избежать путаницы
+        localStorage.setItem(editingLessonKey, JSON.stringify(dataToSave));
         localStorage.removeItem('savedSceneData');
 
-        // Переходим к редактору сцен
         navigate('/tile-editor-scene');
     };
 
-    // Обработка возврата из редактора сцен - только один раз при монтировании
-    useEffect(() => {
-        // Предотвращаем повторную обработку
+    const processSceneData = useCallback(async () => {
         if (hasProcessedSceneData.current) {
             return;
         }
 
-        const savedSceneData = localStorage.getItem('savedSceneData');
-        const editingLessonData = localStorage.getItem('currentEditingLesson');
-        const lessonsBackup = localStorage.getItem('allLessonsBackup');
+        const editingLessonKey = isEditMode ? 'editCurrentEditingLesson' : 'currentEditingLesson';
+        const lessonsBackupKey = isEditMode ? 'editAllLessonsBackup' : 'allLessonsBackup';
 
-        if (savedSceneData && editingLessonData) {
-            try {
-                const sceneData = JSON.parse(savedSceneData);
-                const editingLesson = JSON.parse(editingLessonData);
+        const editingLessonData = localStorage.getItem(editingLessonKey);
+        const lessonsBackup = localStorage.getItem(lessonsBackupKey);
 
-                // Восстанавливаем все уроки из бэкапа
-                let lessonsToRestore = lessons;
-                if (lessonsBackup) {
-                    lessonsToRestore = JSON.parse(lessonsBackup);
-                }
-
-                if (editingLesson && typeof editingLesson.lessonIndex === 'number') {
-                    // Обновляем конкретный урок с данными сцены
-                    const updatedLessons = [...lessonsToRestore];
-                    if (updatedLessons[editingLesson.lessonIndex]) {
-                        updatedLessons[editingLesson.lessonIndex] = {
-                            ...updatedLessons[editingLesson.lessonIndex],
-                            scene_data: JSON.stringify(sceneData)
-                        };
-                    }
-
-                    setLessons(updatedLessons);
-                    if (onChange) onChange(updatedLessons);
-                }
-
-                // Очищаем данные из localStorage (НЕ удаляем courseFormBackup - это сделается в CreateCoursePage)
-                localStorage.removeItem('savedSceneData');
-                localStorage.removeItem('currentEditingLesson');
-                localStorage.removeItem('allLessonsBackup');
-
-                // Отмечаем, что обработка завершена
-                hasProcessedSceneData.current = true;
-            } catch (error) {
-                console.error('Error processing scene data:', error);
-                // В случае ошибки также очищаем localStorage
-                localStorage.removeItem('savedSceneData');
-                localStorage.removeItem('currentEditingLesson');
-                localStorage.removeItem('allLessonsBackup');
-            }
+        if (!editingLessonData) {
+            return;
         }
-    }, []); // Пустой массив зависимостей - выполняется только при монтировании
 
-    // Синхронизация с initialLessons (только если это не результат обработки сцены)
+        try {
+            isRestoringSceneData.current = true;
+            const editingLesson = JSON.parse(editingLessonData);
+
+            if (editingLesson.isEditMode !== isEditMode) {
+                isRestoringSceneData.current = false;
+                return;
+            }
+
+            const lessonIndex = editingLesson.lessonIndex;
+            const mode = isEditMode ? 'edit' : 'create';
+            const courseId = editingLesson.courseId;
+
+            const sceneData = await loadSceneDataWithFallback(lessonIndex, mode, courseId);
+
+            let lessonsToUpdate = [];
+
+            if (lessonsBackup) {
+                try {
+                    lessonsToUpdate = JSON.parse(lessonsBackup);
+                } catch (e) {
+                    isRestoringSceneData.current = false;
+                    return;
+                }
+            } else {
+                lessonsToUpdate = [...lessons];
+            }
+
+            if (typeof editingLesson.lessonIndex === 'number' &&
+                editingLesson.lessonIndex >= 0 &&
+                editingLesson.lessonIndex < lessonsToUpdate.length) {
+
+                const updatedLessons = [...lessonsToUpdate];
+
+                if (sceneData) {
+                    updatedLessons[editingLesson.lessonIndex] = {
+                        ...updatedLessons[editingLesson.lessonIndex],
+                        scene_data: JSON.stringify(sceneData)
+                    };
+                }
+
+                setLessons(updatedLessons);
+
+                if (onChange) {
+                    onChange(updatedLessons);
+                }
+            } else {
+                setLessons(lessonsToUpdate);
+
+                if (onChange) {
+                    onChange(lessonsToUpdate);
+                }
+            }
+
+            hasProcessedSceneData.current = true;
+
+            if (sceneData) {
+                await deleteSceneDataFromDB(lessonIndex, mode, courseId);
+            }
+
+            localStorage.removeItem('savedSceneData');
+            localStorage.removeItem(editingLessonKey);
+            localStorage.removeItem(lessonsBackupKey);
+
+        } catch (error) {
+            if (lessonsBackup) {
+                try {
+                    const lessonsToUpdate = JSON.parse(lessonsBackup);
+                    setLessons(lessonsToUpdate);
+                    if (onChange) {
+                        onChange(lessonsToUpdate);
+                    }
+                } catch (e) {
+                    // Пустое действие при ошибке
+                }
+            }
+
+            localStorage.removeItem('savedSceneData');
+            localStorage.removeItem(editingLessonKey);
+            localStorage.removeItem(lessonsBackupKey);
+
+            hasProcessedSceneData.current = true;
+        } finally {
+            isRestoringSceneData.current = false;
+        }
+    }, [isEditMode, lessons, onChange]);
+
     useEffect(() => {
-        if (!hasProcessedSceneData.current && initialLessons.length > 0) {
+        const timeoutId = setTimeout(() => {
+            processSceneData();
+        }, 100);
+
+        return () => clearTimeout(timeoutId);
+    }, [processSceneData]);
+
+    useEffect(() => {
+        if (initialLessons.length > 0 &&
+            !hasProcessedSceneData.current &&
+            !isRestoringSceneData.current) {
+
             const formattedLessons = initialLessons.map((lesson, idx) => ({
                 ...lesson,
                 order: lesson.order || idx + 1
             }));
-            setLessons(formattedLessons);
+
+            const lessonsChanged = JSON.stringify(formattedLessons) !== JSON.stringify(lessons);
+
+            if (lessonsChanged) {
+                setLessons(formattedLessons);
+            }
         }
     }, [initialLessons]);
 
     const onDragEnd = (result) => {
-        // Перемещение за пределы списка
         if (!result.destination) {
             return;
         }
@@ -144,7 +236,6 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
         );
 
         setLessons(reorderedLessons);
-        if (onChange) onChange(reorderedLessons);
     };
 
     const reorderLessons = (list, startIndex, endIndex) => {
@@ -152,7 +243,6 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
         const [removed] = result.splice(startIndex, 1);
         result.splice(endIndex, 0, removed);
 
-        // Обновляем свойство order для каждого урока
         return result.map((item, index) => ({
             ...item,
             order: index + 1
@@ -162,7 +252,7 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold text-gray-800">Уроки ({lessons.length})</h3>
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-100">Уроки ({lessons.length})</h3>
                 <button
                     type="button"
                     onClick={handleAddLesson}
@@ -193,7 +283,7 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
                                                 {...provided.dragHandleProps}
                                                 className="absolute left-[-20px] top-[50%] transform translate-y-[-50%] cursor-move"
                                             >
-                                                <Bars3Icon className="h-5 w-5 text-gray-400" />
+                                                <Bars3Icon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                                             </div>
                                             <LessonForm
                                                 lesson={lesson}
@@ -201,6 +291,8 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
                                                 onUpdate={handleUpdateLesson}
                                                 onDelete={handleDeleteLesson}
                                                 onCreateScene={handleCreateScene}
+                                                canDelete={!(isEditMode && lessons.length <= 1)}
+                                                errors={errors}
                                             />
                                         </div>
                                     )}
@@ -213,7 +305,7 @@ const LessonsManager = ({ initialLessons = [], courseId, onChange, onNavigateToE
             </DragDropContext>
 
             {lessons.length === 0 && (
-                <div className="text-center py-10 border-2 border-dashed rounded-lg text-gray-800">
+                <div className="text-center py-10 border-2 border-dashed rounded-lg text-gray-800 dark:text-gray-200 border-gray-300 dark:border-gray-700">
                     <p className="text-muted-foreground">Пока нет уроков. Нажмите "Добавить урок", чтобы создать первый урок.</p>
                 </div>
             )}

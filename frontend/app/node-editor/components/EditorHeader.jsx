@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router';
 import {
     CheckIcon,
@@ -24,20 +24,39 @@ const EditorHeader = ({
     isMobile = false
 }) => {
     const { refreshProjectsList } = useEditor();
-    
+
     // Состояние для модального окна менеджера проектов
     const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false);
-    
+
     // Состояние для мобильного меню
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    
+
+    // Состояние для определения темной темы
+    const [isDarkMode, setIsDarkMode] = useState(false);
+
+    // Определение темной темы при загрузке и изменении настроек системы
+    useEffect(() => {
+        const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        setIsDarkMode(darkModeMediaQuery.matches);
+
+        const handleChange = (e) => {
+            setIsDarkMode(e.matches);
+        };
+
+        darkModeMediaQuery.addEventListener('change', handleChange);
+
+        return () => {
+            darkModeMediaQuery.removeEventListener('change', handleChange);
+        };
+    }, []);
+
     /**
      * Обработчик открытия/закрытия модального окна менеджера проектов
      */
     const handleProjectManagerToggle = () => {
         setIsProjectManagerOpen(!isProjectManagerOpen);
     };
-    
+
     /**
      * Обработчик закрытия модального окна менеджера проектов
      */
@@ -45,7 +64,7 @@ const EditorHeader = ({
         setIsProjectManagerOpen(false);
         refreshProjectsList();
     }, [refreshProjectsList]);
-    
+
     /**
      * Обработчик переключения мобильного меню
      */
@@ -69,9 +88,10 @@ const EditorHeader = ({
                         {/* Логотип и название проекта */}
                         <div className="flex items-center">
                             <Link to="/" className="flex-shrink-0">
-                                <img src="/logo.png" alt="Logo" className="h-10 w-auto" />
+                                <img src="/logo.png" alt="Logo" className="h-10 w-auto light-mode-logo" />
+                                <img src="/dark logo.png" alt="Logo" className="h-10 w-auto dark-mode-logo" />
                             </Link>
-                            
+
                             {!isMobile && (
                                 <div className="ml-4">
                                     <div className="text-lg font-medium text-gray-800 dark:text-gray-200">
@@ -96,14 +116,14 @@ const EditorHeader = ({
                                         {isModified && <span className="ml-1 text-amber-500">*</span>}
                                     </div>
                                 )}
-                                
+
                                 <button
                                     className="p-2 rounded-md text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white focus:outline-none"
                                     onClick={toggleMobileMenu}
                                 >
                                     <Bars3Icon className="h-6 w-6" />
                                 </button>
-                                
+
                                 {isMobileMenuOpen && (
                                     <div className="absolute top-16 right-0 left-0 bg-white dark:bg-gray-800 shadow-lg z-50 border-t border-gray-200 dark:border-gray-700">
                                         <div className="px-4 py-2 space-y-2">
@@ -114,7 +134,7 @@ const EditorHeader = ({
                                                 <CheckIcon className="h-5 w-5 mr-2" />
                                                 Сохранить
                                             </button>
-                                            
+
                                             <button
                                                 onClick={() => {
                                                     handleProjectManagerToggle();
@@ -137,17 +157,17 @@ const EditorHeader = ({
                                     <CheckIcon className="h-5 w-5 mr-1.5" />
                                     <span>Сохранить</span>
                                 </button>
-                                
+
                                 <ProjectManagerButton onClick={handleProjectManagerToggle} />
                             </div>
                         )}
                     </div>
                 </div>
             </nav>
-            
+
             {/* Модальное окно менеджера проектов */}
-            <ProjectManagerModal 
-                isOpen={isProjectManagerOpen} 
+            <ProjectManagerModal
+                isOpen={isProjectManagerOpen}
                 onClose={handleProjectManagerClose}
                 isMobile={isMobile}
             />

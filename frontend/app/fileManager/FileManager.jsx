@@ -94,15 +94,15 @@ export function FileManager() {
     };
 
     return (
-        <div className="h-full flex flex-col bg-gray-900 text-gray-100">
-            <div className="p-4 border-b border-gray-700">
+        <div className="h-full flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                 <div className="relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
                     </div>
                     <input
                         type="text"
-                        className="block w-full pl-10 pr-3 py-2 border border-gray-700 rounded-md leading-5 bg-gray-800 placeholder-gray-400 focus:outline-none focus:placeholder-gray-300 focus:ring-1 focus:ring-purple-500 focus:border-purple-500 sm:text-sm text-gray-100"
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 dark:focus:placeholder-gray-300 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm text-gray-900 dark:text-gray-100"
                         placeholder="Поиск файлов и папок..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
@@ -110,12 +110,12 @@ export function FileManager() {
                 </div>
             </div>
 
-            <div className="px-4 py-2 bg-gray-800">
+            <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800">
                 <nav className="flex" aria-label="Breadcrumb">
                     <ol className="inline-flex items-center space-x-1 md:space-x-3">
                         <li className="inline-flex items-center">
                             <button
-                                className="text-sm font-medium text-purple-400 hover:text-purple-300"
+                                className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                                 onClick={() => navigateByBreadcrumb(-1)}
                             >
                                 Корневая папка
@@ -126,7 +126,7 @@ export function FileManager() {
                                 <div className="flex items-center">
                                     <ChevronRightIcon className="w-5 h-5 text-gray-500" />
                                     <button
-                                        className="ml-1 text-sm font-medium text-purple-400 hover:text-purple-300 md:ml-2"
+                                        className="ml-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 md:ml-2"
                                         onClick={() => navigateByBreadcrumb(index)}
                                     >
                                         {folder.name}
@@ -138,7 +138,7 @@ export function FileManager() {
                 </nav>
             </div>
 
-            <div className="flex-grow overflow-hidden">
+            <div className="flex-grow overflow-hidden bg-white dark:bg-gray-900">
                 <FileList
                     files={files}
                     folders={folders}
@@ -153,16 +153,16 @@ export function FileManager() {
                 />
             </div>
 
-            <div className="p-4 border-t border-gray-700 flex space-x-4">
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex space-x-4 bg-white dark:bg-gray-900">
                 <button
-                    className="flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                    className="flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     onClick={() => setNewFolderDialog(true)}
                 >
                     <FolderPlusIcon className="h-5 w-5 mr-2" />
                     Новая папка
                 </button>
                 <button
-                    className="flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                    className="flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     onClick={handleManualFileUpload}
                 >
                     <ArrowUpTrayIcon className="h-5 w-5 mr-2" />
