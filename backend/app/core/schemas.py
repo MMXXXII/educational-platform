@@ -145,6 +145,7 @@ class CourseUpdate(BaseModel):
     lessons_count: Optional[int] = Field(default=None, ge=0)
     image_url: Optional[str] = None
     category_ids: Optional[List[int]] = None
+    remove_image: Optional[bool] = False
 
     @validator('difficulty')
     def validate_difficulty(cls, v):
@@ -194,8 +195,8 @@ class EnrollmentOut(EnrollmentBase):
     user_id: int
     progress: float
     completed: bool
-    enrolled_at: datetime
-    last_accessed_at: datetime
+    enrolled_at: Optional[datetime]
+    last_accessed_at: Optional[datetime]
 
     class Config:
         from_attributes = True
@@ -207,6 +208,23 @@ class EnrollmentWithCourse(EnrollmentOut):
 
     class Config:
         from_attributes = True
+
+
+class CourseWithProgress(CourseOut):
+    """Схема для вывода курса с информацией о прогрессе пользователя"""
+    enrollments: List[EnrollmentOut] = []
+
+    class Config:
+        from_attributes = True
+
+
+class MyCoursesResponse(BaseModel):
+    """Схема для вывода списка курсов пользователя с прогрессом"""
+    items: List[CourseWithProgress]
+    total: int
+    page: int
+    size: int
+    pages: int
 
 
 class CoursesResponse(BaseModel):
@@ -258,6 +276,14 @@ class LessonOut(LessonBase):
 
 class CourseWithLessons(CourseOut):
     """Схема для вывода курса с уроками"""
+    lessons: List[LessonOut] = []
+
+    class Config:
+        from_attributes = True
+
+
+class CourseEditResponse(CourseOut):
+    """Схема для получения курса для редактирования с уроками"""
     lessons: List[LessonOut] = []
 
     class Config:
