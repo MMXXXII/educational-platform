@@ -1,4 +1,5 @@
 import type { Route } from "./+types/profile";
+// @ts-ignore
 import { SignIn } from "../auth/SignIn";
 
 export function meta({ }: Route.MetaArgs) {

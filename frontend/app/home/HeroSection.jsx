@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 import { useAuth } from '../contexts/AuthContext';
 
 export function HeroSection() {
-    const { hasRole } = useAuth();
+    const { hasRole, isLoading } = useAuth();
 
     return (
         <section className="flex-grow flex items-center justify-center bg-gradient-to-b from-blue-50 to-white dark:from-slate-800 dark:to-slate-900 py-12 sm:py-16">
@@ -28,7 +28,7 @@ export function HeroSection() {
                         Начать обучение
                     </Link>
                     {/* Ссылка "Создать курс" только для администраторов и учителей*/}
-                    {hasRole(['admin', 'teacher']) && (
+                    {!isLoading && hasRole(['admin', 'teacher']) && (
                         <Link
                             to="/create-course"
                             className="px-6 sm:px-8 py-3 border border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 font-semibold rounded-lg hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors w-full sm:w-auto flex items-center justify-center"

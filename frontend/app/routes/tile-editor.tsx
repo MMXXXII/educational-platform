@@ -1,4 +1,5 @@
-import type { Route } from "./+types/editor";
+import type { Route } from "./+types/tile-editor";
+// @ts-ignore
 import EditorPanel from "../tile-editor/EditorPanel.jsx";
 
 export function meta({ }: Route.MetaArgs) {

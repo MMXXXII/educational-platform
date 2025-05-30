@@ -4,7 +4,7 @@ import { UserIcon, ArrowRightEndOnRectangleIcon, BookOpenIcon, PlayIcon, PencilS
 import { useAuth } from '../contexts/AuthContext';
 
 export function Header() {
-    const { isAuthenticated, hasRole } = useAuth();
+    const { isAuthenticated, hasRole, isLoading } = useAuth();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -67,82 +67,84 @@ export function Header() {
 
                     {/* Desktop Navigation */}
                     <nav className="hidden md:flex space-x-4 items-center">
-                        {isAuthenticated ? (
-                            <>
-                                {/* Ссылка "Пройти курс" для всех авторизованных пользователей */}
-                                <Link
-                                    to="/node-editor"
-                                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center"
-                                >
-                                    <PlayIcon className="h-5 w-5 mr-1" />
-                                    <span>Пройти курс</span>
-                                </Link>
-
-                                {/* Ссылка "Курсы" для всех авторизованных пользователей */}
-                                <Link
-                                    to="/courses"
-                                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center"
-                                >
-                                    <BookOpenIcon className="h-5 w-5 mr-1" />
-                                    <span>Курсы</span>
-                                </Link>
-
-                                {/* Ссылка "Мои курсы" для всех авторизованных пользователей */}
-                                <Link
-                                    to="/my-courses"
-                                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center"
-                                >
-                                    <AcademicCapIcon className="h-5 w-5 mr-1" />
-                                    <span>Мои курсы</span>
-                                </Link>
-
-                                {/* Ссылка "Создать курс" только для администраторов и учителей*/}
-                                {hasRole(['admin', 'teacher']) && (
+                        {!isLoading && (
+                            isAuthenticated ? (
+                                <>
+                                    {/* Ссылка "Пройти курс" для всех авторизованных пользователей */}
                                     <Link
-                                        to="/create-course"
+                                        to="/node-editor"
                                         className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center"
                                     >
-                                        <PencilSquareIcon className="h-5 w-5 mr-1" />
-                                        <span>Создать курс</span>
+                                        <PlayIcon className="h-5 w-5 mr-1" />
+                                        <span>Пройти курс</span>
                                     </Link>
-                                )}
 
-                                {/* Ссылка "Файлы" только для администраторов и учителей*/}
-                                {hasRole(['admin', 'teacher']) && (
+                                    {/* Ссылка "Курсы" для всех авторизованных пользователей */}
                                     <Link
-                                        to="/file-manager"
+                                        to="/courses"
                                         className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center"
                                     >
-                                        <DocumentTextIcon className="h-5 w-5 mr-1" />
-                                        <span>Файлы</span>
+                                        <BookOpenIcon className="h-5 w-5 mr-1" />
+                                        <span>Курсы</span>
                                     </Link>
-                                )}
 
-                                {/* Ссылка "Профиль" для всех авторизованных пользователей */}
-                                <Link
-                                    to="/profile"
-                                    className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 flex items-center"
-                                >
-                                    <UserIcon className="h-5 w-5 mr-1" />
-                                    <span>Профиль</span>
-                                </Link>
-                            </>
-                        ) : (
-                            <>
-                                <Link
-                                    to="/sign-in"
-                                    className="px-4 py-2 border border-blue-600 text-blue-600 font-semibold rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900 flex items-center"
-                                >
-                                    <ArrowRightEndOnRectangleIcon className="h-5 w-5 mr-1" />
-                                    <span>Войти</span>
-                                </Link>
-                                <Link
-                                    to="/sign-up"
-                                    className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
-                                >
-                                    Регистрация
-                                </Link>
-                            </>
+                                    {/* Ссылка "Мои курсы" для всех авторизованных пользователей */}
+                                    <Link
+                                        to="/my-courses"
+                                        className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center"
+                                    >
+                                        <AcademicCapIcon className="h-5 w-5 mr-1" />
+                                        <span>Мои курсы</span>
+                                    </Link>
+
+                                    {/* Ссылка "Создать курс" только для администраторов и учителей*/}
+                                    {hasRole(['admin', 'teacher']) && (
+                                        <Link
+                                            to="/create-course"
+                                            className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center"
+                                        >
+                                            <PencilSquareIcon className="h-5 w-5 mr-1" />
+                                            <span>Создать курс</span>
+                                        </Link>
+                                    )}
+
+                                    {/* Ссылка "Файлы" только для администраторов и учителей*/}
+                                    {hasRole(['admin', 'teacher']) && (
+                                        <Link
+                                            to="/file-manager"
+                                            className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center"
+                                        >
+                                            <DocumentTextIcon className="h-5 w-5 mr-1" />
+                                            <span>Файлы</span>
+                                        </Link>
+                                    )}
+
+                                    {/* Ссылка "Профиль" для всех авторизованных пользователей */}
+                                    <Link
+                                        to="/profile"
+                                        className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 flex items-center"
+                                    >
+                                        <UserIcon className="h-5 w-5 mr-1" />
+                                        <span>Профиль</span>
+                                    </Link>
+                                </>
+                            ) : (
+                                <>
+                                    <Link
+                                        to="/sign-in"
+                                        className="px-4 py-2 border border-blue-600 text-blue-600 font-semibold rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900 flex items-center"
+                                    >
+                                        <ArrowRightEndOnRectangleIcon className="h-5 w-5 mr-1" />
+                                        <span>Войти</span>
+                                    </Link>
+                                    <Link
+                                        to="/sign-up"
+                                        className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700"
+                                    >
+                                        Регистрация
+                                    </Link>
+                                </>
+                            )
                         )}
                     </nav>
 
@@ -160,7 +162,7 @@ export function Header() {
                 </div>
 
                 {/* Mobile Navigation */}
-                {mobileMenuOpen && (
+                {mobileMenuOpen && !isLoading && (
                     <div className="md:hidden absolute top-full left-0 right-0 bg-white dark:bg-gray-800 shadow-lg py-4 px-6 z-10">
                         <nav className="flex flex-col space-y-4">
                             {isAuthenticated ? (

@@ -1,4 +1,5 @@
 import { Outlet } from "react-router";
+// @ts-ignore
 import { AuthProvider } from '../contexts/AuthContext';
 import DynamicFavicon from '../common/DynamicFavicon';
 import '../common/theme.css';

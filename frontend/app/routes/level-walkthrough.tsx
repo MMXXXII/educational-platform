@@ -1,4 +1,7 @@
+import type { Route } from "./+types/level-walkthrough";
+// @ts-ignore
 import LevelWalkthrough from '../level-walkthrough/LevelWalkthrough';
+// @ts-ignore
 import { EditorProvider } from '../contexts/EditorContext';
 
 export function meta({ }: Route.MetaArgs) {
