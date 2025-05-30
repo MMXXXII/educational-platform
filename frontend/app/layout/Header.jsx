@@ -46,14 +46,15 @@ export function Header() {
                         onContextMenu={preventContextMenu}
                     >
                         <img
-                            src={isDarkMode ? "/dark logo.png" : "/logo.png"}
+                            src="/logo.png"
                             alt="EduPlatform Logo"
-                            className="h-12 sm:h-15 w-auto select-none"
-                            style={{
-                                pointerEvents: 'none',
-                                userSelect: 'none',
-                                WebkitUserSelect: 'none'
-                            }}
+                            className="h-12 sm:h-15 w-auto select-none light-mode-logo"
+                            draggable="false"
+                        />
+                        <img
+                            src="/dark logo.png"
+                            alt="EduPlatform Logo"
+                            className="h-12 sm:h-15 w-auto select-none dark-mode-logo"
                             draggable="false"
                         />
                         {/* Защитный слой поверх изображения */}

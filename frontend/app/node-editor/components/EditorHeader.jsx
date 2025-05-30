@@ -88,7 +88,8 @@ const EditorHeader = ({
                         {/* Логотип и название проекта */}
                         <div className="flex items-center">
                             <Link to="/" className="flex-shrink-0">
-                                <img src={isDarkMode ? "/dark logo.png" : "/logo.png"} alt="Logo" className="h-10 w-auto" />
+                                <img src="/logo.png" alt="Logo" className="h-10 w-auto light-mode-logo" />
+                                <img src="/dark logo.png" alt="Logo" className="h-10 w-auto dark-mode-logo" />
                             </Link>
 
                             {!isMobile && (
