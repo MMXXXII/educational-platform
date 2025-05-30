@@ -72,10 +72,10 @@ const CourseFormFields = ({
     return (
         <>
             {/* Основная информация о курсе */}
-            <div className="mb-8">
+            <div className="mb-2">
                 <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Информация о курсе</h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Название курса */}
                     <div className="col-span-2">
                         <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -146,7 +146,7 @@ const CourseFormFields = ({
                                 onChange={onCourseChange}
                                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.difficulty ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} text-black dark:text-white bg-white dark:bg-gray-700`}
                             >
-                                <option value="" className="text-black dark:text-white">Выберите уровень сложности</option>
+                                <option value="" disabled className="text-black dark:text-white">Выберите уровень сложности</option>
                                 <option value="начинающий" className="text-black dark:text-white">Начинающий</option>
                                 <option value="средний" className="text-black dark:text-white">Средний</option>
                                 <option value="продвинутый" className="text-black dark:text-white">Продвинутый</option>
@@ -158,25 +158,72 @@ const CourseFormFields = ({
 
                         {/* Категория */}
                         <div>
-                            <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Категория*
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Категории*
                             </label>
-                            <select
-                                id="category_id"
-                                name="category_id"
-                                value={course.category_id}
-                                onChange={onCourseChange}
-                                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category_id ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} text-black dark:text-white bg-white dark:bg-gray-700`}
-                            >
-                                <option value="" className="text-black dark:text-white">Выберите категорию</option>
-                                {categories.map(category => (
-                                    <option key={category.id} value={category.id} className="text-black dark:text-white">
-                                        {category.name}
-                                    </option>
-                                ))}
-                            </select>
-                            {errors.category_id && (
-                                <p className="mt-1 text-sm text-red-500">{errors.category_id}</p>
+                            <div className="relative">
+                                <select
+                                    id="category-select"
+                                    name="category-select"
+                                    onChange={(e) => {
+                                        const categoryId = parseInt(e.target.value);
+                                        if (categoryId && !course.category_ids.includes(categoryId)) {
+                                            onCourseChange({
+                                                target: {
+                                                    name: 'category_ids',
+                                                    value: [...course.category_ids, categoryId]
+                                                }
+                                            });
+                                        }
+                                    }}
+                                    value=""
+                                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300 dark:border-gray-600 text-black dark:text-white bg-white dark:bg-gray-700 mb-2"
+                                >
+                                    <option value="" disabled className="text-black dark:text-white">Выберите категорию</option>
+                                    {categories
+                                        .filter(cat => !course.category_ids.includes(cat.id))
+                                        .map(category => (
+                                            <option key={category.id} value={category.id} className="text-black dark:text-white">
+                                                {category.name}
+                                            </option>
+                                        ))
+                                    }
+                                </select>
+
+                                {/* Список выбранных категорий */}
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {course.category_ids.length > 0 ? (
+                                        categories
+                                            .filter(cat => course.category_ids.includes(cat.id))
+                                            .map(category => (
+                                                <div
+                                                    key={category.id}
+                                                    className="flex items-center bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm"
+                                                >
+                                                    <span>{category.name}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            onCourseChange({
+                                                                target: {
+                                                                    name: 'category_ids',
+                                                                    value: course.category_ids.filter(id => id !== category.id)
+                                                                }
+                                                            });
+                                                        }}
+                                                        className="ml-2 text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100"
+                                                    >
+                                                        <XMarkIcon className="h-4 w-4" />
+                                                    </button>
+                                                </div>
+                                            ))
+                                    ) : (
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Нет выбранных категорий</p>
+                                    )}
+                                </div>
+                            </div>
+                            {errors.category_ids && (
+                                <p className="mt-1 text-sm text-red-500">{errors.category_ids}</p>
                             )}
                         </div>
                     </div>
@@ -184,7 +231,7 @@ const CourseFormFields = ({
             </div>
 
             {/* Загрузка изображения */}
-            <div className="mb-8">
+            <div className="mb-6">
                 <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Изображение курса</h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

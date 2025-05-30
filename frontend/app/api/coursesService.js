@@ -64,7 +64,14 @@ export const coursesApi = {
             formData.append('description', courseData.description);
             formData.append('longdescription', courseData.longDescription);
             formData.append('difficulty', courseData.difficulty);
-            formData.append('category_id', courseData.category_id);
+
+            // Добавляем category_ids как отдельные значения
+            if (courseData.category_ids && courseData.category_ids.length > 0) {
+                courseData.category_ids.forEach(categoryId => {
+                    // Убедимся, что categoryId передается как число
+                    formData.append('category_ids', Number(categoryId));
+                });
+            }
 
             // Добавляем изображение, если оно есть
             if (courseData.image) {
@@ -149,7 +156,13 @@ export const coursesApi = {
                 if (courseData.description !== undefined) formData.append('description', courseData.description);
                 if (courseData.longDescription !== undefined) formData.append('longdescription', courseData.longDescription);
                 if (courseData.difficulty !== undefined) formData.append('difficulty', courseData.difficulty);
-                if (courseData.category_id !== undefined) formData.append('category_id', courseData.category_id);
+                
+                // Добавляем category_ids как отдельные значения
+                if (courseData.category_ids !== undefined && courseData.category_ids.length > 0) {
+                    courseData.category_ids.forEach(categoryId => {
+                        formData.append('category_ids', Number(categoryId));
+                    });
+                }
 
                 // Добавляем изображение
                 formData.append('image', courseData.image);
@@ -173,7 +186,7 @@ export const coursesApi = {
                     description: courseData.description,
                     longdescription: courseData.longDescription,
                     difficulty: courseData.difficulty,
-                    category_ids: courseData.category_ids || [parseInt(courseData.category_id)]
+                    category_ids: courseData.category_ids
                 };
 
                 const response = await apiClient.put(`/courses/${courseId}`, updateData);
@@ -192,7 +205,7 @@ export const coursesApi = {
                     // Убедимся, что remove_image передается как булево значение
                     remove_image: courseData.remove_image === true
                 };
-                
+
                 const response = await apiClient.put(`/courses/${courseId}`, updateData);
                 return response.data;
             }

@@ -183,7 +183,7 @@ export function CourseSidebar({ course }) {
 
                 {/* Катеогории */}
                 <div className="flex items-center">
-                    <TagIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" />
+                    <TagIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" />
                     <span className="text-gray-700 dark:text-gray-300">{categories}</span>
                 </div>
             </div>

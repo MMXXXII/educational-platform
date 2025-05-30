@@ -20,7 +20,7 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
         description: '',
         longDescription: '',
         difficulty: '',
-        category_id: '',
+        category_ids: [],
         image: null
     });
 
@@ -141,9 +141,9 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
                     description: courseData.description || '',
                     longDescription: courseData.longdescription || '',
                     difficulty: courseData.difficulty || '',
-                    category_id: courseData.categories && courseData.categories.length > 0
-                        ? courseData.categories[0].id.toString()
-                        : '',
+                    category_ids: courseData.categories
+                        ? courseData.categories.map(cat => cat.id)
+                        : [],
                     image: null
                 };
 
@@ -249,8 +249,8 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
             newErrors.difficulty = 'Выберите уровень сложности';
         }
 
-        if (!course.category_id) {
-            newErrors.category_id = 'Выберите категорию';
+        if (!course.category_ids || course.category_ids.length === 0) {
+            newErrors.category_ids = 'Выберите хотя бы одну категорию';
         }
 
         // Проверка уроков для режимов создания и редактирования
@@ -400,7 +400,7 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
                 description: course.description,
                 longDescription: course.longDescription,
                 difficulty: course.difficulty,
-                category_id: course.category_id,
+                category_ids: course.category_ids,
                 image: course.image
             };
 
@@ -452,9 +452,9 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
                 description: course.description,
                 longdescription: course.longDescription,
                 difficulty: course.difficulty,
-                category_ids: [parseInt(course.category_id)],
+                category_ids: course.category_ids,
                 image: course.image,
-                remove_image: removeExistingImage // Добавляем флаг для удаления изображения
+                remove_image: removeExistingImage
             };
 
             // Обновляем данные курса на сервере
