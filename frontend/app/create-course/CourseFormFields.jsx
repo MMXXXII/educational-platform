@@ -167,21 +167,21 @@ const CourseFormFields = ({
                                     name="category-select"
                                     onChange={(e) => {
                                         const categoryId = parseInt(e.target.value);
-                                        if (categoryId && !course.category_ids.includes(categoryId)) {
+                                        if (categoryId && !course.category_ids?.includes(categoryId)) {
                                             onCourseChange({
                                                 target: {
                                                     name: 'category_ids',
-                                                    value: [...course.category_ids, categoryId]
+                                                    value: [...(course.category_ids ?? []), categoryId]
                                                 }
                                             });
                                         }
                                     }}
                                     value=""
-                                    className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300 dark:border-gray-600 text-black dark:text-white bg-white dark:bg-gray-700 mb-2"
+                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.category_ids ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} text-black dark:text-white bg-white dark:bg-gray-700 mb-2`}
                                 >
                                     <option value="" disabled className="text-black dark:text-white">Выберите категорию</option>
                                     {categories
-                                        .filter(cat => !course.category_ids.includes(cat.id))
+                                        .filter(cat => !course.category_ids?.includes(cat.id))
                                         .map(category => (
                                             <option key={category.id} value={category.id} className="text-black dark:text-white">
                                                 {category.name}
@@ -192,9 +192,9 @@ const CourseFormFields = ({
 
                                 {/* Список выбранных категорий */}
                                 <div className="mt-2 flex flex-wrap gap-2">
-                                    {course.category_ids.length > 0 ? (
+                                    {course.category_ids?.length > 0 ? (
                                         categories
-                                            .filter(cat => course.category_ids.includes(cat.id))
+                                            .filter(cat => course.category_ids?.includes(cat.id))
                                             .map(category => (
                                                 <div
                                                     key={category.id}
@@ -207,7 +207,7 @@ const CourseFormFields = ({
                                                             onCourseChange({
                                                                 target: {
                                                                     name: 'category_ids',
-                                                                    value: course.category_ids.filter(id => id !== category.id)
+                                                                    value: (course.category_ids ?? []).filter(id => id !== category.id)
                                                                 }
                                                             });
                                                         }}

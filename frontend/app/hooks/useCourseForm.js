@@ -282,6 +282,10 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
                 // Находим элемент с соответствующим id или близкий элемент
                 let errorElement = document.getElementById(firstErrorKey);
 
+                if (firstErrorKey === 'category_ids') {
+                    errorElement = document.getElementById('category-select');
+                }
+
                 if (!errorElement) {
                     // Пытаемся найти по имени, если ID не является достаточно специфичным (например, для уроков)
                     errorElement = document.getElementsByName(firstErrorKey)[0];
@@ -333,7 +337,7 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
         }
 
         const lessonsChanged = JSON.stringify(updatedLessons) !== JSON.stringify(lessons);
-        if (!lessonsChanged && lessons.length === updatedLessons.length) { // also check if length changed for new lessons
+        if (!lessonsChanged && lessons.length === updatedLessons.length) { // также проверяем, изменилась ли длина для новых уроков
             return;
         }
 
@@ -377,7 +381,7 @@ export const useCourseForm = (mode = 'create', courseId = null) => {
                 description: course.description || '',
                 longDescription: course.longDescription || '',
                 difficulty: course.difficulty || '',
-                category_id: course.category_id || ''
+                category_ids: course.category_ids || []
             };
 
             await saveCourseDataToDB(courseToSave, course.image, mode, courseId);
