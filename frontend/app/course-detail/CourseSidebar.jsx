@@ -96,7 +96,8 @@ export function CourseSidebar({ course }) {
             setEnrolled(true);
             setError(null);
             // Перенаправляем пользователя на страницу прохождения после успешной записи
-            window.location.href = `/node-editor`;
+            // window.location.href = `/level-walkthrough`;
+            // Временно заменено на сообщение об успешной записи
         } catch (err) {
             console.error('Failed to enroll:', err);
             // Если ошибка содержит сообщение о том, что пользователь уже записан
@@ -104,7 +105,8 @@ export function CourseSidebar({ course }) {
                 setEnrolled(true);
                 setError(null);
                 // Перенаправляем пользователя на страницу прохождения если он уже записан
-                window.location.href = `/node-editor`;
+                // window.location.href = `/level-walkthrough`;
+                // Временно заменено на сообщение об уже имеющейся записи
             } else if (err.message && err.message.includes('авторизация')) {
                 setError('Требуется авторизация для записи на курс');
             } else {
@@ -125,7 +127,7 @@ export function CourseSidebar({ course }) {
                 </span>
             );
         } else if (enrolled) {
-            return 'Продолжить';
+            return 'Вы записаны на курс';
         } else {
             return 'Начать прохождение';
         }
@@ -149,12 +151,15 @@ export function CourseSidebar({ course }) {
                     </span>
                 </button>
             ) : enrolled ? (
-                <Link
-                    to={`/node-editor`}
-                    className="w-full py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors mb-4 inline-block text-center"
-                >
+                // <Link
+                //     to={`/level-walkthrough`}
+                //     className="w-full py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors mb-4 inline-block text-center"
+                // >
+                //     {getButtonText()}
+                // </Link>
+                <div className="w-full py-3 bg-green-600 text-white font-semibold rounded-lg mb-4 text-center">
                     {getButtonText()}
-                </Link>
+                </div>
             ) : (
                 <button
                     className={`w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors mb-4 ${enrolling ? 'opacity-70 cursor-not-allowed' : ''}`}

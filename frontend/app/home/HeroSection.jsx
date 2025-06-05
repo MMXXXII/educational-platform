@@ -14,13 +14,6 @@ export function HeroSection() {
                     Интерактивные курсы для детей и подростков. Создавай свои уроки или проходи готовые.
                 </p>
                 <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row justify-center gap-4">
-                    {/* Временная ссылка "Пройти курс" */}
-                    <Link
-                        to="/node-editor"
-                        className="px-6 sm:px-8 py-3 border border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 font-semibold rounded-lg hover:bg-blue-50 dark:hover:bg-slate-700 transition-colors w-full sm:w-auto flex items-center justify-center"
-                    >
-                        Пройти курс
-                    </Link>
                     <Link
                         to="/courses"
                         className="px-6 sm:px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors w-full sm:w-auto flex items-center justify-center"

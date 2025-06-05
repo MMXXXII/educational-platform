@@ -135,12 +135,16 @@ export function MyCoursesPage() {
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2 line-clamp-2">
-                            {course.title}
-                        </h3>
-                        <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">
-                            {course.description}
-                        </p>
+                        <div className="h-14 mb-2">
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 line-clamp-2">
+                                {course.title}
+                            </h3>
+                        </div>
+                        <div className="h-10 mb-3">
+                            <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2">
+                                {course.description}
+                            </p>
+                        </div>
                         <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
                             <span>Автор: {course.author}</span>
                             <span className="mx-2">•</span>
@@ -155,12 +159,6 @@ export function MyCoursesPage() {
                             </div>
                             <ProgressBar progress={progress} />
                         </div>
-
-                        {isCompleted && (
-                            <div className="inline-flex items-center px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 text-xs font-medium rounded-full">
-                                ✓ Завершено
-                            </div>
-                        )}
                     </div>
                     <AcademicCapIcon className="h-8 w-8 text-blue-500 flex-shrink-0 ml-4" />
                 </div>
@@ -189,12 +187,16 @@ export function MyCoursesPage() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2 line-clamp-2">
-                        {course.title}
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">
-                        {course.description}
-                    </p>
+                    <div className="h-14 mb-2">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 line-clamp-2">
+                            {course.title}
+                        </h3>
+                    </div>
+                    <div className="h-10 mb-3">
+                        <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2">
+                            {course.description}
+                        </p>
+                    </div>
                     <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                         <span>{course.students_count || 0} студентов</span>
                         <span className="mx-2">•</span>
@@ -230,7 +232,6 @@ export function MyCoursesPage() {
             </div>
         </div>
     );
-
 
 
     return (
