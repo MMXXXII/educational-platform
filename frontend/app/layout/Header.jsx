@@ -70,15 +70,6 @@ export function Header() {
                         {!isLoading && (
                             isAuthenticated ? (
                                 <>
-                                    {/* Ссылка "Пройти курс" для всех авторизованных пользователей */}
-                                    <Link
-                                        to="/node-editor"
-                                        className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center"
-                                    >
-                                        <PlayIcon className="h-5 w-5 mr-1" />
-                                        <span>Пройти курс</span>
-                                    </Link>
-
                                     {/* Ссылка "Курсы" для всех авторизованных пользователей */}
                                     <Link
                                         to="/courses"
@@ -97,7 +88,7 @@ export function Header() {
                                         <span>Мои курсы</span>
                                     </Link>
 
-                                    {/* Ссылка "Создать курс" только для администраторов и учителей*/}
+                                    {/* Ссылка "Создать курс" только для администраторов и учителей */}
                                     {hasRole(['admin', 'teacher']) && (
                                         <Link
                                             to="/create-course"
@@ -108,8 +99,7 @@ export function Header() {
                                         </Link>
                                     )}
 
-                                    {/* Ссылка "Файлы" только для администраторов и учителей*/}
-                                    {hasRole(['admin', 'teacher']) && (
+                                    {/* Ссылка "Файлы" только для всех авторизованных пользователей */}
                                         <Link
                                             to="/file-manager"
                                             className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center"
@@ -117,7 +107,7 @@ export function Header() {
                                             <DocumentTextIcon className="h-5 w-5 mr-1" />
                                             <span>Файлы</span>
                                         </Link>
-                                    )}
+                                    
 
                                     {/* Ссылка "Профиль" для всех авторизованных пользователей */}
                                     <Link

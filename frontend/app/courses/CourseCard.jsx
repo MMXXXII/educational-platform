@@ -17,7 +17,10 @@ export function CourseCard({ course }) {
             </div>
 
             <div className="p-4">
-                <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-2 line-clamp-2">{course.title}</h3>
+                <div className="h-14 mb-2">
+                    <h3 className="font-bold text-lg text-gray-800 dark:text-white line-clamp-2">{course.title}</h3>
+                </div>
+
                 <div className="h-10 mb-3">
                     <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-2">{course.description}</p>
                 </div>
