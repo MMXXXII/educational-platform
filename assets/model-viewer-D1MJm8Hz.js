@@ -1,0 +1,1 @@
+import{d as i,m as e}from"./model-viewer-CRf71ZHW.js";import"./with-props-CdbLO-WJ.js";import"./chunk-AYJ5UCUI-B1579ApN.js";import"./sceneFragmentDeclaration-CNWtVIbJ.js";import"./waterMaterial-DHEJP-Do.js";export{i as default,e as meta};

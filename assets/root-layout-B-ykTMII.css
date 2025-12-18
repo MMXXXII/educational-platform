@@ -1,0 +1,1 @@
+.light-mode-logo{display:block}.dark-mode-logo{display:none}@media (prefers-color-scheme: dark){.light-mode-logo{display:none}.dark-mode-logo{display:block}}

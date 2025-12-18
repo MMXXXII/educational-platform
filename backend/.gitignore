@@ -1,0 +1,6 @@
+.env
+.env.production
+venv
+__pycache__
+file-manager
+static

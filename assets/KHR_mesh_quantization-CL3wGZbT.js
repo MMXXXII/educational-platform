@@ -1,0 +1,1 @@
+import{u as e,r as n}from"./model-viewer-CRf71ZHW.js";import"./with-props-CdbLO-WJ.js";import"./chunk-AYJ5UCUI-B1579ApN.js";import"./sceneFragmentDeclaration-CNWtVIbJ.js";import"./waterMaterial-DHEJP-Do.js";const t="KHR_mesh_quantization";class o{constructor(i){this.name=t,this.enabled=i.isExtensionUsed(t)}dispose(){}}e(t);n(t,!0,s=>new o(s));export{o as KHR_mesh_quantization};
