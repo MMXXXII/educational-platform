@@ -323,42 +323,52 @@ const ProjectManager = ({ onClose, isMobile = false }) => {
     /**
      * Обработчик создания нового проекта
      */
-    const handleCreateNewProject = () => {
-        // Проверяем наличие имени проекта
-        if (!newProjectName || !newProjectName.trim()) {
-            showNotification('Имя проекта не может быть пустым', 'warning');
-            return;
-        }
+    /**
+ * Обработчик создания нового проекта
+ */
+const handleCreateNewProject = () => {
+    // Проверяем наличие имени проекта
+    if (!newProjectName || !newProjectName.trim()) {
+        showNotification('Имя проекта не может быть пустым', 'warning');
+        return;
+    }
 
-        // Проверяем, существует ли уже проект с таким именем
-        if (projectsList.includes(newProjectName.trim())) {
-            showNotification(`Проект с именем "${newProjectName}" уже существует`, 'warning');
-            return;
-        }
+    // Проверяем, существует ли уже проект с таким именем
+    if (projectsList.includes(newProjectName.trim())) {
+        showNotification(`Проект с именем "${newProjectName}" уже существует`, 'warning');
+        return;
+    }
 
-        // Создаем новый проект с текущими нодами/ребрами на холсте
-        const success = createNewProject(newProjectName.trim(), true);
+    // Создаем новый проект с текущими нодами/ребрами на холсте
+    const success = createNewProject(newProjectName.trim(), true);
 
-        if (success) {
-            // Сразу же сохраняем проект в localStorage
+    if (success) {
+        showNotification(`Создан новый проект: ${newProjectName}`, 'success');
+        setNewProjectName('');
+        
+        // Даем время React обновить состояние перед сохранением
+        setTimeout(() => {
+            // Пытаемся сохранить проект
             const saveSuccess = saveProject(newProjectName.trim());
-
+            
             if (saveSuccess) {
-                showNotification(`Создан новый проект: ${newProjectName}`, 'success');
-                setNewProjectName('');
+                showNotification(`Проект успешно сохранен`, 'success');
                 // Обновляем список проектов после сохранения
                 refreshProjectsList();
                 // Если нужно, закрываем модальное окно
                 if (onClose) {
-                    onClose();
+                    setTimeout(() => onClose(), 500); // Небольшая задержка для UX
                 }
             } else {
-                showNotification(`Проект создан, но не удалось сохранить его`, 'warning');
+                showNotification(`Проект создан, но не удалось сохранить его. Попробуйте сохранить вручную.`, 'warning');
+                // Все равно обновляем список
+                refreshProjectsList();
             }
-        } else {
-            showNotification('Ошибка при создании проекта', 'error');
-        }
-    };
+        }, 100); // Небольшая задержка для обновления состояния
+    } else {
+        showNotification('Ошибка при создании проекта', 'error');
+    }
+};
 
     // Получаем отфильтрованные и отсортированные проекты
     const filteredProjects = getFilteredAndSortedProjects();

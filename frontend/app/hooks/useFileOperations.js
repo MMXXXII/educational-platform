@@ -1,18 +1,22 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { fileService } from '../api';
 
 export const useFileOperations = (currentFolder, onSuccess) => {
     const [loading, setLoading] = useState({});
+    const [error, setError] = useState(null); // Добавлено
 
-    const createFolder = async (name) => {
-        setLoading({ type: 'create', status: true });
+    const createFolder = async (folderName) => {
+        setLoading({ type: 'createFolder', status: true });
+        setError(null); // Сбрасываем предыдущие ошибки
         try {
-            await fileService.createFolder(name, currentFolder);
-            onSuccess();
+            await fileService.createFolder(folderName, currentFolder);
+            onSuccess(); // Используем onSuccess вместо refresh
         } catch (error) {
             console.error('Error creating folder:', error);
+            setError(error.response?.data?.detail || 'Ошибка при создании папки');
+            throw error; // Прокидываем ошибку дальше
         } finally {
-            setLoading({ type: 'create', status: false });
+            setLoading({ type: 'createFolder', status: false });
         }
     };
 
@@ -29,6 +33,7 @@ export const useFileOperations = (currentFolder, onSuccess) => {
             onSuccess();
         } catch (error) {
             console.error('Error renaming item:', error);
+            throw error; // Добавлено: тоже прокидываем ошибку
         } finally {
             setLoading({ type: 'rename', status: false });
         }
@@ -47,6 +52,7 @@ export const useFileOperations = (currentFolder, onSuccess) => {
             onSuccess();
         } catch (error) {
             console.error('Error deleting item:', error);
+            throw error; // Добавлено
         } finally {
             setLoading({ type: 'delete', status: false });
         }
@@ -68,6 +74,7 @@ export const useFileOperations = (currentFolder, onSuccess) => {
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error('Error downloading file:', error);
+            throw error; // Добавлено
         } finally {
             setLoading({ type: 'download', status: false });
         }
@@ -82,6 +89,7 @@ export const useFileOperations = (currentFolder, onSuccess) => {
             onSuccess();
         } catch (error) {
             console.error('Error uploading files:', error);
+            throw error; // Добавлено
         } finally {
             setLoading({ type: 'upload', status: false });
         }
@@ -89,6 +97,7 @@ export const useFileOperations = (currentFolder, onSuccess) => {
 
     return {
         loading,
+        error, // Добавлено в возвращаемый объект
         createFolder,
         rename,
         deleteItem,

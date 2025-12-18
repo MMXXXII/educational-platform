@@ -24,19 +24,13 @@ export const EditorProvider = ({ children }) => {
     const [isBrowser, setIsBrowser] = useState(false);
     const [saveError, setSaveError] = useState(null);
     const [loadError, setLoadError] = useState(null);
-
-    // Состояние для автоматического масштабирования после загрузки проекта
     const [needsFitView, setNeedsFitView] = useState(false);
+
+    // Вычисляемое свойство
+    const hasActiveProject = Boolean(projectName && projectName.trim() !== '');
 
     // Реф для хранения функций, чтобы избежать циклических зависимостей
     const functionRef = useRef({});
-
-    // Эффект для инициализации списка проектов после маунтинга компонента
-    useEffect(() => {
-        setIsBrowser(true);
-        // Обновляем список проектов при инициализации
-        refreshProjectsList();
-    }, []);
 
     /**
      * Обновляет список проектов
@@ -257,7 +251,7 @@ export const EditorProvider = ({ children }) => {
 
         try {
             const success = SerializationService.deleteProjectVersion(projectName, versionName);
-            
+
             if (success) {
                 console.log(`Версия "${versionName}" проекта "${projectName}" успешно удалена`);
                 // Обновляем список версий
@@ -281,11 +275,28 @@ export const EditorProvider = ({ children }) => {
      * @param {string} name - Имя проекта (если не указано, используется текущее)
      * @returns {boolean} - Успешно ли сохранен проект
      */
+    /**
+ * Сохраняет текущий проект
+ * @param {string} name - Имя проекта (если не указано, используется текущее)
+ * @returns {boolean} - Успешно ли сохранен проект
+ */
     const saveProject = useCallback((name = null) => {
         setSaveError(null);
 
-        if (!isBrowser) {
-            const error = 'Невозможно сохранить проект: localStorage недоступен';
+        // Правильная проверка доступности localStorage
+        let storageAvailable = false;
+        try {
+            // Пробуем обратиться к localStorage
+            const testKey = '__test__';
+            localStorage.setItem(testKey, testKey);
+            localStorage.removeItem(testKey);
+            storageAvailable = true;
+        } catch (e) {
+            storageAvailable = false;
+        }
+
+        if (!storageAvailable) {
+            const error = 'Невозможно сохранить проект: localStorage недоступен. Убедитесь, что вы работаете в браузере и не используете режим инкогнито.';
             console.warn(error);
             setSaveError(error);
             return false;
@@ -327,7 +338,7 @@ export const EditorProvider = ({ children }) => {
             setSaveError(`Ошибка при сохранении: ${error.message}`);
             return false;
         }
-    }, [nodes, edges, projectName, isBrowser, refreshProjectsList]);
+    }, [nodes, edges, projectName, refreshProjectsList]);
 
     // Сохраняем функцию в реф
     functionRef.current.saveProject = saveProject;
@@ -364,13 +375,13 @@ export const EditorProvider = ({ children }) => {
         try {
             // Создаем проект в памяти
             setProjectName(name);
-            
+
             // Если keepCurrentNodes=true, сохраняем текущие ноды и рёбра, иначе очищаем
             if (!keepCurrentNodes) {
                 setNodes([]);
                 setEdges([]);
             }
-            
+
             setIsModified(false);
             setSelectedNodeId(null);
             setSaveError(null);
@@ -378,10 +389,10 @@ export const EditorProvider = ({ children }) => {
 
             // Сериализуем текущее состояние графа (пустое или существующее)
             const serializedGraph = SerializationService.serializeGraph(
-                keepCurrentNodes ? nodes : [], 
+                keepCurrentNodes ? nodes : [],
                 keepCurrentNodes ? edges : []
             );
-            
+
             // Сохраняем проект в localStorage
             SerializationService.saveToLocalStorage(name, serializedGraph);
 
@@ -618,6 +629,7 @@ export const EditorProvider = ({ children }) => {
         nodes,
         edges,
         projectName,
+        hasActiveProject,
         projectsList,
         projectVersions,
         isModified,

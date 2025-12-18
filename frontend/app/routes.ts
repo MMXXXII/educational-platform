@@ -10,6 +10,7 @@ export default [
     layout("./routes/root-layout.tsx", [
         layout("./routes/layout.tsx", [
             index("routes/home.tsx"),
+            route("admin", "./routes/admin.tsx"),
             route("courses", "./routes/courses.tsx"),
             route("courses/:id", "./routes/course-detail.tsx"),
             route("my-courses", "./routes/my-courses.tsx"),
@@ -17,6 +18,7 @@ export default [
             route("file-manager", "./routes/file-manager.tsx"),
             route("create-course", "./routes/create-course.tsx"),
             route("edit-course/:id", "./routes/edit-course.tsx"),
+            route("about", "./routes/about.tsx"), 
         ]),
         route("node-editor", "routes/node-editor.tsx"),
         route("tile-editor", "./routes/tile-editor.tsx"),

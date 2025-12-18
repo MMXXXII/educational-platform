@@ -1,20 +1,19 @@
 import axios from 'axios';
 import { getAccessToken, setTokens, removeTokens } from '../utils/auth';
-import config from '../../config';
+import appConfig from '../../config';  // ✅ Переименовали
 
 // Create axios instance with default config
 const api = axios.create({
-    baseURL: `${config.apiUrl}/api`,
+    baseURL: appConfig.apiUrl,  // ✅ Убрали /api
     headers: {
         'Content-Type': 'application/json'
     },
-    // Enable sending cookies and auth headers
     withCredentials: true
 });
 
 // Request interceptor - add auth token
 api.interceptors.request.use(
-    (config) => {
+    (config) => {  // Теперь этот config не конфликтует
         const token = getAccessToken();
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
@@ -28,7 +27,6 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
-        // If no response, it's a network error
         if (!error.response) {
             console.error('Network error:', error);
             return Promise.reject(error);
@@ -40,12 +38,16 @@ api.interceptors.response.use(
             originalRequest._retry = true;
 
             try {
-                const response = await axios.post(`${config.apiUrl}/api/refresh`, {}, {
-                    headers: {
-                        'Authorization': `Bearer ${getAccessToken()}`
-                    },
-                    withCredentials: true
-                });
+                const response = await axios.post(
+                    `${appConfig.apiUrl}/api/refresh`,  // ✅ Используем appConfig
+                    {}, 
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${getAccessToken()}`
+                        },
+                        withCredentials: true
+                    }
+                );
 
                 const { access_token, refresh_token } = response.data;
                 setTokens(access_token, refresh_token);

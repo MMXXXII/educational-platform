@@ -49,10 +49,31 @@ export function FileManager() {
     };
 
     const handleCreateFolder = async () => {
-        await createFolder(newFolderName);
-        setNewFolderDialog(false);
-        setNewFolderName('');
+        if (!newFolderName.trim()) {
+            alert('Имя папки не может быть пустым');
+            return;
+        }
+
+        await createFolder(newFolderName.trim())
+            .then(() => {
+                setNewFolderDialog(false);
+                setNewFolderName('');
+            })
+            .catch(error => {
+                // ловим только дубликаты
+                if (error.response?.status === 400 &&
+                    (error.response?.data?.detail === "Folder already exists" ||
+                        error.response?.data?.detail?.includes("already exists"))) {
+                    alert(`Папка с именем "${newFolderName}" уже существует`);
+                } else {
+                    // остальные ошибки игнорируем или выводим в консоль
+                    console.error(error);
+                }
+            });
     };
+
+
+
 
     const handleRename = async () => {
         await rename(selectedItem, newName);
