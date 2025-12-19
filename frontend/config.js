@@ -1,5 +1,5 @@
 const config = {
-    apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:8000'
+  apiUrl: "https://educational-platform-vvs0.onrender.com", 
 };
 
 console.log('ENV VITE_API_URL:', import.meta.env.VITE_API_URL);
