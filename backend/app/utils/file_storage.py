@@ -14,9 +14,9 @@ from app.core.config import BASE_URL
 UPLOAD_DIR = Path("static/uploads")
 COURSE_IMAGES_DIR = UPLOAD_DIR / "course_images"
 
-# Создаем директории, если они не существуют
-UPLOAD_DIR.mkdir(exist_ok=True)
-COURSE_IMAGES_DIR.mkdir(exist_ok=True)
+# Создаем директории, если они не существуют (parents=True создаст все родительские директории)
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+COURSE_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 # Допустимые типы изображений
 ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"]
