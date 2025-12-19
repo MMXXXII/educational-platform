@@ -55,3 +55,21 @@ def update_user_vk_id(db: Session, user_id: int, vk_id: str):
         db.commit()
         db.refresh(user)
     return user
+
+def update_user_password(db: Session, user_id: int, current_password: str, new_password: str):
+    """
+    Обновляет пароль пользователя после проверки текущего.
+    """
+    user = get_user(db, user_id)
+    if not user:
+        raise ValueError("Пользователь не найден")
+    
+    # Проверка текущего пароля
+    if not verify_password(current_password, user.hashed_password):
+        raise ValueError("Неверный текущий пароль")
+    
+    # Хэширование и сохранение нового пароля
+    user.hashed_password = get_password_hash(new_password)
+    db.commit()
+    db.refresh(user)
+    return user

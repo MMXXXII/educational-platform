@@ -288,3 +288,11 @@ class CourseEditResponse(CourseOut):
 
     class Config:
         from_attributes = True
+
+class UserUpdate(BaseModel):
+    email: str | None = None
+    role: str | None = None
+    is_active: bool | None = None
+    
+    class Config:
+        from_attributes = True
